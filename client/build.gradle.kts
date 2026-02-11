@@ -1,18 +1,17 @@
 plugins {
-    alias(libs.plugins.android.library)
+    id("com.android.application")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.developers.client"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 30
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
+        //consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -37,4 +36,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(project(":core"))
 }
