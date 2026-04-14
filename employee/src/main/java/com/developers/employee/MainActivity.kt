@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
 
         // Datos únicos del EMPLEADO
         val datosEmpleado = hashMapOf(
-            "quien" to " QR DE YAHIR",
+            "quien" to " QR DE YAHIR HERNANDEZ",
             "accion" to "Registrando asistencia ",
             "turno" to "Matutino",
             "fecha" to Date()
