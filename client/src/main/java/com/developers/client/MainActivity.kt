@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         // 3. Datos únicos del CLIENTE
         val datosCliente = hashMapOf(
             "quien" to "CLIENTE APP ",
-            "accion" to "Quiero comprar panochon",
+            "accion" to "Quiero comprar panochita",
             "precio_visto" to 15.50,
             "fecha" to Date()
         )
