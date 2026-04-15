@@ -66,14 +66,14 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF3F3FF)), 
+                    .background(MaterialTheme.colorScheme.surfaceVariant), 
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
                         .size(70.dp)
                         .clip(RoundedCornerShape(15.dp))
-                        .background(Color(0xFFFFB38E)),
+                        .background(PanAppPeach),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -91,14 +91,14 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                 text = "¡Bienvenido de nuevo!",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = PanAppTextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
 
             Text(
                 text = "Huele a pan recién horneado...",
                 style = MaterialTheme.typography.bodyMedium,
-                color = PanAppTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
@@ -110,25 +110,26 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                     text = "Correo o Teléfono",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = PanAppTextPrimary,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 OutlinedTextField(
                     value = correo,
                     onValueChange = { correo = it },
-                    placeholder = { Text("ejemplo@correo.com", color = PanAppTextSecondary) },
+                    placeholder = { Text("ejemplo@correo.com", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.Email,
                             contentDescription = null,
-                            tint = PanAppTextSecondary
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(15.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = PanAppBorder,
-                        focusedBorderColor = PanAppPrimary
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true
@@ -148,13 +149,13 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                         text = "Contraseña",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PanAppTextPrimary
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = "¿Olvidaste tu clave?",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PanAppPrimary,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { /* TODO: Forgot password */ }
                     )
                 }
@@ -162,19 +163,20 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    placeholder = { Text("••••••••", color = PanAppTextSecondary) },
+                    placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.Lock,
                             contentDescription = null,
-                            tint = PanAppTextSecondary
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(15.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = PanAppBorder,
-                        focusedBorderColor = PanAppPrimary
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true
@@ -223,7 +225,7 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                     .height(56.dp),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(15.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -232,11 +234,12 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                     Text(
                         text = if (isLoading) "Cargando..." else "Iniciar sesión",
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                     if (!isLoading) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
                     }
                 }
             }
@@ -248,14 +251,14 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = PanAppBorder)
+                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
                 Text(
                     text = " O TAMBIÉN PUEDES ",
                     style = MaterialTheme.typography.labelSmall,
-                    color = PanAppTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
-                HorizontalDivider(modifier = Modifier.weight(1f), color = PanAppBorder)
+                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -267,13 +270,13 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(15.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PanAppTextPrimary)
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground)
             ) {
                 Text(
                     text = "Crear una cuenta nueva",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PanAppTextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -283,13 +286,13 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
             val annotatedString = buildAnnotatedString {
                 append("Al continuar, aceptas nuestros ")
                 pushStringAnnotation(tag = "TERMS", annotation = "terms")
-                withStyle(style = SpanStyle(color = PanAppPrimary, fontWeight = FontWeight.Bold)) {
+                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
                     append("Términos de Servicio")
                 }
                 pop()
                 append(" y ")
                 pushStringAnnotation(tag = "POLICY", annotation = "policy")
-                withStyle(style = SpanStyle(color = PanAppPrimary, fontWeight = FontWeight.Bold)) {
+                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
                     append("Política de Privacidad")
                 }
                 pop()
@@ -300,7 +303,7 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                 text = annotatedString,
                 style = MaterialTheme.typography.bodySmall.copy(
                     textAlign = TextAlign.Center,
-                    color = PanAppTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 onClick = { offset ->
                     annotatedString.getStringAnnotations(tag = "TERMS", start = offset, end = offset).firstOrNull()?.let {

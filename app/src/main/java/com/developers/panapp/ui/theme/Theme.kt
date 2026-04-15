@@ -13,14 +13,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PanAppPrimary,
-    secondary = PurpleGrey80,
+    primary = PanAppPrimaryDark,
+    secondary = PanAppPrimaryDark,
     tertiary = Pink80,
-    background = Color(0xFF121212),
-    surface = Color(0xFF121212),
+    background = PanAppBackgroundDark,
+    surface = PanAppSurfaceDark,
     onPrimary = Color.White,
-    onBackground = Color.White,
-    onSurface = Color.White
+    onBackground = PanAppTextPrimaryDark,
+    onSurface = PanAppTextPrimaryDark,
+    outline = PanAppBorderDark,
+    surfaceVariant = PanAppSurfaceDark,
+    onSurfaceVariant = PanAppTextSecondaryDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -32,14 +35,16 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Color.White,
     onBackground = PanAppTextPrimary,
     onSurface = PanAppTextPrimary,
-    outline = PanAppBorder
+    outline = PanAppBorder,
+    surfaceVariant = PanAppSurface,
+    onSurfaceVariant = PanAppTextSecondary
 )
 
 @Composable
 fun PanAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Set to false to use our brand colors
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
