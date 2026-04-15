@@ -4,20 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.developers.panapp.ui.theme.PanAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            PanAppTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppNavigation()
                 }
@@ -26,16 +26,28 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// El controlador de navegación se queda aquí (o podría ir en otro archivo también)
 @Composable
 fun AppNavigation() {
-    var currentScreen by remember { mutableStateOf("login") }
+    var currentScreen by rememberSaveable { mutableStateOf("login") }
+    var termsSource by rememberSaveable { mutableStateOf("login") }
 
-    if (currentScreen == "login") {
-        // Llama a la función que ahora vive en LoginScreen.kt
-        LoginScreen(onNavigateToRegister = { currentScreen = "register" })
-    } else if (currentScreen == "register") {
-        // Llama a la función que ahora vive en RegisterScreen.kt
-        RegisterScreen(onNavigateToLogin = { currentScreen = "login" })
+    when (currentScreen) {
+        "login" -> LoginScreen(
+            onNavigateToRegister = { currentScreen = "register" },
+            onNavigateToTerms = { 
+                termsSource = "login"
+                currentScreen = "terms" 
+            }
+        )
+        "register" -> RegisterScreen(
+            onNavigateToLogin = { currentScreen = "login" },
+            onNavigateToTerms = { 
+                termsSource = "register"
+                currentScreen = "terms" 
+            }
+        )
+        "terms" -> TermsScreen(
+            onNavigateBack = { currentScreen = termsSource }
+        )
     }
 }
