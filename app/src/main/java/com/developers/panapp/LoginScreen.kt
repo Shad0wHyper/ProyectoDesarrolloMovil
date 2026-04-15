@@ -36,7 +36,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit) {
+fun LoginScreen(
+    onNavigateToRegister: () -> Unit, 
+    onNavigateToTerms: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit
+) {
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -77,7 +81,7 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
                         contentDescription = "Logo",
                         modifier = Modifier.size(50.dp),
                         tint = Color.Unspecified
@@ -156,7 +160,7 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onNavigateToTerms: () -> Unit)
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { /* TODO: Forgot password */ }
+                        modifier = Modifier.clickable { onNavigateToForgotPassword() }
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))

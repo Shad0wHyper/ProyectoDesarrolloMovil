@@ -1,5 +1,6 @@
 package com.developers.panapp
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,11 @@ import com.developers.panapp.ui.theme.*
 
 @Composable
 fun TermsScreen(onNavigateBack: () -> Unit) {
+    // Manejo del botón atrás del sistema
+    BackHandler {
+        onNavigateBack()
+    }
+
     val scrollState = rememberScrollState()
     var hasAccepted by rememberSaveable { mutableStateOf(false) }
 
@@ -123,7 +129,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                                painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
                                 contentDescription = null,
                                 modifier = Modifier.size(35.dp),
                                 tint = Color.Unspecified
@@ -184,7 +190,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                 TermsSection(
                     icon = Icons.Outlined.Lock,
                     sectionNumber = "05",
-                    title = "Seguridad de Cuenta",
+                    title = "Security de Cuenta",
                     content = "Usted es responsable de mantener la confidencialidad de su contraseña y de todas las actividades que ocurran bajo su cuenta de PanApp."
                 )
 

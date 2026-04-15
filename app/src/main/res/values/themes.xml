@@ -2,4 +2,16 @@
 <resources>
 
     <style name="Theme.PanApp" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.StartingSplash" parent="Theme.SplashScreen">
+        <!-- Fondo de la splash del sistema -->
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+
+        <!-- Hacemos el icono del sistema transparente para que no se encime con el tuyo de Compose -->
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+
+        <!-- El tema al que cambiará después de la splash del sistema -->
+        <item name="postSplashScreenTheme">@style/Theme.PanApp</item>
+    </style>
+
 </resources>
