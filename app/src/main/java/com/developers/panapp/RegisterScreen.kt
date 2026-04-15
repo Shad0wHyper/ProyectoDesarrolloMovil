@@ -2,6 +2,7 @@ package com.developers.panapp
 
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -46,6 +47,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit) {
+    // Manejo del botón atrás del sistema
+    BackHandler {
+        onNavigateToLogin()
+    }
+
     var nombre by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
     var correo by rememberSaveable { mutableStateOf("") }
@@ -113,7 +119,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
                         contentDescription = "Logo",
                         modifier = Modifier.size(60.dp),
                         tint = Color.Unspecified
