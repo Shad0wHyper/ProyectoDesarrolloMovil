@@ -84,14 +84,14 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Regresar",
-                        tint = PanAppTextPrimary
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
                     text = "PanApp",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = PanAppPrimary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(48.dp)) // To center the title
             }
@@ -109,7 +109,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     modifier = Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(15.dp))
-                        .background(Color(0xFFFFB38E)),
+                        .background(PanAppPeach),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -126,13 +126,13 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     text = "Crea una cuenta",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = PanAppTextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Text(
                     text = "Introduce tus datos a continuación para unirte a la comunidad de PanApp.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = PanAppTextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -178,28 +178,28 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         text = "Contraseña",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PanAppTextPrimary,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        placeholder = { Text("••••••••", color = PanAppTextSecondary) },
-                        leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = PanAppTextSecondary) },
+                        placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                                     contentDescription = null,
-                                    tint = PanAppTextSecondary
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = PanAppBorder,
-                            focusedBorderColor = PanAppPrimary
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
                         ),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true
@@ -207,7 +207,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     Text(
                         text = "Mínimo 8 caracteres con números y símbolos.",
                         style = MaterialTheme.typography.labelSmall,
-                        color = PanAppTextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, start = 4.dp)
                     )
                 }
@@ -220,28 +220,28 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         text = "Confirmar contraseña",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PanAppTextPrimary,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        placeholder = { Text("••••••••", color = PanAppTextSecondary) },
-                        leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, tint = PanAppTextSecondary) },
+                        placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         trailingIcon = {
                             IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                 Icon(
                                     imageVector = if (confirmPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                                     contentDescription = null,
-                                    tint = PanAppTextSecondary
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = PanAppBorder,
-                            focusedBorderColor = PanAppPrimary
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
                         ),
                         visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true
@@ -255,26 +255,26 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(15.dp))
-                        .background(Color(0xFFF9F9F9))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = acceptTerms,
                         onCheckedChange = { acceptTerms = it },
-                        colors = CheckboxDefaults.colors(checkedColor = PanAppPrimary)
+                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                     )
                     
                     val annotatedTerms = buildAnnotatedString {
                         append("Acepto los ")
                         pushStringAnnotation(tag = "TERMS", annotation = "terms")
-                        withStyle(style = SpanStyle(color = PanAppPrimary, fontWeight = FontWeight.Bold)) {
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
                             append("Términos de servicio")
                         }
                         pop()
                         append(" y la ")
                         pushStringAnnotation(tag = "POLICY", annotation = "policy")
-                        withStyle(style = SpanStyle(color = PanAppPrimary, fontWeight = FontWeight.Bold)) {
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
                             append("Política de privacidad")
                         }
                         pop()
@@ -283,7 +283,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
 
                     ClickableText(
                         text = annotatedTerms,
-                        style = MaterialTheme.typography.bodySmall.copy(color = PanAppTextSecondary),
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                         onClick = { offset ->
                             annotatedTerms.getStringAnnotations(tag = "TERMS", start = offset, end = offset).firstOrNull()?.let {
                                 onNavigateToTerms()
@@ -341,17 +341,18 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         .height(56.dp),
                     enabled = !isLoading,
                     shape = RoundedCornerShape(15.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = if (isLoading) "Creando..." else "Crear cuenta",
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                         if (!isLoading) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.Default.AddCircleOutline, contentDescription = null)
+                            Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = Color.White)
                         }
                     }
                 }
@@ -366,13 +367,13 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     Text(
                         text = "¿Ya tienes una cuenta? ",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = PanAppTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "Inicia sesión",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = PanAppPrimary,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { onNavigateToLogin() }
                     )
                 }
@@ -396,19 +397,19 @@ fun RegistrationField(
             text = label,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = PanAppTextPrimary,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = PanAppTextSecondary) },
-            leadingIcon = { Icon(leadingIcon, null, tint = PanAppTextSecondary) },
+            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            leadingIcon = { Icon(leadingIcon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(15.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = PanAppBorder,
-                focusedBorderColor = PanAppPrimary
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedBorderColor = MaterialTheme.colorScheme.primary
             ),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             singleLine = true
