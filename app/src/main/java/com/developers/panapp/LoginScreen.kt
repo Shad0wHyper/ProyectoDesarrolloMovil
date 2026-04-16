@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -37,7 +38,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun LoginScreen(
-    onNavigateToRegister: () -> Unit, 
+    onNavigateToRegister: () -> Unit,
     onNavigateToTerms: () -> Unit,
     onNavigateToForgotPassword: () -> Unit
 ) {
@@ -49,6 +50,8 @@ fun LoginScreen(
 
     val auth = remember { FirebaseAuth.getInstance() }
     val db = remember { FirebaseFirestore.getInstance() }
+
+    val errorTemplate = stringResource(id = R.string.common_error_prefix)
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -65,12 +68,12 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Logo area
+            // Logo
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant), 
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -81,8 +84,8 @@ fun LoginScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
-                        contentDescription = "Logo",
+                        painter = painterResource(id = R.drawable.icon),
+                        contentDescription = stringResource(id = R.string.common_logo),
                         modifier = Modifier.size(50.dp),
                         tint = Color.Unspecified
                     )
@@ -92,7 +95,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "¡Bienvenido de nuevo!",
+                text = stringResource(id = R.string.login_welcome_back),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -100,7 +103,7 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Huele a pan recién horneado...",
+                text = stringResource(id = R.string.login_welcome_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -108,10 +111,10 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Correo o Teléfono
+            // Campo Correo
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Correo o Teléfono",
+                    text = stringResource(id = R.string.login_email_or_phone),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -120,21 +123,12 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = correo,
                     onValueChange = { correo = it },
-                    placeholder = { Text("ejemplo@correo.com", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    placeholder = { Text(stringResource(id = R.string.login_email_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Email,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(imageVector = Icons.Outlined.Email, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(15.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true
                 )
@@ -142,7 +136,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Contraseña
+            // Campo Contraseña
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -150,13 +144,13 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Contraseña",
+                        text = stringResource(id = R.string.login_password),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "¿Olvidaste tu clave?",
+                        text = stringResource(id = R.string.login_forgot_password),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -167,21 +161,12 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    placeholder = { Text(stringResource(id = R.string.login_password_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Lock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(15.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    ),
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true
                 )
@@ -189,7 +174,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Iniciar sesión button
+            // Botón Iniciar Sesión
             Button(
                 onClick = {
                     if (correo.isNotEmpty() && password.isNotEmpty()) {
@@ -203,14 +188,15 @@ fun LoginScreen(
                                             isLoading = false
                                             if (documento.exists()) {
                                                 val rol = documento.getString("rol") ?: "sin_rol"
-                                                when (rol) {
-                                                    "admin" -> Toast.makeText(context, "🚀 BIENVENIDO ADMIN", Toast.LENGTH_LONG).show()
-                                                    "cliente" -> Toast.makeText(context, "🥖 BIENVENIDO CLIENTE", Toast.LENGTH_LONG).show()
-                                                    "empleado" -> Toast.makeText(context, "📷 BIENVENIDO EMPLEADO", Toast.LENGTH_LONG).show()
-                                                    else -> Toast.makeText(context, "Rol desconocido", Toast.LENGTH_SHORT).show()
+                                                val messageId = when (rol) {
+                                                    "admin" -> R.string.login_success_admin
+                                                    "cliente" -> R.string.login_success_client
+                                                    "empleado" -> R.string.login_success_employee
+                                                    else -> R.string.login_error_unknown_rol
                                                 }
+                                                Toast.makeText(context, messageId, Toast.LENGTH_LONG).show()
                                             } else {
-                                                Toast.makeText(context, "Usuario sin rol en la BD", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, R.string.login_error_no_rol, Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                         .addOnFailureListener { isLoading = false }
@@ -218,10 +204,11 @@ fun LoginScreen(
                             }
                             .addOnFailureListener { error ->
                                 isLoading = false
-                                Toast.makeText(context, "Error: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                val errorMessage = String.format(errorTemplate, error.localizedMessage ?: "")
+                                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                             }
                     } else {
-                        Toast.makeText(context, "Llena todos los campos", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, R.string.login_error_empty_fields, Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier
@@ -236,7 +223,7 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = if (isLoading) "Cargando..." else "Iniciar sesión",
+                        text = if (isLoading) stringResource(id = R.string.login_loading) else stringResource(id = R.string.login_sign_in_button),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -257,7 +244,7 @@ fun LoginScreen(
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
                 Text(
-                    text = " O TAMBIÉN PUEDES ",
+                    text = stringResource(id = R.string.login_divider_text),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp)
@@ -267,7 +254,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Crear una cuenta nueva button
+            // Botón Crear Cuenta
             OutlinedButton(
                 onClick = onNavigateToRegister,
                 modifier = Modifier
@@ -277,7 +264,7 @@ fun LoginScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground)
             ) {
                 Text(
-                    text = "Crear una cuenta nueva",
+                    text = stringResource(id = R.string.login_create_account_button),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -286,23 +273,33 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Footer text
+            // Footer con ClickableText
+            val termsPrefix = stringResource(id = R.string.login_terms_prefix)
+            val termsLink = stringResource(id = R.string.login_terms_link)
+            val termsMiddle = stringResource(id = R.string.login_terms_middle)
+            val policyLink = stringResource(id = R.string.login_policy_link)
+            val termsSuffix = stringResource(id = R.string.login_terms_suffix)
+
             val annotatedString = buildAnnotatedString {
-                append("Al continuar, aceptas nuestros ")
+                append(termsPrefix)
+                append(" ")
                 pushStringAnnotation(tag = "TERMS", annotation = "terms")
                 withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                    append("Términos de Servicio")
+                    append(termsLink)
                 }
                 pop()
-                append(" y ")
+                append(" ")
+                append(termsMiddle)
+                append(" ")
                 pushStringAnnotation(tag = "POLICY", annotation = "policy")
                 withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                    append("Política de Privacidad")
+                    append(policyLink)
                 }
                 pop()
-                append(".")
+                append(termsSuffix)
             }
 
+            @Suppress("DEPRECATION")
             ClickableText(
                 text = annotatedString,
                 style = MaterialTheme.typography.bodySmall.copy(

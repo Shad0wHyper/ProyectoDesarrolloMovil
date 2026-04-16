@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +57,9 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
     val db = remember { FirebaseFirestore.getInstance() }
     val scrollState = rememberScrollState()
 
+    // ✨ Capturamos la plantilla para inyectar errores (Lint safe)
+    val errorNetworkTemplate = stringResource(id = R.string.common_error_prefix)
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -79,12 +83,12 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Regresar",
+                            contentDescription = stringResource(id = R.string.common_back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                     Text(
-                        text = "Restablecer",
+                        text = stringResource(id = R.string.forgot_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -94,7 +98,7 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // Logo area (Prototype style)
+                // Logo area
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -110,8 +114,8 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
-                            contentDescription = "Logo",
+                            painter = painterResource(id = R.drawable.icon),
+                            contentDescription = stringResource(id = R.string.common_logo),
                             modifier = Modifier.size(50.dp),
                             tint = Color.Unspecified
                         )
@@ -121,14 +125,14 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Ingresa tu Correo",
+                    text = stringResource(id = R.string.forgot_main_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Text(
-                    text = "Restablecimiento de cuenta",
+                    text = stringResource(id = R.string.forgot_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -142,7 +146,7 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                         .padding(horizontal = 30.dp)
                 ) {
                     Text(
-                        text = "Correo o Teléfono",
+                        text = stringResource(id = R.string.forgot_email_label),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -151,7 +155,7 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                     OutlinedTextField(
                         value = correo,
                         onValueChange = { correo = it },
-                        placeholder = { Text("ejemplo@correo.com", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        placeholder = { Text(stringResource(id = R.string.forgot_email_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Outlined.Email,
@@ -196,16 +200,17 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                                                 }
                                                 .addOnFailureListener { error ->
                                                     isLoading = false
-                                                    Toast.makeText(context, "Error: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                    val finalError = String.format(errorNetworkTemplate, error.localizedMessage ?: "")
+                                                    Toast.makeText(context, finalError, Toast.LENGTH_LONG).show()
                                                 }
                                         }
                                     }
                                     .addOnFailureListener {
                                         isLoading = false
-                                        Toast.makeText(context, "Error al verificar datos", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, R.string.forgot_toast_error_db, Toast.LENGTH_SHORT).show()
                                     }
                             } else {
-                                Toast.makeText(context, "Por favor ingresa tu correo", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.forgot_toast_error_empty, Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier
@@ -218,7 +223,7 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (isLoading) "Procesando..." else "Restablecer Cuenta",
+                                text = if (isLoading) stringResource(id = R.string.forgot_loading) else stringResource(id = R.string.forgot_button),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -278,19 +283,19 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                             )
-                            
+
                             Spacer(modifier = Modifier.height(32.dp))
-                            
+
                             Text(
-                                text = if (isSuccess) "Instrucciones de Restablecimiento\nEnviadas" else "Cuenta no encontrada",
+                                text = if (isSuccess) stringResource(id = R.string.forgot_success_title) else stringResource(id = R.string.forgot_error_title),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            
+
                             Spacer(modifier = Modifier.height(48.dp))
-                            
+
                             // Success/Error Icon
                             val iconColor = if (isSuccess) Color(0xFF00C4B4) else Color(0xFFE57373)
                             Box(contentAlignment = Alignment.Center) {
@@ -315,30 +320,27 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                                     )
                                 }
                             }
-                            
+
                             Spacer(modifier = Modifier.height(24.dp))
-                            
+
                             Text(
-                                text = if (isSuccess) "Revisa tu correo" else "Verifica el correo ingresado",
+                                text = if (isSuccess) stringResource(id = R.string.forgot_success_subtitle) else stringResource(id = R.string.forgot_error_subtitle),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            
+
                             Spacer(modifier = Modifier.height(32.dp))
-                            
+
                             Text(
-                                text = if (isSuccess)
-                                    "Instrucciones enviadas correctamente\nno olvides revisar en el apartado de\nspam"
-                                else
-                                    "El correo que ingresaste no está registrado\nen PanApp. Por favor, intenta de nuevo o\ncrea una cuenta nueva.",
+                                text = if (isSuccess) stringResource(id = R.string.forgot_success_message) else stringResource(id = R.string.forgot_error_message),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            
+
                             Spacer(modifier = Modifier.weight(1f))
-                            
+
                             Button(
                                 onClick = {
                                     if (isSuccess) {
@@ -357,7 +359,7 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = if (isSuccess) "Aceptar" else "Intentar de nuevo",
+                                        text = if (isSuccess) stringResource(id = R.string.forgot_success_button) else stringResource(id = R.string.forgot_error_button),
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White

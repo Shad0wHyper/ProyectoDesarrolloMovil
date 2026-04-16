@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,12 +61,12 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Regresar",
+                        contentDescription = stringResource(id = R.string.common_back),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "Términos y Condiciones",
+                    text = stringResource(id = R.string.terms_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -92,7 +93,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Text(
-                                text = "Versión 1.0.0",
+                                text = stringResource(id = R.string.terms_version),
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -101,13 +102,13 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Aviso Legal y Política de Privacidad",
+                            text = stringResource(id = R.string.terms_main_title),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = "Última actualización: 14 de Abril, 2026",
+                            text = stringResource(id = R.string.terms_last_update),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -129,7 +130,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
+                                painter = painterResource(id = R.drawable.icon),
                                 contentDescription = null,
                                 modifier = Modifier.size(35.dp),
                                 tint = Color.Unspecified
@@ -147,7 +148,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "\"Por favor, lea detenidamente este documento antes de continuar con la creación de su cuenta en PanApp.\"",
+                        text = stringResource(id = R.string.terms_intro_highlight),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
@@ -162,36 +163,36 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                 TermsSection(
                     icon = Icons.Outlined.Gavel,
                     sectionNumber = "01",
-                    title = "Aceptación de los Términos",
-                    content = "Al acceder y utilizar la aplicación PanApp, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de estos términos, no podrá utilizar nuestros servicios."
+                    title = stringResource(id = R.string.terms_section_1_title),
+                    content = stringResource(id = R.string.terms_section_1_content)
                 )
 
                 TermsSection(
                     icon = Icons.Outlined.PrivacyTip,
                     sectionNumber = "02",
-                    title = "Privacidad y Datos",
-                    content = "Su privacidad es importante para nosotros. Recopilamos datos mínimos necesarios para la gestión operativa de pedidos y clientes. Todos los datos están cifrados bajo protocolos de seguridad industrial de extremo a extremo."
+                    title = stringResource(id = R.string.terms_section_2_title),
+                    content = stringResource(id = R.string.terms_section_2_content)
                 )
 
                 TermsSection(
                     icon = Icons.Outlined.AccountBalance,
                     sectionNumber = "03",
-                    title = "Uso de la Plataforma",
-                    content = "La plataforma debe utilizarse exclusivamente para fines de compra y gestión comercial legítima. Queda prohibido el uso de la herramienta para actividades fraudulentas o que vulneren los derechos de terceros."
+                    title = stringResource(id = R.string.terms_section_3_title),
+                    content = stringResource(id = R.string.terms_section_3_content)
                 )
 
                 TermsSection(
                     icon = Icons.Outlined.Security,
                     sectionNumber = "04",
-                    title = "Responsabilidades",
-                    content = "PanApp no se hace responsable de las decisiones comerciales tomadas basadas en los datos analíticos proporcionados por la app, ni por interrupciones menores del servicio debidas a mantenimiento."
+                    title = stringResource(id = R.string.terms_section_4_title),
+                    content = stringResource(id = R.string.terms_section_4_content)
                 )
 
                 TermsSection(
                     icon = Icons.Outlined.Lock,
                     sectionNumber = "05",
-                    title = "Security de Cuenta",
-                    content = "Usted es responsable de mantener la confidencialidad de su contraseña y de todas las actividades que ocurran bajo su cuenta de PanApp."
+                    title = stringResource(id = R.string.terms_section_5_title),
+                    content = stringResource(id = R.string.terms_section_5_content)
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -199,7 +200,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(20.dp))
                 
                 Text(
-                    text = "Para más información sobre cómo tratamos sus datos, puede contactar a nuestro equipo de soporte legal en soporte@panapp.com",
+                    text = stringResource(id = R.string.terms_footer_info),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -228,7 +229,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                         colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                     )
                     Text(
-                        text = "He leído y acepto los términos de uso y la política de manejo de datos.",
+                        text = stringResource(id = R.string.terms_checkbox_label),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.clickable { hasAccepted = !hasAccepted }
@@ -248,7 +249,7 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                     enabled = hasAccepted
                 ) {
                     Text(
-                        text = "Aceptar y continuar",
+                        text = stringResource(id = R.string.terms_accept_button),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -289,7 +290,7 @@ fun TermsSection(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "SECCIÓN $sectionNumber",
+                text = stringResource(id = R.string.terms_section_prefix, sectionNumber),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold

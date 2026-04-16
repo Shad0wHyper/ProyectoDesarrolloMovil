@@ -55,7 +55,7 @@ fun SplashScreen(onNextScreen: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = com.developers.panapp.R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = R.drawable.icon),
                     contentDescription = "Logo",
                     modifier = Modifier.size(90.dp),
                     tint = Color.Unspecified
