@@ -3,17 +3,18 @@ package com.developers.panapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.developers.panapp.ui.theme.PanAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,45 +33,65 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation() {
-    var currentScreen by rememberSaveable { mutableStateOf("splash") }
-    var termsSource by rememberSaveable { mutableStateOf("login") }
+    // El "Motor" que controla los viajes entre pantallas
+    val navController = rememberNavController()
 
-    AnimatedContent(
-        targetState = currentScreen,
-        transitionSpec = {
-            if (targetState == "splash") {
-                EnterTransition.None togetherWith ExitTransition.None
-            } else {
-                fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.9f) togetherWith
-                fadeOut(animationSpec = tween(500))
-            }
-        },
-        label = "ScreenTransition"
-    ) { screen ->
-        when (screen) {
-            "splash" -> SplashScreen(
-                onNextScreen = { currentScreen = "login" }
-            )
-            "login" -> LoginScreen(
-                onNavigateToRegister = { currentScreen = "register" },
-                onNavigateToTerms = { 
-                    termsSource = "login"
-                    currentScreen = "terms" 
-                },
-                onNavigateToForgotPassword = { currentScreen = "forgot_password" }
-            )
-            "register" -> RegisterScreen(
-                onNavigateToLogin = { currentScreen = "login" },
-                onNavigateToTerms = { 
-                    termsSource = "register"
-                    currentScreen = "terms" 
+    // NavHost es el mapa de nuestra aplicación
+    NavHost(
+        navController = navController,
+        startDestination = "splash",
+        enterTransition = { fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.9f) },
+        exitTransition = { fadeOut(animationSpec = tween(500)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(500)) }, // Animación al regresar
+        popExitTransition = { fadeOut(animationSpec = tween(500)) }  // Animación al regresar
+    ) {
+
+        // 1. Pantalla Splash
+        composable(
+            route = "splash",
+            // El splash no necesita animación de entrada porque es lo primero que carga
+            enterTransition = { fadeIn(animationSpec = tween(0)) },
+            exitTransition = { fadeOut(animationSpec = tween(500)) }
+        ) {
+            SplashScreen(
+                onNextScreen = {
+                    // Navega al login Y destruye el splash para no poder volver a él
+                    navController.navigate("login") {
+                        popUpTo("splash") { inclusive = true }
+                    }
                 }
             )
-            "terms" -> TermsScreen(
-                onNavigateBack = { currentScreen = termsSource }
+        }
+
+        // 2. Pantalla Login
+        composable("login") {
+            LoginScreen(
+                onNavigateToRegister = { navController.navigate("register") },
+                onNavigateToTerms = { navController.navigate("terms") },
+                onNavigateToForgotPassword = { navController.navigate("forgot_password") }
             )
-            "forgot_password" -> ForgotPasswordScreen(
-                onNavigateBack = { currentScreen = "login" }
+        }
+
+        // 3. Pantalla Registro
+        composable("register") {
+            RegisterScreen(
+                onNavigateToLogin = { navController.popBackStack() }, // Solo destruye esta vista y vuelve al login
+                onNavigateToTerms = { navController.navigate("terms") }
+            )
+        }
+
+        // 4. Pantalla Términos y Condiciones
+        composable("terms") {
+            TermsScreen(
+                // popBackStack() vuelve automáticamente a la pantalla anterior (Login o Registro)
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 5. Pantalla Olvidé mi Contraseña
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
