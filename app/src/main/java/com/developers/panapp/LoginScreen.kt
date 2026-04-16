@@ -188,13 +188,26 @@ fun LoginScreen(
                                             isLoading = false
                                             if (documento.exists()) {
                                                 val rol = documento.getString("rol") ?: "sin_rol"
-                                                val messageId = when (rol) {
-                                                    "admin" -> R.string.login_success_admin
-                                                    "cliente" -> R.string.login_success_client
-                                                    "empleado" -> R.string.login_success_employee
-                                                    else -> R.string.login_error_unknown_rol
+
+                                                val targetPackage = when (rol) {
+                                                    "admin" -> "com.developers.admin"
+                                                    "cliente" -> "com.developers.client"
+                                                    "empleado" -> "com.developers.employee"
+                                                    else -> ""
                                                 }
-                                                Toast.makeText(context, messageId, Toast.LENGTH_LONG).show()
+
+                                                if (targetPackage.isNotEmpty()) {
+                                                    val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
+
+                                                    if (intent != null) {
+                                                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                        context.startActivity(intent)
+                                                    } else {
+                                                        Toast.makeText(context, "La app de $rol no está instalada en este dispositivo", Toast.LENGTH_LONG).show()
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, R.string.login_error_unknown_rol, Toast.LENGTH_SHORT).show()
+                                                }
                                             } else {
                                                 Toast.makeText(context, R.string.login_error_no_rol, Toast.LENGTH_SHORT).show()
                                             }
@@ -234,7 +247,6 @@ fun LoginScreen(
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(32.dp))
 
             // Divider
