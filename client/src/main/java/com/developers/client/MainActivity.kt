@@ -1,50 +1,74 @@
 package com.developers.client
 
 import android.os.Bundle
-import android.util.Log
-import android.view.Gravity
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.firestore.FirebaseFirestore
-import java.util.Date
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.developers.client.ui.theme.PanAppClientTheme
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 1. Interfaz visual simple (Texto en pantalla)
-        val textView = TextView(this)
-        textView.text = "CLIENTE: Conectando..."
-        textView.textSize = 24f
-        textView.gravity = Gravity.CENTER
-        setContentView(textView)
-
-        // 2. Conexión a Base de Datos
-        val db = FirebaseFirestore.getInstance()
-
-        // 3. Datos únicos del CLIENTE
-        val datosCliente = hashMapOf(
-            "quien" to "CLIENTE APP ",
-            "accion" to "Quiero comprar pan de mipalo",
-            "accion" to "Quiero comprar pan ",
-            "precio_visto" to 15.50,
-            "fecha" to Date()
-        )
-
-        // 4. Escribir en la nube
-        db.collection("validacion_final")
-            .add(datosCliente)
-            .addOnSuccessListener {
-                val msg = "✅ CLIENTE: Éxito!\nID: ${it.id}"
-                Log.d("FIREBASE_TEST", msg)
-                textView.text = msg
-                textView.setTextColor(android.graphics.Color.GREEN)
+        setContent {
+            val appViewModel: AppViewModel = viewModel()
+            PanAppClientTheme(darkTheme = appViewModel.isDarkMode) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    ClientAppNavigation(appViewModel)
+                }
             }
-            .addOnFailureListener {
-                val msg = "❌ CLIENTE: Error\n$it"
-                Log.e("FIREBASE_TEST", msg)
-                textView.text = msg
-                textView.setTextColor(android.graphics.Color.RED)
-            }
+        }
+    }
+}
+
+@Composable
+fun ClientAppNavigation(appViewModel: AppViewModel) {
+    val navController = rememberNavController()
+
+    NavHost(navController = navController, startDestination = "home") {
+        composable("home") {
+            HomeScreen(
+                appViewModel = appViewModel,
+                onNavigateToCart = { navController.navigate("cart") },
+                onNavigateToOrders = { navController.navigate("orders") },
+                onNavigateToSettings = { navController.navigate("settings") },
+                onNavigateToProfile = { navController.navigate("profile") }
+            )
+        }
+        composable("cart") {
+            CartScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("orders") {
+            OrdersScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCart = { 
+                    navController.navigate("cart") {
+                        popUpTo("home")
+                    }
+                }
+            )
+        }
+        composable("settings") {
+            SettingsScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("profile") {
+            ProfileScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }
