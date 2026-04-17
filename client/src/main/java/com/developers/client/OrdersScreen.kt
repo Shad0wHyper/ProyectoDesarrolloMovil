@@ -84,6 +84,11 @@ fun OrdersScreen(
             }
 
             if (selectedOrder != null) {
+                val statusKey = when(selectedOrder?.status) {
+                    "Pendiente" -> "pendiente"
+                    "En Camino" -> "en_camino"
+                    else -> "entregado"
+                }
                 AlertDialog(
                     onDismissRequest = { selectedOrder = null },
                     title = { Text("${appViewModel.getString("order_details")} #${selectedOrder?.id}") },
@@ -91,6 +96,7 @@ fun OrdersScreen(
                         Column {
                             Text("${appViewModel.getString("date")}: ${selectedOrder?.date}")
                             Text("Total: $${selectedOrder?.total}")
+                            Text("Status: ${appViewModel.getString(statusKey)}")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("${appViewModel.getString("items")}:", fontWeight = FontWeight.Bold)
                             Text("- ${selectedOrder?.mainItem}")
@@ -139,6 +145,12 @@ fun OrderItemCard(
                     Text(order.date, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
                 
+                val statusKey = when(order.status) {
+                    "Pendiente" -> "pendiente"
+                    "En Camino" -> "en_camino"
+                    else -> "entregado"
+                }
+
                 Surface(
                     color = when(order.status) {
                         "Pendiente" -> Color(0xFFFFF4E5)
@@ -148,7 +160,7 @@ fun OrderItemCard(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = order.status,
+                        text = appViewModel.getString(statusKey),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         color = when(order.status) {
                             "Pendiente" -> Color(0xFFE65100)

@@ -61,11 +61,19 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
         composable("settings") {
             SettingsScreen(
                 appViewModel = appViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProfile = { navController.navigate("profile") },
+                onNavigateToNotifications = { navController.navigate("notifications") }
             )
         }
         composable("profile") {
             ProfileScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("notifications") {
+            NotificationsScreen(
                 appViewModel = appViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )

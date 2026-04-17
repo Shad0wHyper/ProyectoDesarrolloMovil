@@ -3,6 +3,8 @@ package com.developers.client
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.developers.client.ui.theme.PanAppPeach
 import com.developers.client.ui.theme.PanAppPrimary
+import kotlinx.coroutines.launch
 
 data class Product(
     val name: String,
@@ -50,14 +53,10 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("TODO") }
+    val categories = listOf("TODO", "PANES", "CAFÉ", "OTROS")
+    val pagerState = rememberPagerState(pageCount = { categories.size })
+    val coroutineScope = rememberCoroutineScope()
     
-    val filteredProducts = if (selectedCategory == "TODO") {
-        allProducts
-    } else {
-        allProducts.filter { it.category == selectedCategory }
-    }
-
     val isDarkMode = appViewModel.isDarkMode
 
     Scaffold(
@@ -146,61 +145,105 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(if (isDarkMode) Color(0xFF121212) else Color.White)
-                .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${appViewModel.getString("hello")}, ${appViewModel.userName.split(" ")[0]}! 👋",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color.White else Color.Black
-            )
-            Text(
-                text = appViewModel.getString("what_fancy"),
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
-            )
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "${appViewModel.getString("hello")}, ${appViewModel.userName.split(" ")[0]}! 👋",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDarkMode) Color.White else Color.Black
+                )
+                Text(
+                    text = appViewModel.getString("what_fancy"),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Categories
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                CategoryItem(appViewModel.getString("cat_all"), Icons.Default.RestaurantMenu, selectedCategory == "TODO", isDarkMode) { selectedCategory = "TODO" }
-                CategoryItem(appViewModel.getString("cat_breads"), Icons.Default.BakeryDining, selectedCategory == "PANES", isDarkMode) { selectedCategory = "PANES" }
-                CategoryItem(appViewModel.getString("cat_coffee"), Icons.Default.Coffee, selectedCategory == "CAFÉ", isDarkMode) { selectedCategory = "CAFÉ" }
-                CategoryItem(appViewModel.getString("cat_others"), Icons.Default.StarBorder, selectedCategory == "OTROS", isDarkMode) { selectedCategory = "OTROS" }
+                // Categories Row with Clickable behavior
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    categories.forEachIndexed { index, catKey ->
+                        val translatedName = when(catKey) {
+                            "PANES" -> appViewModel.getString("cat_breads")
+                            "CAFÉ" -> appViewModel.getString("cat_coffee")
+                            "OTROS" -> appViewModel.getString("cat_others")
+                            else -> appViewModel.getString("cat_all")
+                        }
+                        val icon = when(catKey) {
+                            "PANES" -> Icons.Default.BakeryDining
+                            "CAFÉ" -> Icons.Default.Coffee
+                            "OTROS" -> Icons.Default.StarBorder
+                            else -> Icons.Default.RestaurantMenu
+                        }
+                        CategoryItem(
+                            name = translatedName, 
+                            icon = icon, 
+                            isSelected = pagerState.currentPage == index, 
+                            isDarkMode = isDarkMode
+                        ) {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // Swipeable Pager for Products
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Top
+            ) { pageIndex ->
+                val currentCat = categories[pageIndex]
+                val filteredProducts = if (currentCat == "TODO") {
+                    allProducts
+                } else {
+                    allProducts.filter { it.category == currentCat }
+                }
 
-            Text(
-                text = if (selectedCategory == "TODO") appViewModel.getString("products") else "${appViewModel.getString("categories_label")}: $selectedCategory",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color.White else Color.Black
-            )
+                val currentCategoryDisplayName = when(currentCat) {
+                    "PANES" -> appViewModel.getString("cat_breads")
+                    "CAFÉ" -> appViewModel.getString("cat_coffee")
+                    "OTROS" -> appViewModel.getString("cat_others")
+                    else -> appViewModel.getString("cat_all")
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredProducts) { product ->
-                    ProductCard(
-                        name = product.name,
-                        price = product.price,
-                        rating = product.rating,
-                        isNew = product.isNew,
-                        isDarkMode = isDarkMode,
-                        appViewModel = appViewModel
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                    Text(
+                        text = if (currentCat == "TODO") appViewModel.getString("products") else "${appViewModel.getString("categories_label")}: $currentCategoryDisplayName",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDarkMode) Color.White else Color.Black
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(filteredProducts) { product ->
+                            ProductCard(
+                                name = product.name,
+                                price = product.price,
+                                rating = product.rating,
+                                isNew = product.isNew,
+                                isDarkMode = isDarkMode,
+                                appViewModel = appViewModel
+                            )
+                        }
+                    }
                 }
             }
         }

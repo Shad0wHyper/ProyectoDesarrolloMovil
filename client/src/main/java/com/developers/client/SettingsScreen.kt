@@ -24,7 +24,9 @@ import com.developers.client.ui.theme.PanAppPrimary
 @Composable
 fun SettingsScreen(
     appViewModel: AppViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -77,7 +79,7 @@ fun SettingsScreen(
                     title = appViewModel.getString("profile"),
                     subtitle = appViewModel.getString("profile_desc"),
                     icon = Icons.Default.Person,
-                    onClick = { },
+                    onClick = onNavigateToProfile,
                     isDarkMode = appViewModel.isDarkMode
                 )
                 
@@ -85,7 +87,7 @@ fun SettingsScreen(
                     title = appViewModel.getString("notifications"),
                     subtitle = appViewModel.getString("notif_desc"),
                     icon = Icons.Default.Notifications,
-                    onClick = { },
+                    onClick = onNavigateToNotifications,
                     isDarkMode = appViewModel.isDarkMode
                 )
             }

@@ -35,7 +35,8 @@ fun CartScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit
 ) {
-    var selectedPaymentMethod by remember { mutableStateOf("Tarjeta") }
+    // We store the KEY of the payment method instead of the display name
+    var selectedPaymentKey by remember { mutableStateOf("card") }
     var showPaymentSheet by remember { mutableStateOf(false) }
     val isDarkMode = appViewModel.isDarkMode
 
@@ -144,25 +145,25 @@ fun CartScreen(
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
                             appViewModel.getString("card"), "Crédito o Débito", Icons.Outlined.CreditCard, 
-                            selectedPaymentMethod == "Tarjeta", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentMethod = "Tarjeta" }
+                            selectedPaymentKey == "card", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentKey = "card" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
                             appViewModel.getString("transfer"), "Banca Móvil", Icons.Outlined.AccountBalance, 
-                            selectedPaymentMethod == "Transferencia", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentMethod = "Transferencia" }
+                            selectedPaymentKey == "transfer", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentKey = "transfer" }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
                             appViewModel.getString("cash"), "Pago en Tienda", Icons.Outlined.Payments, 
-                            selectedPaymentMethod == "Efectivo", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentMethod = "Efectivo" }
+                            selectedPaymentKey == "cash", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentKey = "cash" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
                             appViewModel.getString("local_pay"), "Billetera Digital", Icons.Outlined.Storefront, 
-                            selectedPaymentMethod == "Pago Local", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentMethod = "Pago Local" }
+                            selectedPaymentKey == "local_pay", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentKey = "local_pay" }
                     }
                 }
                 Spacer(modifier = Modifier.height(32.dp))
@@ -176,7 +177,7 @@ fun CartScreen(
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
             dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkMode) Color.Gray else Color.LightGray) }
         ) {
-            PaymentGatewayContent(selectedPaymentMethod, isDarkMode, appViewModel) {
+            PaymentGatewayContent(selectedPaymentKey, isDarkMode, appViewModel) {
                 showPaymentSheet = false
             }
         }
@@ -184,7 +185,8 @@ fun CartScreen(
 }
 
 @Composable
-fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: AppViewModel, onDismiss: () -> Unit) {
+fun PaymentGatewayContent(paymentKey: String, isDarkMode: Boolean, appViewModel: AppViewModel, onDismiss: () -> Unit) {
+    val translatedMethod = appViewModel.getString(paymentKey)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -198,13 +200,17 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
             color = if (isDarkMode) Color.White else Color.Black
         )
         Text(
-            text = "${appViewModel.getString("payment_method")}: $method",
+            text = "${appViewModel.getString("payment_method")}: $translatedMethod",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Formulario de pago para $method", color = if (isDarkMode) Color.White else Color.Black)
+        Text(
+            text = "Formulario de pago para $translatedMethod", 
+            color = if (isDarkMode) Color.White else Color.Black,
+            style = MaterialTheme.typography.bodyMedium
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
         Button(
