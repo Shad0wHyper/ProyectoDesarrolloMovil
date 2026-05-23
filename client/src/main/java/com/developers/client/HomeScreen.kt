@@ -15,29 +15,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.developers.client.ui.theme.PanAppPeach
 import com.developers.client.ui.theme.PanAppPrimary
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class Product(
-    val name: String,
-    val price: String,
-    val rating: String,
-    val isNew: Boolean,
-    val category: String
-)
-
-val allProducts = listOf(
-    Product("Croissant", "$2.50", "4.8", true, "PANES"),
-    Product("Baguette", "$1.20", "4.5", false, "PANES"),
-    Product("Muffin", "$3.00", "4.7", true, "PANES"),
-    Product("Cappuccino", "$3.75", "4.9", false, "CAFÉ"),
-    Product("Latte", "$3.50", "4.8", false, "CAFÉ"),
-    Product("Espresso", "$2.00", "4.6", false, "CAFÉ"),
-    Product("Jugo Naranja", "$2.50", "4.4", false, "OTROS"),
-    Product("Té Verde", "$2.20", "4.5", false, "OTROS")
+    val id: String = "",
+    val nombre: String = "",
+    val precio: Double = 0.0,
+    val calificacion: Double = 0.0,
+    val isNuevo: Boolean = false,
+    val categoria: String = "",
+    val imagenUrl: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,11 +46,29 @@ fun HomeScreen(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("TODO") }
-    
+
+    var allProducts by remember { mutableStateOf<List<Product>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("productos").get()
+            .addOnSuccessListener { result ->
+                val lista = result.documents.mapNotNull { doc ->
+                    doc.toObject(Product::class.java)?.copy(id = doc.id)
+                }
+                allProducts = lista
+                isLoading = false
+            }
+            .addOnFailureListener {
+                isLoading = false
+            }
+    }
+
     val filteredProducts = if (selectedCategory == "TODO") {
         allProducts
     } else {
-        allProducts.filter { it.category == selectedCategory }
+        allProducts.filter { it.categoria.equals(selectedCategory, ignoreCase = true) }
     }
 
     val isDarkMode = appViewModel.isDarkMode
@@ -82,7 +95,7 @@ fun HomeScreen(
                             badge = { Badge { Text("3") } }
                         ) {
                             Icon(
-                                Icons.Outlined.ShoppingCart, 
+                                Icons.Outlined.ShoppingCart,
                                 contentDescription = "Carrito",
                                 tint = if (isDarkMode) Color.White else Color.Black
                             )
@@ -109,14 +122,6 @@ fun HomeScreen(
                                     onNavigateToProfile()
                                 },
                                 leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = if (isDarkMode) Color.White else Color.Black) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(appViewModel.getString("my_orders"), color = if (isDarkMode) Color.White else Color.Black) },
-                                onClick = {
-                                    showMenu = false
-                                    onNavigateToOrders()
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Inventory2, contentDescription = null, tint = if (isDarkMode) Color.White else Color.Black) }
                             )
                             DropdownMenuItem(
                                 text = { Text(appViewModel.getString("settings"), color = if (isDarkMode) Color.White else Color.Black) },
@@ -163,7 +168,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Categories
+            // Categorías
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -185,22 +190,33 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredProducts) { product ->
-                    ProductCard(
-                        name = product.name,
-                        price = product.price,
-                        rating = product.rating,
-                        isNew = product.isNew,
-                        isDarkMode = isDarkMode,
-                        appViewModel = appViewModel
-                    )
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PanAppPrimary)
+                }
+            } else if (filteredProducts.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No hay productos en esta categoría.", color = Color.Gray)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filteredProducts) { product ->
+                        ProductCard(
+                            name = product.nombre,
+                            price = String.format("$%.2f", product.precio),
+                            rating = product.calificacion.toString(),
+                            isNew = product.isNuevo,
+                            imageUrl = product.imagenUrl,
+                            isDarkMode = isDarkMode,
+                            appViewModel = appViewModel
+                        )
+                    }
                 }
             }
         }
@@ -237,7 +253,7 @@ fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, isDarkMod
 }
 
 @Composable
-fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, isDarkMode: Boolean, appViewModel: AppViewModel) {
+fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, imageUrl: String, isDarkMode: Boolean, appViewModel: AppViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -248,8 +264,16 @@ fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, isD
     ) {
         Column {
             Box(modifier = Modifier.height(120.dp).fillMaxWidth()) {
-                Box(modifier = Modifier.fillMaxSize().background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)))
-                
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5))
+                )
+
                 if (isNew) {
                     Surface(
                         modifier = Modifier.padding(8.dp),
@@ -264,7 +288,7 @@ fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, isD
                         )
                     }
                 }
-                
+
                 Surface(
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     color = (if (isDarkMode) Color.Black else Color.White).copy(alpha = 0.7f),
@@ -277,7 +301,7 @@ fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, isD
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = rating, 
+                            text = rating,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isDarkMode) Color.White else Color.Black
                         )
@@ -303,7 +327,7 @@ fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, isD
                         style = MaterialTheme.typography.bodyLarge
                     )
                     IconButton(
-                        onClick = { },
+                        onClick = { /* TODO: Lógica para agregar al carrito */ },
                         modifier = Modifier.size(32.dp).background(PanAppPrimary, CircleShape)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
