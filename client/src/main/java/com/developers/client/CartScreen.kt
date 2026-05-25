@@ -26,19 +26,56 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.developers.client.ui.theme.PanAppPrimary
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.rememberPaymentSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     appViewModel: AppViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onPaymentSuccess: () -> Unit
 ) {
-    // We store the KEY of the payment method instead of the display name
-    var selectedPaymentKey by remember { mutableStateOf("card") }
+    var selectedPaymentMethod by remember { mutableStateOf("Tarjeta") }
     var showPaymentSheet by remember { mutableStateOf(false) }
     val isDarkMode = appViewModel.isDarkMode
+
+    // Stripe PaymentSheet integration
+    val paymentSheet = rememberPaymentSheet { paymentSheetResult ->
+        when (paymentSheetResult) {
+            is com.stripe.android.paymentsheet.PaymentSheetResult.Completed -> {
+                onPaymentSuccess()
+            }
+            is com.stripe.android.paymentsheet.PaymentSheetResult.Canceled -> {
+                // Handle cancellation
+            }
+            is com.stripe.android.paymentsheet.PaymentSheetResult.Failed -> {
+                // Handle error
+            }
+        }
+    }
+
+    fun presentPaymentSheet() {
+        val googlePayConfig = PaymentSheet.GooglePayConfiguration(
+            environment = PaymentSheet.GooglePayConfiguration.Environment.Test,
+            countryCode = "MX"
+        )
+
+        val configuration = PaymentSheet.Configuration(
+            merchantDisplayName = "PanApp Inc.",
+            googlePay = googlePayConfig,
+            allowsDelayedPaymentMethods = true
+        )
+
+        paymentSheet.presentWithPaymentIntent(
+            "pi_example_secret_placeholder", 
+            configuration
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -72,7 +109,13 @@ fun CartScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { showPaymentSheet = true },
+                        onClick = { 
+                            if (selectedPaymentMethod == "Tarjeta") {
+                                presentPaymentSheet()
+                            } else {
+                                showPaymentSheet = true 
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
@@ -98,33 +141,40 @@ fun CartScreen(
                 ) {
                     Text(
                         appViewModel.getString("your_order"), 
-                        style = MaterialTheme.typography.titleLarge, 
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall, 
+                        fontWeight = FontWeight.ExtraBold,
                         color = if (isDarkMode) Color.White else Color.Black
                     )
                     Surface(
-                        color = if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFE8E8FF),
+                        color = PanAppPrimary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
                             "3 ${appViewModel.getString("items")}",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             color = PanAppPrimary,
-                            style = MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
             items(3) { index ->
+                val name = when(index) {
+                    0 -> "Croissant de Mantequilla"
+                    1 -> "Baguette Rústica"
+                    else -> "Muffin de Arándanos"
+                }
+                val price = when(index) {
+                    0 -> "$2.50"
+                    1 -> "$4.00"
+                    else -> "$3.25"
+                }
                 CartItem(
-                    name = when(index) {
-                        0 -> "Croissant"
-                        1 -> "Baguette"
-                        else -> "Muffin"
-                    },
-                    desc = "Delicioso y artesanal.",
-                    price = "$5.00",
+                    name = name,
+                    desc = "Artesanal, recién horneado",
+                    price = price,
                     quantity = 1,
                     isDarkMode = isDarkMode
                 )
@@ -133,6 +183,9 @@ fun CartScreen(
 
             item {
                 Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color.LightGray.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(24.dp))
+                
                 Text(
                     appViewModel.getString("payment_method"), 
                     style = MaterialTheme.typography.titleLarge, 
@@ -144,28 +197,31 @@ fun CartScreen(
                 Column {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("card"), "Crédito o Débito", Icons.Outlined.CreditCard, 
-                            selectedPaymentKey == "card", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentKey = "card" }
+                            appViewModel.getString("card"), "Stripe / Apple Pay", Icons.Outlined.CreditCard, 
+                            selectedPaymentMethod == "Tarjeta", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentMethod = "Tarjeta" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
-                            appViewModel.getString("transfer"), "Banca Móvil", Icons.Outlined.AccountBalance, 
-                            selectedPaymentKey == "transfer", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentKey = "transfer" }
+                            appViewModel.getString("transfer"), "SPEI / Bank", Icons.Outlined.AccountBalance, 
+                            selectedPaymentMethod == "Transferencia", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentMethod = "Transferencia" }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("cash"), "Pago en Tienda", Icons.Outlined.Payments, 
-                            selectedPaymentKey == "cash", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentKey = "cash" }
+                            appViewModel.getString("cash"), "OXXO / Tienda", Icons.Outlined.Payments, 
+                            selectedPaymentMethod == "Efectivo", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentMethod = "Efectivo" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
-                            appViewModel.getString("local_pay"), "Billetera Digital", Icons.Outlined.Storefront, 
-                            selectedPaymentKey == "local_pay", isDarkMode, Modifier.weight(1f)
-                        ) { selectedPaymentKey = "local_pay" }
+                            appViewModel.getString("local_pay"), "Google Pay", Icons.Outlined.Storefront, 
+                            selectedPaymentMethod == "Pago Local", isDarkMode, Modifier.weight(1f)
+                        ) { selectedPaymentMethod = "Pago Local" }
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                OrderSummary(isDarkMode, appViewModel)
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
@@ -177,49 +233,136 @@ fun CartScreen(
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
             dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkMode) Color.Gray else Color.LightGray) }
         ) {
-            PaymentGatewayContent(selectedPaymentKey, isDarkMode, appViewModel) {
+            PaymentGatewayContent(selectedPaymentMethod, isDarkMode, appViewModel) {
                 showPaymentSheet = false
+                onPaymentSuccess() 
             }
         }
     }
 }
 
 @Composable
-fun PaymentGatewayContent(paymentKey: String, isDarkMode: Boolean, appViewModel: AppViewModel, onDismiss: () -> Unit) {
-    val translatedMethod = appViewModel.getString(paymentKey)
+fun OrderSummary(isDarkMode: Boolean, appViewModel: AppViewModel) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF0F0F0).copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SummaryRow("Subtotal", "$9.75", isDarkMode)
+            SummaryRow("Envío", "$2.00", isDarkMode)
+            SummaryRow("Impuestos", "$0.80", isDarkMode)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray.copy(alpha = 0.2f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Total", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = if (isDarkMode) Color.White else Color.Black)
+                Text("$12.55", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = PanAppPrimary)
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryRow(label: String, value: String, isDarkMode: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+        Text(value, color = if (isDarkMode) Color.White else Color.Black, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: AppViewModel, onDismiss: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Icon(
+            imageVector = when(method) {
+                "Tarjeta" -> Icons.Outlined.CreditCard
+                "Transferencia" -> Icons.Outlined.AccountBalance
+                "Efectivo" -> Icons.Outlined.Payments
+                else -> Icons.Outlined.Storefront
+            },
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = PanAppPrimary
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
         Text(
-            text = appViewModel.getString("confirm_order"),
+            text = "Completar Pago",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = if (isDarkMode) Color.White else Color.Black
         )
         Text(
-            text = "${appViewModel.getString("payment_method")}: $translatedMethod",
+            text = "Método seleccionado: $method",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray
         )
+        
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "Formulario de pago para $translatedMethod", 
-            color = if (isDarkMode) Color.White else Color.Black,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = when(method) {
+                        "Transferencia" -> "CLABE: 0123 4567 8901 2345 67\nBanco: PanBank\nReferencia: #ORDER-772"
+                        "Efectivo" -> "Presenta este código en cualquier OXXO o tienda afiliada para realizar tu pago."
+                        else -> "Ingresa los detalles de tu $method para continuar con la transacción segura."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDarkMode) Color.LightGray else Color.DarkGray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                if (method == "Efectivo") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .background(Color.White)
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("|| ||| || |||| ||| ||", letterSpacing = 4.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
+        
         Button(
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
         ) {
-            Text(appViewModel.getString("pay_now"))
+            Text(
+                if (method == "Tarjeta") appViewModel.getString("pay_now") else "Confirmar Pedido",
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+        }
+        
+        TextButton(onClick = onDismiss) {
+            Text(appViewModel.getString("close"), color = Color.Gray)
         }
         Spacer(modifier = Modifier.height(16.dp))
     }

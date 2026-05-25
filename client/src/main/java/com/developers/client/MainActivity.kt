@@ -12,10 +12,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.ui.theme.PanAppClientTheme
+import com.stripe.android.PaymentConfiguration
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Inicializar Stripe
+        PaymentConfiguration.init(
+            applicationContext,
+            PaymentConfig.PUBLISHABLE_KEY
+        )
+
         setContent {
             val appViewModel: AppViewModel = viewModel()
             PanAppClientTheme(darkTheme = appViewModel.isDarkMode) {
@@ -44,7 +52,27 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
         composable("cart") {
             CartScreen(
                 appViewModel = appViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onPaymentSuccess = {
+                    navController.navigate("payment_success") {
+                        popUpTo("cart") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("payment_success") {
+            SuccessScreen(
+                appViewModel = appViewModel,
+                onNavigateHome = {
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                onNavigateToOrders = {
+                    navController.navigate("orders") {
+                        popUpTo("home")
+                    }
+                }
             )
         }
         composable("orders") {
@@ -68,6 +96,20 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
         }
         composable("profile") {
             ProfileScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToPayments = { navController.navigate("payment_methods") }
+            )
+        }
+        composable("payment_methods") {
+            PaymentMethodsScreen(
+                appViewModel = appViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddCard = { navController.navigate("add_card") }
+            )
+        }
+        composable("add_card") {
+            AddCardScreen(
                 appViewModel = appViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
