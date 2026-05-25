@@ -1,13 +1,13 @@
 package com.developers.panapp
 
-import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit) {
+    // Manejo del botón atrás del sistema
+    BackHandler {
+        onNavigateToLogin()
+    }
+
     var nombre by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
     var correo by rememberSaveable { mutableStateOf("") }
@@ -60,6 +66,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
     val scrollState = rememberScrollState()
     val auth = remember { FirebaseAuth.getInstance() }
     val db = remember { FirebaseFirestore.getInstance() }
+
+    val errorTemplate = stringResource(id = R.string.common_error_prefix)
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -83,17 +91,17 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                 IconButton(onClick = onNavigateToLogin) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Regresar",
+                        contentDescription = stringResource(id = R.string.common_back),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "PanApp",
+                    text = stringResource(id = R.string.app_name),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(48.dp)) // To center the title
+                Spacer(modifier = Modifier.width(48.dp)) // Para centrar el título
             }
 
             Column(
@@ -107,30 +115,38 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                 // Logo
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(PanAppPeach),
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = "Logo",
-                        modifier = Modifier.size(60.dp),
-                        tint = Color.Unspecified
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(PanAppPeach),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.icon),
+                            contentDescription = stringResource(id = R.string.common_logo),
+                            modifier = Modifier.size(50.dp),
+                            tint = Color.Unspecified
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Crea una cuenta",
+                    text = stringResource(id = R.string.register_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Text(
-                    text = "Introduce tus datos a continuación para unirte a la comunidad de PanApp.",
+                    text = stringResource(id = R.string.register_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -141,20 +157,20 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
 
                 // Campos de entrada
                 RegistrationField(
-                    label = "Nombre completo",
+                    label = stringResource(id = R.string.register_full_name),
                     value = nombre,
                     onValueChange = { nombre = it },
-                    placeholder = "Ej. Juan Pérez",
+                    placeholder = stringResource(id = R.string.register_full_name_placeholder),
                     leadingIcon = Icons.Outlined.Person
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 RegistrationField(
-                    label = "Correo electrónico",
+                    label = stringResource(id = R.string.register_email),
                     value = correo,
                     onValueChange = { correo = it },
-                    placeholder = "tu@ejemplo.com",
+                    placeholder = stringResource(id = R.string.register_email_placeholder),
                     leadingIcon = Icons.Outlined.Email,
                     keyboardType = KeyboardType.Email
                 )
@@ -162,10 +178,10 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 RegistrationField(
-                    label = "Teléfono (opcional)",
+                    label = stringResource(id = R.string.register_phone),
                     value = telefono,
                     onValueChange = { telefono = it },
-                    placeholder = "+34 000 000 000",
+                    placeholder = stringResource(id = R.string.register_phone_placeholder),
                     leadingIcon = Icons.Outlined.Phone,
                     keyboardType = KeyboardType.Phone
                 )
@@ -175,7 +191,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                 // Password Field
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Contraseña",
+                        text = stringResource(id = R.string.register_password),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -184,7 +200,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        placeholder = { Text(stringResource(id = R.string.register_password_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -205,7 +221,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         singleLine = true
                     )
                     Text(
-                        text = "Mínimo 8 caracteres con números y símbolos.",
+                        text = stringResource(id = R.string.register_password_hint),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, start = 4.dp)
@@ -217,7 +233,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                 // Confirm Password Field
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Confirmar contraseña",
+                        text = stringResource(id = R.string.register_confirm_password),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -226,7 +242,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        placeholder = { Text("••••••••", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        placeholder = { Text(stringResource(id = R.string.register_password_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         trailingIcon = {
                             IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
@@ -264,40 +280,45 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         onCheckedChange = { acceptTerms = it },
                         colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                     )
-                    
+
+                    val acceptPrefix = stringResource(id = R.string.register_accept_prefix)
+                    val termsLink = stringResource(id = R.string.register_terms_link)
+                    val acceptMiddle = stringResource(id = R.string.register_accept_middle)
+                    val policyLink = stringResource(id = R.string.register_policy_link)
+                    val acceptSuffix = stringResource(id = R.string.register_accept_suffix)
+
                     val annotatedTerms = buildAnnotatedString {
-                        append("Acepto los ")
-                        pushStringAnnotation(tag = "TERMS", annotation = "terms")
+                        append(acceptPrefix)
+                        append(" ")
+                        pushLink(androidx.compose.ui.text.LinkAnnotation.Clickable("TERMS") {
+                            onNavigateToTerms()
+                        })
                         withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                            append("Términos de servicio")
+                            append(termsLink)
                         }
                         pop()
-                        append(" y la ")
-                        pushStringAnnotation(tag = "POLICY", annotation = "policy")
+                        append(" ")
+                        append(acceptMiddle)
+                        append(" ")
+                        pushLink(androidx.compose.ui.text.LinkAnnotation.Clickable("POLICY") {
+                            onNavigateToTerms()
+                        })
                         withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                            append("Política de privacidad")
+                            append(policyLink)
                         }
                         pop()
-                        append(" de PanApp.")
+                        append(acceptSuffix)
                     }
 
-                    ClickableText(
+                    Text(
                         text = annotatedTerms,
-                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                        onClick = { offset ->
-                            annotatedTerms.getStringAnnotations(tag = "TERMS", start = offset, end = offset).firstOrNull()?.let {
-                                onNavigateToTerms()
-                            }
-                            annotatedTerms.getStringAnnotations(tag = "POLICY", start = offset, end = offset).firstOrNull()?.let {
-                                onNavigateToTerms()
-                            }
-                        }
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // Create Account Button
+                // Botón Crear Cuenta
                 Button(
                     onClick = {
                         if (nombre.isNotEmpty() && correo.isNotEmpty() && password.length >= 8 && password == confirmPassword && acceptTerms) {
@@ -315,25 +336,26 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                                         db.collection("usuarios").document(uid).set(datosUsuario)
                                             .addOnSuccessListener {
                                                 isLoading = false
-                                                Toast.makeText(context, "¡Cuenta creada con éxito!", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, R.string.register_success, Toast.LENGTH_LONG).show()
                                                 onNavigateToLogin()
                                             }
-                                            .addOnFailureListener { e ->
+                                            .addOnFailureListener {
                                                 isLoading = false
-                                                Toast.makeText(context, "Error al guardar en BD", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, R.string.register_error_db, Toast.LENGTH_SHORT).show()
                                             }
                                     }
                                 }
                                 .addOnFailureListener { error ->
                                     isLoading = false
-                                    Toast.makeText(context, "Error: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                    val errorMessage = String.format(errorTemplate, error.localizedMessage ?: "")
+                                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                                 }
                         } else if (!acceptTerms) {
-                            Toast.makeText(context, "Debes aceptar los términos", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.register_error_terms, Toast.LENGTH_SHORT).show()
                         } else if (password != confirmPassword) {
-                            Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.register_error_password_mismatch, Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Llena todo correctamente (Clave >= 8)", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.register_error_invalid_data, Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
@@ -345,7 +367,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (isLoading) "Creando..." else "Crear cuenta",
+                            text = if (isLoading) stringResource(id = R.string.register_loading) else stringResource(id = R.string.register_button),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -365,12 +387,12 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "¿Ya tienes una cuenta? ",
+                        text = stringResource(id = R.string.register_footer_prefix),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Inicia sesión",
+                        text = stringResource(id = R.string.register_footer_link),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,

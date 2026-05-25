@@ -1,0 +1,103 @@
+<resources>
+    <string name="app_name">PanApp</string>
+
+    <!-- Common -->
+    <string name="common_back">Regresar</string>
+    <string name="common_logo">Logo</string>
+    <string name="common_error_prefix">Error: %1$s</string>
+    <string name="common_accept">Aceptar</string>
+    <string name="common_continue">Continuar</string>
+
+    <!-- Login Screen -->
+    <string name="login_welcome_back">¡Bienvenido de nuevo!</string>
+    <string name="login_welcome_subtitle">Huele a pan recién horneado...</string>
+    <string name="login_email_or_phone">Correo o Teléfono</string>
+    <string name="login_email_placeholder">ejemplo@correo.com</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_forgot_password">¿Olvidaste tu clave?</string>
+    <string name="login_password_placeholder">••••••••</string>
+    <string name="login_sign_in_button">Iniciar sesión</string>
+    <string name="login_loading">Cargando...</string>
+    <string name="login_divider_text"> O TAMBIÉN PUEDES </string>
+    <string name="login_create_account_button">Crear una cuenta nueva</string>
+    <string name="login_terms_prefix">Al continuar, aceptas nuestros</string>
+    <string name="login_terms_link">Términos de Servicio</string>
+    <string name="login_terms_middle">y</string>
+    <string name="login_policy_link">Política de Privacidad</string>
+    <string name="login_terms_suffix">.</string>
+    <string name="login_success_admin">🚀 BIENVENIDO ADMIN</string>
+    <string name="login_success_client">🥖 BIENVENIDO CLIENTE</string>
+    <string name="login_success_employee">📷 BIENVENIDO EMPLEADO</string>
+    <string name="login_error_unknown_rol">Rol desconocido</string>
+    <string name="login_error_no_rol">Usuario sin rol en la BD</string>
+    <string name="login_error_empty_fields">Llena todos los campos</string>
+
+    <!-- Register Screen -->
+    <string name="register_title">Crea una cuenta</string>
+    <string name="register_subtitle">Introduce tus datos a continuación para unirte a la comunidad de PanApp.</string>
+    <string name="register_full_name">Nombre completo</string>
+    <string name="register_full_name_placeholder">Ej. Juan Pérez</string>
+    <string name="register_email">Correo electrónico</string>
+    <string name="register_email_placeholder">tu@ejemplo.com</string>
+    <string name="register_phone">Teléfono (opcional)</string>
+    <string name="register_phone_placeholder">+34 000 000 000</string>
+    <string name="register_password">Contraseña</string>
+    <string name="register_password_placeholder">••••••••</string>
+    <string name="register_password_hint">Mínimo 8 caracteres con números y símbolos.</string>
+    <string name="register_confirm_password">Confirmar contraseña</string>
+    <string name="register_accept_prefix">Acepto los </string>
+    <string name="register_terms_link">Términos de servicio</string>
+    <string name="register_accept_middle"> y la </string>
+    <string name="register_policy_link">Política de privacidad</string>
+    <string name="register_accept_suffix"> de PanApp.</string>
+    <string name="register_loading">Creando...</string>
+    <string name="register_button">Crear cuenta</string>
+    <string name="register_footer_prefix">¿Ya tienes una cuenta? </string>
+    <string name="register_footer_link">Inicia sesión</string>
+    <string name="register_success">¡Cuenta creada con éxito!</string>
+    <string name="register_error_db">Error al guardar en BD</string>
+    <string name="register_error_terms">Debes aceptar los términos</string>
+    <string name="register_error_password_mismatch">Las contraseñas no coinciden</string>
+    <string name="register_error_invalid_data">Llena todo correctamente (Clave >= 8)</string>
+
+    <!-- Terms Screen -->
+    <string name="terms_title">Términos y Condiciones</string>
+    <string name="terms_version">Versión 1.0.0</string>
+    <string name="terms_main_title">Aviso Legal y Política de Privacidad</string>
+    <string name="terms_last_update">Última actualización: 14 de Abril, 2026</string>
+    <string name="terms_intro_highlight">\"Por favor, lea detenidamente este documento antes de continuar con la creación de su cuenta en PanApp.\"</string>
+    <string name="terms_section_prefix">SECCIÓN %1$s</string>
+    <string name="terms_section_1_title">Aceptación de los Términos</string>
+    <string name="terms_section_1_content">Al acceder y utilizar la aplicación PanApp, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte de estos términos, no podrá utilizar nuestros servicios.</string>
+    <string name="terms_section_2_title">Privacidad y Datos</string>
+    <string name="terms_section_2_content">Su privacidad es importante para nosotros. Recopilamos datos mínimos necesarios para la gestión operativa de pedidos y clientes. Todos los datos están cifrados bajo protocolos de seguridad industrial de extremo a extremo.</string>
+    <string name="terms_section_3_title">Uso de la Plataforma</string>
+    <string name="terms_section_3_content">La plataforma debe utilizarse exclusivamente para fines de compra y gestión comercial legítima. Queda prohibido el uso de la herramienta para actividades fraudulentas o que vulneren los derechos de terceros.</string>
+    <string name="terms_section_4_title">Responsabilidades</string>
+    <string name="terms_section_4_content">PanApp no se hace responsable de las decisiones comerciales tomadas basadas en los datos analíticos proporcionados por la app, ni por interrupciones menores del servicio debidas a mantenimiento.</string>
+    <string name="terms_section_5_title">Seguridad de Cuenta</string>
+    <string name="terms_section_5_content">Usted es responsable de mantener la confidencialidad de su contraseña y de todas las actividades que ocurran bajo su cuenta de PanApp.</string>
+    <string name="terms_footer_info">Para más información sobre cómo tratamos sus datos, puede contactar a nuestro equipo de soporte legal en soporte@panapp.com</string>
+    <string name="terms_checkbox_label">He leído y acepto los términos de uso y la política de manejo de datos.</string>
+    <string name="terms_accept_button">Aceptar y continuar</string>
+
+    <!-- Forgot Password Screen -->
+    <string name="forgot_title">Restablecer</string>
+    <string name="forgot_main_title">Ingresa tu Correo</string>
+    <string name="forgot_subtitle">Restablecimiento de cuenta</string>
+    <string name="forgot_email_label">Correo o Teléfono</string>
+    <string name="forgot_email_placeholder">ejemplo@correo.com</string>
+    <string name="forgot_loading">Verificando...</string>
+    <string name="forgot_button">Restablecer Cuenta</string>
+    <string name="forgot_success_title">Instrucciones de Restablecimiento\nEnviadas</string>
+    <string name="forgot_error_title">Cuenta no encontrada</string>
+    <string name="forgot_success_subtitle">Revisa tu correo</string>
+    <string name="forgot_error_subtitle">Verifica el correo ingresado</string>
+    <string name="forgot_success_message">Instrucciones enviadas correctamente\nno olvides revisar en el apartado de\nspam</string>
+    <string name="forgot_error_message">El correo que ingresaste no está registrado\nen PanApp. Por favor, intenta de nuevo o\ncrea una cuenta nueva.</string>
+    <string name="forgot_success_button">Aceptar</string>
+    <string name="forgot_error_button">Intentar de nuevo</string>
+    <string name="forgot_toast_error_network">Error de red al enviar correo</string>
+    <string name="forgot_toast_error_db">Error al verificar datos</string>
+    <string name="forgot_toast_error_empty">Por favor ingresa tu correo</string>
+</resources>
