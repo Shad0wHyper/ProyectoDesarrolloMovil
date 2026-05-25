@@ -37,6 +37,13 @@ fun AlmacenStockScreen() {
     var textBusqueda by remember { mutableStateOf("") }
     var categoriaSeleccionada by remember { mutableStateOf("Todo") }
 
+    // Estado para Nuevo Material
+    var showAddMaterialDialog by remember { mutableStateOf(false) }
+    var nuevoNombreMat by remember { mutableStateOf("") }
+    var nuevoSKUMat by remember { mutableStateOf("") }
+    var nuevoMinimoMat by remember { mutableStateOf("") }
+    var nuevaUnidadMat by remember { mutableStateOf("kg") }
+
     // Filtrado de la lista
     val materialesFiltrados = listaMateriales.filter { material ->
         val coincideBusqueda = material.nombre.contains(textBusqueda, ignoreCase = true) || 
@@ -47,6 +54,79 @@ fun AlmacenStockScreen() {
 
     // Contador de Alertas Dinámico
     val alertasCount = listaMateriales.count { it.existencia < it.minimo }
+
+    var materialParaAjustar by remember { mutableStateOf<MaterialStock?>(null) }
+    var nuevoStockValue by remember { mutableStateOf("") }
+
+    if (showAddMaterialDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddMaterialDialog = false },
+            title = { Text("Nuevo Material") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = nuevoNombreMat, onValueChange = { nuevoNombreMat = it }, label = { Text("Nombre") })
+                    OutlinedTextField(value = nuevoSKUMat, onValueChange = { nuevoSKUMat = it }, label = { Text("SKU") })
+                    OutlinedTextField(value = nuevoMinimoMat, onValueChange = { nuevoMinimoMat = it }, label = { Text("Mínimo Requerido") })
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (nuevoNombreMat.isNotBlank()) {
+                        listaMateriales.add(MaterialStock(nuevoNombreMat, nuevoSKUMat, 0.0, nuevoMinimoMat.toDoubleOrNull() ?: 10.0, nuevaUnidadMat, "Otros"))
+                        showAddMaterialDialog = false
+                        nuevoNombreMat = ""
+                        nuevoSKUMat = ""
+                        Toast.makeText(context, "Material agregado", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Agregar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddMaterialDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (materialParaAjustar != null) {
+        AlertDialog(
+            onDismissRequest = { materialParaAjustar = null },
+            title = { Text("Ajustar Stock: ${materialParaAjustar?.nombre}") },
+            text = {
+                Column {
+                    Text("Ingrese la nueva cantidad en ${materialParaAjustar?.unidad}:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = nuevoStockValue,
+                        onValueChange = { nuevoStockValue = it },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val nuevaCant = nuevoStockValue.toDoubleOrNull()
+                    if (nuevaCant != null) {
+                        val index = listaMateriales.indexOfFirst { it.sku == materialParaAjustar?.sku }
+                        if (index != -1) {
+                            listaMateriales[index] = materialParaAjustar!!.copy(existencia = nuevaCant)
+                            Toast.makeText(context, "Stock actualizado", Toast.LENGTH_SHORT).show()
+                        }
+                        materialParaAjustar = null
+                        nuevoStockValue = ""
+                    }
+                }) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { materialParaAjustar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -74,7 +154,12 @@ fun AlmacenStockScreen() {
                 }
             },
             actions = {
-                IconButton(onClick = { /* TODO */ }) {
+                IconButton(onClick = { showAddMaterialDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Nuevo Material")
+                }
+                IconButton(onClick = { 
+                    Toast.makeText(context, "Sincronizando con base de datos...", Toast.LENGTH_SHORT).show()
+                }) {
                     Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones")
                 }
             },
@@ -148,10 +233,8 @@ fun AlmacenStockScreen() {
                 MaterialStockCard(
                     material = material,
                     onAjustarClick = {
-                        val index = listaMateriales.indexOfFirst { it.sku == material.sku }
-                        if (index != -1) {
-                            listaMateriales[index] = material.copy(existencia = material.existencia + 5.0)
-                        }
+                        materialParaAjustar = material
+                        nuevoStockValue = material.existencia.toString()
                     },
                     onEditClick = {
                         Toast.makeText(context, "Modificando ${material.nombre}...", Toast.LENGTH_SHORT).show()

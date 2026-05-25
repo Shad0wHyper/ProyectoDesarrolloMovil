@@ -65,7 +65,12 @@ fun AIReportScreen(onBack: () -> Unit) {
                     value = "$1,450.00",
                     description = "Se espera un incremento del 15% debido a festividad local.",
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
-                    color = Color(0xFF4CAF50)
+                    color = Color(0xFF4CAF50),
+                    action = {
+                        TextButton(onClick = { Toast.makeText(context, "Ver desglose de ventas", Toast.LENGTH_SHORT).show() }) {
+                            Text("Ver detalles", color = Color(0xFF4CAF50))
+                        }
+                    }
                 )
             }
 
@@ -115,7 +120,12 @@ fun AIReportScreen(onBack: () -> Unit) {
                     value = "200 Panes, 80 Bollería",
                     description = "Optimización para reducir desperdicios al mínimo (0.5%).",
                     icon = Icons.Default.PrecisionManufacturing,
-                    color = Color(0xFFFFA000)
+                    color = Color(0xFFFFA000),
+                    action = {
+                        TextButton(onClick = { Toast.makeText(context, "Enviando plan a producción...", Toast.LENGTH_SHORT).show() }) {
+                            Text("Enviar a Producción", color = Color(0xFFFFA000))
+                        }
+                    }
                 )
             }
 

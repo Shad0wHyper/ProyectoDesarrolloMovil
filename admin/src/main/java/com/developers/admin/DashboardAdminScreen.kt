@@ -40,7 +40,41 @@ fun DashboardAdminScreen() {
     // 3. Estado del Buscador
     var textBusqueda by remember { mutableStateOf("") }
     
+    // Estado para Nuevo Producto
+    var showAddProductDialog by remember { mutableStateOf(false) }
+    var nuevoNombre by remember { mutableStateOf("") }
+    var nuevaCategoria by remember { mutableStateOf("Panes") }
+    var nuevoPrecio by remember { mutableStateOf("") }
+
     val context = LocalContext.current
+
+    if (showAddProductDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddProductDialog = false },
+            title = { Text("Nuevo Producto") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = nuevoNombre, onValueChange = { nuevoNombre = it }, label = { Text("Nombre") })
+                    OutlinedTextField(value = nuevaCategoria, onValueChange = { nuevaCategoria = it }, label = { Text("Categoría") })
+                    OutlinedTextField(value = nuevoPrecio, onValueChange = { nuevoPrecio = it }, label = { Text("Precio") })
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (nuevoNombre.isNotBlank() && nuevoPrecio.isNotBlank()) {
+                        listaProductos.add(Producto(nuevoNombre, nuevaCategoria, 0, "AGOTADO", Color.Red, nuevoPrecio))
+                        showAddProductDialog = false
+                        nuevoNombre = ""
+                        nuevoPrecio = ""
+                        Toast.makeText(context, "Producto agregado", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Agregar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddProductDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
 
     Scaffold(
         bottomBar = { 
@@ -51,12 +85,7 @@ fun DashboardAdminScreen() {
         },
         floatingActionButton = { 
             if (currentScreen == "dashboard") {
-                AdminFAB(onAdd = {
-                    listaProductos.add(Producto("Pan Dulce ${listaProductos.size}", "Bollería", 20, "Óptimo", Color(0xFF4CAF50), "1.50"))
-                    Toast.makeText(context, "Nuevo producto agregado", Toast.LENGTH_SHORT).show()
-                })
-            } else if (currentScreen == "almacen") {
-                ExtendedFAB()
+                AdminFAB(onAdd = { showAddProductDialog = true })
             }
         },
         containerColor = Color(0xFFF8F9FA)
@@ -69,10 +98,8 @@ fun DashboardAdminScreen() {
                     onTextBusquedaChange = { textBusqueda = it },
                     onGestionarPedidosClick = { currentScreen = "pedidos" },
                     onAIPredictionsClick = { currentScreen = "ia_report" },
-                    onAddClick = {
-                        listaProductos.add(Producto("Pan Dulce ${listaProductos.size}", "Bollería", 20, "Óptimo", Color(0xFF4CAF50), "1.50"))
-                        Toast.makeText(context, "Nuevo producto agregado", Toast.LENGTH_SHORT).show()
-                    }
+                    onAlmacenClick = { currentScreen = "almacen" },
+                    onAddClick = { showAddProductDialog = true }
                 )
                 "almacen" -> AlmacenStockScreen()
                 "pedidos" -> PedidosScreen()
@@ -90,6 +117,7 @@ fun DashboardContent(
     onTextBusquedaChange: (String) -> Unit,
     onGestionarPedidosClick: () -> Unit,
     onAIPredictionsClick: () -> Unit,
+    onAlmacenClick: () -> Unit,
     onAddClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -134,18 +162,7 @@ fun DashboardContent(
         items(productosFiltrados) { producto ->
             ProductoCard(
                 producto = producto,
-                onInventarioClick = {
-                    // 2. Incrementar stock
-                    val index = listaProductos.indexOf(producto)
-                    if (index != -1) {
-                        val newStock = producto.stock + 1
-                        listaProductos[index] = producto.copy(
-                            stock = newStock,
-                            statusLabel = if (newStock > 20) "Óptimo" else "Bajo",
-                            statusColor = if (newStock > 20) Color(0xFF4CAF50) else Color(0xFFFFA000)
-                        )
-                    }
-                },
+                onInventarioClick = onAlmacenClick,
                 onDarDeBajaClick = {
                     // 2. Decrementar stock
                     val index = listaProductos.indexOf(producto)
@@ -172,7 +189,7 @@ fun DashboardContent(
             )
         }
 
-        item { AlertaSuministrosCard() }
+        item { AlertaSuministrosCard(onClick = onAlmacenClick) }
         
         item { Spacer(modifier = Modifier.height(16.dp)) }
     }
@@ -181,6 +198,7 @@ fun DashboardContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminTopBar() {
+    val context = LocalContext.current
     TopAppBar(
         title = {
             Text(
@@ -189,7 +207,9 @@ fun AdminTopBar() {
             )
         },
         actions = {
-            Box(modifier = Modifier.padding(8.dp)) {
+            Box(modifier = Modifier.padding(8.dp).clickable {
+                Toast.makeText(context, "No hay notificaciones nuevas", Toast.LENGTH_SHORT).show()
+            }) {
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = "Alertas",
@@ -208,7 +228,10 @@ fun AdminTopBar() {
             Surface(
                 modifier = Modifier
                     .size(36.dp)
-                    .padding(end = 8.dp),
+                    .padding(end = 8.dp)
+                    .clickable {
+                        Toast.makeText(context, "Perfil de Administrador", Toast.LENGTH_SHORT).show()
+                    },
                 shape = CircleShape,
                 color = Color.LightGray
             ) {
@@ -487,7 +510,7 @@ fun ProductoCard(
 }
 
 @Composable
-fun AlertaSuministrosCard() {
+fun AlertaSuministrosCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
@@ -510,7 +533,7 @@ fun AlertaSuministrosCard() {
                 color = Color.Red,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.clickable { /* TODO */ }
+                modifier = Modifier.clickable(onClick = onClick)
             )
         }
     }
@@ -572,14 +595,14 @@ fun AdminBottomBar(currentScreen: String, onScreenSelected: (String) -> Unit) {
 }
 
 @Composable
-fun ExtendedFAB() {
+fun ExtendedFAB(onClick: () -> Unit) {
     ExtendedFloatingActionButton(
-        onClick = { /* TODO */ },
+        onClick = onClick,
         containerColor = Color(0xFF6200EE),
         contentColor = Color.White,
         shape = RoundedCornerShape(16.dp),
         icon = { Icon(Icons.Default.Add, contentDescription = null) },
-        text = { Text("Crear Pedido") }
+        text = { Text("Nuevo Item") }
     )
 }
 
