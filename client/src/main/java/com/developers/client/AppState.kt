@@ -79,7 +79,8 @@ class AppViewModel : ViewModel() {
                 "phone_label" to "Teléfono",
                 "pendiente" to "Pendiente",
                 "en_camino" to "En Camino",
-                "entregado" to "Entregado"
+                "entregado" to "Entregado",
+                "payment_form" to "Formulario de pago para"
             ),
             "English" to mapOf(
                 "hello" to "Hello",
@@ -126,7 +127,8 @@ class AppViewModel : ViewModel() {
                 "phone_label" to "Phone Number",
                 "pendiente" to "Pending",
                 "en_camino" to "On the way",
-                "entregado" to "Delivered"
+                "entregado" to "Delivered",
+                "payment_form" to "Payment form for"
             ),
             "Português" to mapOf(
                 "hello" to "Olá",
@@ -173,7 +175,8 @@ class AppViewModel : ViewModel() {
                 "phone_label" to "Telefone",
                 "pendiente" to "Pendente",
                 "en_camino" to "A caminho",
-                "entregado" to "Entregue"
+                "entregado" to "Entregue",
+                "payment_form" to "Formulário de pagamento para"
             ),
             "Italiano" to mapOf(
                 "hello" to "Ciao",
@@ -220,7 +223,8 @@ class AppViewModel : ViewModel() {
                 "phone_label" to "Numero di Telefono",
                 "pendiente" to "In attesa",
                 "en_camino" to "In viaggio",
-                "entregado" to "Consegnato"
+                "entregado" to "Consegnato",
+                "payment_form" to "Modulo di pagamento per"
             ),
             "Français" to mapOf(
                 "hello" to "Bonjour",
@@ -246,7 +250,7 @@ class AppViewModel : ViewModel() {
                 "history" to "Historique",
                 "your_order" to "Votre Commande",
                 "items" to "articles",
-                "view_details" to "Voir les détails",
+                "view_details" to "Voir les detalles",
                 "buy_again" to "Commander à nouveau",
                 "order_details" to "Détails de la commande",
                 "date" to "Date",
@@ -267,7 +271,8 @@ class AppViewModel : ViewModel() {
                 "phone_label" to "Numéro de Téléphone",
                 "pendiente" to "En attente",
                 "en_camino" to "En chemin",
-                "entregado" to "Livré"
+                "entregado" to "Livré",
+                "payment_form" to "Formulaire de paiement pour"
             )
         )
         return translations[currentLanguage]?.get(key) ?: key

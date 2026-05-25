@@ -3,6 +3,8 @@ package com.developers.client
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,14 +18,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import androidx.compose.ui.platform.LocalContext
 import com.developers.client.ui.theme.PanAppPeach
 import com.developers.client.ui.theme.PanAppPrimary
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 data class Product(
     val id: String = "",
@@ -45,7 +48,9 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("TODO") }
+    val categories = listOf("TODO", "PANES", "CAFÉ", "OTROS")
+    val pagerState = rememberPagerState(pageCount = { categories.size })
+    val coroutineScope = rememberCoroutineScope()
 
     var allProducts by remember { mutableStateOf<List<Product>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -63,12 +68,6 @@ fun HomeScreen(
             .addOnFailureListener {
                 isLoading = false
             }
-    }
-
-    val filteredProducts = if (selectedCategory == "TODO") {
-        allProducts
-    } else {
-        allProducts.filter { it.categoria.equals(selectedCategory, ignoreCase = true) }
     }
 
     val isDarkMode = appViewModel.isDarkMode
@@ -151,71 +150,113 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(if (isDarkMode) Color(0xFF121212) else Color.White)
-                .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${appViewModel.getString("hello")}, ${appViewModel.userName.split(" ")[0]}! 👋",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color.White else Color.Black
-            )
-            Text(
-                text = appViewModel.getString("what_fancy"),
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
-            )
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "${appViewModel.getString("hello")}, ${appViewModel.userName.split(" ")[0]}! 👋",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDarkMode) Color.White else Color.Black
+                )
+                Text(
+                    text = appViewModel.getString("what_fancy"),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Categorías
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                CategoryItem(appViewModel.getString("cat_all"), Icons.Default.RestaurantMenu, selectedCategory == "TODO", isDarkMode) { selectedCategory = "TODO" }
-                CategoryItem(appViewModel.getString("cat_breads"), Icons.Default.BakeryDining, selectedCategory == "PANES", isDarkMode) { selectedCategory = "PANES" }
-                CategoryItem(appViewModel.getString("cat_coffee"), Icons.Default.Coffee, selectedCategory == "CAFÉ", isDarkMode) { selectedCategory = "CAFÉ" }
-                CategoryItem(appViewModel.getString("cat_others"), Icons.Default.StarBorder, selectedCategory == "OTROS", isDarkMode) { selectedCategory = "OTROS" }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    categories.forEachIndexed { index, catKey ->
+                        val translatedName = when (catKey) {
+                            "PANES" -> appViewModel.getString("cat_breads")
+                            "CAFÉ" -> appViewModel.getString("cat_coffee")
+                            "OTROS" -> appViewModel.getString("cat_others")
+                            else -> appViewModel.getString("cat_all")
+                        }
+                        val icon = when (catKey) {
+                            "PANES" -> Icons.Default.BakeryDining
+                            "CAFÉ" -> Icons.Default.Coffee
+                            "OTROS" -> Icons.Default.StarBorder
+                            else -> Icons.Default.RestaurantMenu
+                        }
+                        CategoryItem(
+                            name = translatedName,
+                            icon = icon,
+                            isSelected = pagerState.currentPage == index,
+                            isDarkMode = isDarkMode
+                        ) {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = if (selectedCategory == "TODO") appViewModel.getString("products") else "${appViewModel.getString("categories_label")}: $selectedCategory",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color.White else Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = PanAppPrimary)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Top
+            ) { pageIndex ->
+                val currentCat = categories[pageIndex]
+                val filteredProducts = if (currentCat == "TODO") {
+                    allProducts
+                } else {
+                    allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) }
                 }
-            } else if (filteredProducts.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay productos en esta categoría.", color = Color.Gray)
+
+                val currentCategoryDisplayName = when (currentCat) {
+                    "PANES" -> appViewModel.getString("cat_breads")
+                    "CAFÉ" -> appViewModel.getString("cat_coffee")
+                    "OTROS" -> appViewModel.getString("cat_others")
+                    else -> appViewModel.getString("cat_all")
                 }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(filteredProducts) { product ->
-                        ProductCard(
-                            name = product.nombre,
-                            price = String.format("$%.2f", product.precio),
-                            rating = product.calificacion.toString(),
-                            isNew = product.isNuevo,
-                            imageUrl = product.imagenUrl,
-                            isDarkMode = isDarkMode,
-                            appViewModel = appViewModel
-                        )
+
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                    Text(
+                        text = if (currentCat == "TODO") appViewModel.getString("products") else "${appViewModel.getString("categories_label")}: $currentCategoryDisplayName",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDarkMode) Color.White else Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = PanAppPrimary)
+                        }
+                    } else if (filteredProducts.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No hay productos en esta categoría.", color = Color.Gray)
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(filteredProducts) { product ->
+                                ProductCard(
+                                    name = product.nombre,
+                                    price = String.format("$%.2f", product.precio),
+                                    rating = product.calificacion.toString(),
+                                    isNew = product.isNuevo,
+                                    imageUrl = product.imagenUrl,
+                                    isDarkMode = isDarkMode,
+                                    appViewModel = appViewModel
+                                )
+                            }
+                        }
                     }
                 }
             }

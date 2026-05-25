@@ -9,7 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,10 +22,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.ui.theme.PanAppClientTheme
 import com.developers.client.ui.theme.PanAppPrimary
+import com.stripe.android.PaymentConfiguration
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        PaymentConfiguration.init(
+            applicationContext,
+            PaymentConfig.PUBLISHABLE_KEY
+        )
+
         setContent {
             val appViewModel: AppViewModel = viewModel()
             PanAppClientTheme(darkTheme = appViewModel.isDarkMode) {
@@ -40,7 +48,6 @@ class MainActivity : ComponentActivity() {
 fun ClientAppNavigation(appViewModel: AppViewModel) {
     val navController = rememberNavController()
 
-    // ✨ CONFIGURACIÓN: Solo Inicio y Pedidos en la barra inferior
     val bottomNavItems = listOf(
         Triple("home", "Inicio", Icons.Default.Home),
         Triple("orders", "Pedidos", Icons.Default.Receipt)
@@ -50,8 +57,6 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
-
-            // Mostrar la barra inferior solo si estamos en Inicio o Pedidos
             val showBottomBar = bottomNavItems.any { it.first == currentDestination?.route }
 
             if (showBottomBar) {
@@ -105,7 +110,27 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
             composable("cart") {
                 CartScreen(
                     appViewModel = appViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onPaymentSuccess = {
+                        navController.navigate("payment_success") {
+                            popUpTo("cart") { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable("payment_success") {
+                SuccessScreen(
+                    appViewModel = appViewModel,
+                    onNavigateHome = {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    },
+                    onNavigateToOrders = {
+                        navController.navigate("orders") {
+                            popUpTo("home")
+                        }
+                    }
                 )
             }
             composable("orders") {
@@ -122,11 +147,33 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
             composable("settings") {
                 SettingsScreen(
                     appViewModel = appViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProfile = { navController.navigate("profile") },
+                    onNavigateToNotifications = { navController.navigate("notifications") }
                 )
             }
             composable("profile") {
                 ProfileScreen(
+                    appViewModel = appViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToPayments = { navController.navigate("payment_methods") }
+                )
+            }
+            composable("payment_methods") {
+                PaymentMethodsScreen(
+                    appViewModel = appViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAddCard = { navController.navigate("add_card") }
+                )
+            }
+            composable("add_card") {
+                AddCardScreen(
+                    appViewModel = appViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("notifications") {
+                NotificationsScreen(
                     appViewModel = appViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )

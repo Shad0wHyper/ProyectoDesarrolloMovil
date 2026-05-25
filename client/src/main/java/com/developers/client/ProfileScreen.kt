@@ -7,7 +7,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
@@ -24,7 +26,8 @@ import com.developers.client.ui.theme.PanAppPrimary
 @Composable
 fun ProfileScreen(
     appViewModel: AppViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToPayments: () -> Unit
 ) {
     var name by remember { mutableStateOf(appViewModel.userName) }
     var email by remember { mutableStateOf(appViewModel.userEmail) }
@@ -125,6 +128,25 @@ fun ProfileScreen(
                     unfocusedTextColor = if (isDarkMode) Color.White else Color.Black
                 )
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedButton(
+                onClick = onNavigateToPayments,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (isDarkMode) Color.DarkGray else Color.LightGray)
+            ) {
+                Icon(Icons.Default.Payment, contentDescription = null, tint = PanAppPrimary)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Métodos de Pago", 
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = if (isDarkMode) Color.White else Color.Black
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
