@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Inicialización de Stripe (Configuración de tu amigo)
         PaymentConfiguration.init(
             applicationContext,
             PaymentConfig.PUBLISHABLE_KEY
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity() {
 fun ClientAppNavigation(appViewModel: AppViewModel) {
     val navController = rememberNavController()
 
+    // ✨ Solo dejamos Inicio y Pedidos abajo
     val bottomNavItems = listOf(
         Triple("home", "Inicio", Icons.Default.Home),
         Triple("orders", "Pedidos", Icons.Default.Receipt)
@@ -98,6 +100,7 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
+            // Rutas principales
             composable("home") {
                 HomeScreen(
                     appViewModel = appViewModel,
@@ -118,21 +121,6 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                     }
                 )
             }
-            composable("payment_success") {
-                SuccessScreen(
-                    appViewModel = appViewModel,
-                    onNavigateHome = {
-                        navController.navigate("home") {
-                            popUpTo("home") { inclusive = true }
-                        }
-                    },
-                    onNavigateToOrders = {
-                        navController.navigate("orders") {
-                            popUpTo("home")
-                        }
-                    }
-                )
-            }
             composable("orders") {
                 OrdersScreen(
                     appViewModel = appViewModel,
@@ -144,6 +132,8 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                     }
                 )
             }
+
+            // Rutas de Ajustes y Perfil
             composable("settings") {
                 SettingsScreen(
                     appViewModel = appViewModel,
@@ -159,6 +149,29 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                     onNavigateToPayments = { navController.navigate("payment_methods") }
                 )
             }
+            composable("notifications") {
+                NotificationsScreen(
+                    appViewModel = appViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Nuevas Rutas de Pagos de tu amigo
+            composable("payment_success") {
+                SuccessScreen(
+                    appViewModel = appViewModel,
+                    onNavigateHome = {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    },
+                    onNavigateToOrders = {
+                        navController.navigate("orders") {
+                            popUpTo("home")
+                        }
+                    }
+                )
+            }
             composable("payment_methods") {
                 PaymentMethodsScreen(
                     appViewModel = appViewModel,
@@ -168,12 +181,6 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
             }
             composable("add_card") {
                 AddCardScreen(
-                    appViewModel = appViewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            composable("notifications") {
-                NotificationsScreen(
                     appViewModel = appViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )

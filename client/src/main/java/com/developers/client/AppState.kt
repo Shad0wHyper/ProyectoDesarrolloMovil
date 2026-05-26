@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.compose.runtime.mutableStateListOf
 
 class AppViewModel : ViewModel() {
     var isDarkMode by mutableStateOf(false)
@@ -13,6 +14,16 @@ class AppViewModel : ViewModel() {
     var userName by mutableStateOf("Marco Antonio")
     var userEmail by mutableStateOf("marco.antonio@email.com")
     var userPhone by mutableStateOf("+52 555 123 4567")
+
+    val cartItems = mutableStateListOf<Product>()
+
+    fun addToCart(product: Product) {
+        cartItems.add(product)
+    }
+
+    fun removeFromCart(product: Product) {
+        cartItems.remove(product)
+    }
 
     fun toggleDarkMode(enabled: Boolean) {
         isDarkMode = enabled
