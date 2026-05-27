@@ -8,11 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.developers.client.ui.theme.*
+import com.developers.client.ui.theme.PanAppPrimary
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +32,35 @@ fun OrdersScreen(
 ) {
     var selectedOrder by remember { mutableStateOf<OrderData?>(null) }
     val isDarkMode = appViewModel.isDarkMode
+
+    var orderList by remember { mutableStateOf<List<OrderData>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        // ✨ AHORA USAMOS EL ID DEL VIEWMODEL, NO DEL FIREBASE AUTH
+        val currentUserId = appViewModel.currentUserId
+
+        if (currentUserId == "INVITADO") {
+            isLoading = false
+            return@LaunchedEffect
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        db.collection("pedidos")
+            .whereEqualTo("userId", currentUserId)
+            .get()
+            .addOnSuccessListener { result ->
+                val lista = result.documents.mapNotNull { doc ->
+                    doc.toObject(OrderData::class.java)
+                }.sortedByDescending { it.timestamp }
+
+                orderList = lista
+                isLoading = false
+            }
+            .addOnFailureListener {
+                isLoading = false
+            }
+    }
 
     Scaffold(
         topBar = {
@@ -64,22 +92,36 @@ fun OrdersScreen(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        appViewModel.getString("history"), 
-                        style = MaterialTheme.typography.headlineSmall, 
+                        appViewModel.getString("history"),
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (isDarkMode) Color.White else Color.Black
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                items(orderList) { order ->
-                    OrderItemCard(
-                        order = order, 
-                        appViewModel = appViewModel,
-                        onViewDetails = { selectedOrder = order },
-                        onReorder = onNavigateToCart
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                if (isLoading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = PanAppPrimary)
+                        }
+                    }
+                } else if (orderList.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text("Aún no tienes pedidos registrados.", color = Color.Gray)
+                        }
+                    }
+                } else {
+                    items(orderList) { order ->
+                        OrderItemCard(
+                            order = order,
+                            appViewModel = appViewModel,
+                            onViewDetails = { selectedOrder = order },
+                            onReorder = onNavigateToCart
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
 
@@ -99,7 +141,7 @@ fun OrdersScreen(
                             Text("Status: ${appViewModel.getString(statusKey)}")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("${appViewModel.getString("items")}:", fontWeight = FontWeight.Bold)
-                            Text("- ${selectedOrder?.mainItem}")
+                            Text("- ${selectedOrder?.mainItem} y más...")
                         }
                     },
                     confirmButton = {
@@ -115,7 +157,7 @@ fun OrdersScreen(
 
 @Composable
 fun OrderItemCard(
-    order: OrderData, 
+    order: OrderData,
     appViewModel: AppViewModel,
     onViewDetails: () -> Unit,
     onReorder: () -> Unit
@@ -137,14 +179,14 @@ fun OrderItemCard(
             ) {
                 Column {
                     Text(
-                        text = "ID #${order.id}",
+                        text = "ID ${order.id}",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.Gray,
                         fontWeight = FontWeight.Bold
                     )
                     Text(order.date, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
-                
+
                 val statusKey = when(order.status) {
                     "Pendiente" -> "pendiente"
                     "En Camino" -> "en_camino"
@@ -174,7 +216,7 @@ fun OrderItemCard(
             }
 
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = 12.dp), 
+                modifier = Modifier.padding(vertical = 12.dp),
                 color = if (isDarkMode) Color.DarkGray else Color(0xFFF0F0F0)
             )
 
@@ -191,16 +233,16 @@ fun OrderItemCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        order.mainItem, 
-                        fontWeight = FontWeight.Bold, 
+                        order.mainItem,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isDarkMode) Color.White else Color.Black
                     )
                     Text("${order.itemCount} ${appViewModel.getString("items")}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
                 Text(
-                    "$${order.total}", 
-                    fontWeight = FontWeight.Bold, 
+                    "$${order.total}",
+                    fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (isDarkMode) Color.White else Color.Black
                 )
@@ -233,18 +275,3 @@ fun OrderItemCard(
         }
     }
 }
-
-data class OrderData(
-    val id: String,
-    val status: String,
-    val date: String,
-    val mainItem: String,
-    val itemCount: Int,
-    val total: String
-)
-
-val orderList = listOf(
-    OrderData("BK-9120", "Pendiente", "Hoy, 14 Oct • 09:30 AM", "Pan de Masa Madre", 2, "12.50"),
-    OrderData("BK-8955", "En Camino", "Ayer, 13 Oct • 04:15 PM", "Croissants Chocolate", 5, "35.20"),
-    OrderData("BK-8842", "Entregado", "12 Oct 2023 • 11:00 AM", "Muffin Arándanos", 3, "24.50")
-)

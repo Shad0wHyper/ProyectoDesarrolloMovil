@@ -200,6 +200,8 @@ fun LoginScreen(
                                                     val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
 
                                                     if (intent != null) {
+                                                        intent.putExtra("USER_ID", auth.currentUser?.uid)
+                                                        intent.putExtra("USER_EMAIL", auth.currentUser?.email)
                                                         intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
                                                         context.startActivity(intent)
                                                     } else {

@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource // Importación necesaria para el logo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -28,7 +29,6 @@ import com.developers.client.ui.theme.PanAppPrimary
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
-// 1. Modelo de datos real de Firestore
 data class Product(
     val id: String = "",
     val nombre: String = "",
@@ -44,7 +44,7 @@ data class Product(
 fun HomeScreen(
     appViewModel: AppViewModel,
     onNavigateToCart: () -> Unit,
-    onNavigateToOrders: () -> Unit, // Aunque ya no esté en el menú, la pasamos por si acaso
+    onNavigateToOrders: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProfile: () -> Unit
 ) {
@@ -53,7 +53,6 @@ fun HomeScreen(
     val pagerState = rememberPagerState(pageCount = { categories.size })
     val coroutineScope = rememberCoroutineScope()
 
-    // 2. Estados de Firebase
     var allProducts by remember { mutableStateOf<List<Product>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -79,21 +78,25 @@ fun HomeScreen(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    Box(
+                    // ✨ AQUÍ ESTÁ EL LOGO REDONDEADO IMPORTADO DESDE DRAWABLE
+                    Image(
+                        painter = painterResource(id = R.drawable.log),
+                        contentDescription = "Logo Oficial",
+                        contentScale = ContentScale.Crop, // Recorta la imagen para que encaje perfecto sin estirarse
                         modifier = Modifier
                             .padding(start = 16.dp)
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(PanAppPeach),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.BakeryDining, contentDescription = null, tint = Color.White)
-                    }
+                            .size(45.dp) // Tamaño del logo en la barra superior
+                            .clip(RoundedCornerShape(12.dp)) // Le da bordes suaves. Si lo quieres redondo cambia a 'CircleShape'
+                    )
                 },
                 actions = {
                     IconButton(onClick = onNavigateToCart) {
                         BadgedBox(
-                            badge = { Badge { Text("3") } }
+                            badge = {
+                                if (appViewModel.cartUniqueItems > 0) {
+                                    Badge { Text(appViewModel.cartUniqueItems.toString()) }
+                                }
+                            }
                         ) {
                             Icon(
                                 Icons.Outlined.ShoppingCart,
@@ -116,7 +119,6 @@ fun HomeScreen(
                             onDismissRequest = { showMenu = false },
                             modifier = Modifier.background(if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
                         ) {
-                            // ✨ Menú superior limpio (Sin pedidos)
                             DropdownMenuItem(
                                 text = { Text(appViewModel.getString("profile"), color = if (isDarkMode) Color.White else Color.Black) },
                                 onClick = {
@@ -203,7 +205,6 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // 3. El Pager de tu amigo, pero filtrando productos reales
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
@@ -250,7 +251,6 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(filteredProducts) { product ->
-                                // 4. Mandamos llamar a ProductCard con datos de Firebase
                                 ProductCard(
                                     name = product.nombre,
                                     price = String.format("$%.2f", product.precio),
@@ -258,7 +258,8 @@ fun HomeScreen(
                                     isNew = product.isNuevo,
                                     imageUrl = product.imagenUrl,
                                     isDarkMode = isDarkMode,
-                                    appViewModel = appViewModel
+                                    appViewModel = appViewModel,
+                                    product = product
                                 )
                             }
                         }
@@ -298,9 +299,17 @@ fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, isDarkMod
     }
 }
 
-// 5. ProductCard con Coil (AsyncImage)
 @Composable
-fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, imageUrl: String, isDarkMode: Boolean, appViewModel: AppViewModel) {
+fun ProductCard(
+    name: String,
+    price: String,
+    rating: String,
+    isNew: Boolean,
+    imageUrl: String,
+    isDarkMode: Boolean,
+    appViewModel: AppViewModel,
+    product: Product
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -311,7 +320,6 @@ fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, ima
     ) {
         Column {
             Box(modifier = Modifier.height(120.dp).fillMaxWidth()) {
-
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
@@ -375,7 +383,7 @@ fun ProductCard(name: String, price: String, rating: String, isNew: Boolean, ima
                         style = MaterialTheme.typography.bodyLarge
                     )
                     IconButton(
-                        onClick = { /* TODO: Aquí programaremos el botón para añadir al carrito */ },
+                        onClick = { appViewModel.addToCart(product) },
                         modifier = Modifier.size(32.dp).background(PanAppPrimary, CircleShape)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))

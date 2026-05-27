@@ -7,11 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.CreditCard
@@ -24,11 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.developers.client.ui.theme.PanAppPrimary
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.rememberPaymentSheet
@@ -42,20 +44,24 @@ fun CartScreen(
 ) {
     var selectedPaymentMethod by remember { mutableStateOf("Tarjeta") }
     var showPaymentSheet by remember { mutableStateOf(false) }
+
+    // ✨ NUEVO: Estado para controlar el pop-up de error de dirección
+    var showAddressErrorDialog by remember { mutableStateOf(false) }
+
     val isDarkMode = appViewModel.isDarkMode
 
-    // Stripe PaymentSheet integration
+    val subtotal = appViewModel.cartSubtotal
+    val deliveryFee = if (subtotal > 0) 2.00 else 0.0
+    val taxes = subtotal * 0.08
+    val finalTotal = subtotal + deliveryFee + taxes
+
     val paymentSheet = rememberPaymentSheet { paymentSheetResult ->
         when (paymentSheetResult) {
             is com.stripe.android.paymentsheet.PaymentSheetResult.Completed -> {
                 onPaymentSuccess()
             }
-            is com.stripe.android.paymentsheet.PaymentSheetResult.Canceled -> {
-                // Handle cancellation
-            }
-            is com.stripe.android.paymentsheet.PaymentSheetResult.Failed -> {
-                // Handle error
-            }
+            is com.stripe.android.paymentsheet.PaymentSheetResult.Canceled -> { }
+            is com.stripe.android.paymentsheet.PaymentSheetResult.Failed -> { }
         }
     }
 
@@ -64,17 +70,30 @@ fun CartScreen(
             environment = PaymentSheet.GooglePayConfiguration.Environment.Test,
             countryCode = "MX"
         )
-
         val configuration = PaymentSheet.Configuration(
             merchantDisplayName = "PanApp Inc.",
             googlePay = googlePayConfig,
             allowsDelayedPaymentMethods = true
         )
-
         paymentSheet.presentWithPaymentIntent(
-            "pi_example_secret_placeholder", 
+            "pi_example_secret_placeholder",
             configuration
         )
+    }
+
+    // ✨ LÓGICA FILTRADORA DE SEGURIDAD
+    fun handleCheckoutProcess() {
+        if (appViewModel.userAddress.trim().isEmpty()) {
+            // Candado activado: No hay dirección, detenemos todo y mostramos Pop-Up
+            showAddressErrorDialog = true
+        } else {
+            // Procedimiento normal de cobro
+            if (selectedPaymentMethod == "Tarjeta") {
+                presentPaymentSheet()
+            } else {
+                showPaymentSheet = true
+            }
+        }
     }
 
     Scaffold(
@@ -105,19 +124,14 @@ fun CartScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(appViewModel.getString("total"), style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-                        Text("$17.45", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PanAppPrimary)
+                        Text(String.format("$%.2f", finalTotal), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PanAppPrimary)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { 
-                            if (selectedPaymentMethod == "Tarjeta") {
-                                presentPaymentSheet()
-                            } else {
-                                showPaymentSheet = true 
-                            }
-                        },
+                        onClick = { handleCheckoutProcess() }, // ✨ Redirige al filtro de seguridad
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
+                        enabled = appViewModel.cartItems.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                     ) {
                         Text(appViewModel.getString("confirm_order"), modifier = Modifier.padding(vertical = 8.dp))
@@ -140,8 +154,8 @@ fun CartScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        appViewModel.getString("your_order"), 
-                        style = MaterialTheme.typography.headlineSmall, 
+                        appViewModel.getString("your_order"),
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (isDarkMode) Color.White else Color.Black
                     )
@@ -150,7 +164,7 @@ fun CartScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            "3 ${appViewModel.getString("items")}",
+                            "${appViewModel.cartTotalQuantity} ${appViewModel.getString("items")}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             color = PanAppPrimary,
                             style = MaterialTheme.typography.labelMedium,
@@ -160,71 +174,105 @@ fun CartScreen(
                 }
             }
 
-            items(3) { index ->
-                val name = when(index) {
-                    0 -> "Croissant de Mantequilla"
-                    1 -> "Baguette Rústica"
-                    else -> "Muffin de Arándanos"
+            if (appViewModel.cartItems.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                        Text(appViewModel.getString("empty_cart"), color = Color.Gray, fontSize = 16.sp)
+                    }
                 }
-                val price = when(index) {
-                    0 -> "$2.50"
-                    1 -> "$4.00"
-                    else -> "$3.25"
+            } else {
+                items(appViewModel.cartItems) { cartItem ->
+                    CartItemWidget(
+                        item = cartItem,
+                        isDarkMode = isDarkMode,
+                        onIncrease = { appViewModel.updateQuantity(cartItem.id, cartItem.quantity + 1) },
+                        onDecrease = { appViewModel.updateQuantity(cartItem.id, cartItem.quantity - 1) }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
-                CartItem(
-                    name = name,
-                    desc = "Artesanal, recién horneado",
-                    price = price,
-                    quantity = 1,
-                    isDarkMode = isDarkMode
-                )
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
             item {
                 Spacer(modifier = Modifier.height(24.dp))
+
+                // ✨ MOSTRAR DIRECCIÓN EN EL RESUMEN DEL CARRITO (Si ya la tiene escrita)
+                if (appViewModel.userAddress.trim().isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = PanAppPrimary.copy(alpha = 0.05f))
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("Entregar en:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                                Text(appViewModel.userAddress, fontSize = 14.sp, color = if (isDarkMode) Color.White else Color.Black)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
                 HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color.LightGray.copy(alpha = 0.5f))
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Text(
-                    appViewModel.getString("payment_method"), 
-                    style = MaterialTheme.typography.titleLarge, 
+                    appViewModel.getString("payment_method"),
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (isDarkMode) Color.White else Color.Black
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Column {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("card"), "Stripe / Apple Pay", Icons.Outlined.CreditCard, 
+                            appViewModel.getString("card"), "Stripe / Apple Pay", Icons.Outlined.CreditCard,
                             selectedPaymentMethod == "Tarjeta", isDarkMode, Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Tarjeta" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
-                            appViewModel.getString("transfer"), "SPEI / Bank", Icons.Outlined.AccountBalance, 
+                            appViewModel.getString("transfer"), "SPEI / Bank", Icons.Outlined.AccountBalance,
                             selectedPaymentMethod == "Transferencia", isDarkMode, Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Transferencia" }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("cash"), "OXXO / Tienda", Icons.Outlined.Payments, 
+                            appViewModel.getString("cash"), "OXXO / Tienda", Icons.Outlined.Payments,
                             selectedPaymentMethod == "Efectivo", isDarkMode, Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Efectivo" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
-                            appViewModel.getString("local_pay"), "Google Pay", Icons.Outlined.Storefront, 
+                            appViewModel.getString("local_pay"), "Google Pay", Icons.Outlined.Storefront,
                             selectedPaymentMethod == "Pago Local", isDarkMode, Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Pago Local" }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                OrderSummary(isDarkMode, appViewModel)
+                OrderSummaryWidget(subtotal, deliveryFee, taxes, finalTotal, isDarkMode, appViewModel)
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+
+    // ✨ POP-UP FLOTANTE DE ERROR DE DIRECCIÓN (Candado del Carrito)
+    if (showAddressErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddressErrorDialog = false },
+            title = { Text("Falta Dirección de Envío", fontWeight = FontWeight.Bold) },
+            text = { Text("Se necesita registrar una dirección de entrega en los ajustes de tu perfil para poder realizar una compra.") },
+            confirmButton = {
+                Button(
+                    onClick = { showAddressErrorDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
+                ) {
+                    Text("Entendido")
+                }
+            }
+        )
     }
 
     if (showPaymentSheet) {
@@ -235,14 +283,14 @@ fun CartScreen(
         ) {
             PaymentGatewayContent(selectedPaymentMethod, isDarkMode, appViewModel) {
                 showPaymentSheet = false
-                onPaymentSuccess() 
+                onPaymentSuccess()
             }
         }
     }
 }
 
 @Composable
-fun OrderSummary(isDarkMode: Boolean, appViewModel: AppViewModel) {
+fun OrderSummaryWidget(subtotal: Double, delivery: Double, taxes: Double, total: Double, isDarkMode: Boolean, appViewModel: AppViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -251,16 +299,16 @@ fun OrderSummary(isDarkMode: Boolean, appViewModel: AppViewModel) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            SummaryRow("Subtotal", "$9.75", isDarkMode)
-            SummaryRow("Envío", "$2.00", isDarkMode)
-            SummaryRow("Impuestos", "$0.80", isDarkMode)
+            SummaryRow(appViewModel.getString("subtotal"), String.format("$%.2f", subtotal), isDarkMode)
+            SummaryRow(appViewModel.getString("delivery"), String.format("$%.2f", delivery), isDarkMode)
+            SummaryRow(appViewModel.getString("taxes"), String.format("$%.2f", taxes), isDarkMode)
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray.copy(alpha = 0.2f))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Total", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = if (isDarkMode) Color.White else Color.Black)
-                Text("$12.55", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = PanAppPrimary)
+                Text(String.format("$%.2f", total), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = PanAppPrimary)
             }
         }
     }
@@ -296,9 +344,9 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
             modifier = Modifier.size(48.dp),
             tint = PanAppPrimary
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = "Completar Pago",
             style = MaterialTheme.typography.headlineSmall,
@@ -310,7 +358,7 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Surface(
@@ -330,7 +378,7 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 if (method == "Efectivo") {
                     Spacer(modifier = Modifier.height(16.dp))
                     Box(
@@ -348,7 +396,7 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Button(
             onClick = onDismiss,
             modifier = Modifier.fillMaxWidth(),
@@ -360,7 +408,7 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
                 modifier = Modifier.padding(vertical = 4.dp)
             )
         }
-        
+
         TextButton(onClick = onDismiss) {
             Text(appViewModel.getString("close"), color = Color.Gray)
         }
@@ -369,7 +417,12 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
 }
 
 @Composable
-fun CartItem(name: String, desc: String, price: String, quantity: Int, isDarkMode: Boolean) {
+fun CartItemWidget(
+    item: CartItem,
+    isDarkMode: Boolean,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -382,25 +435,56 @@ fun CartItem(name: String, desc: String, price: String, quantity: Int, isDarkMod
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(70.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5))
             )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
-                Text(desc, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(item.name, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
+                Text(item.desc, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(price, color = PanAppPrimary, fontWeight = FontWeight.Bold)
-                    Text("Qty: $quantity", color = if (isDarkMode) Color.White else Color.Black)
+                    Text(String.format("$%.2f", item.price), color = PanAppPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = onDecrease,
+                            modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = "Menos", modifier = Modifier.size(16.dp), tint = if (isDarkMode) Color.White else Color.Black)
+                        }
+
+                        Text(
+                            text = "${item.quantity}",
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDarkMode) Color.White else Color.Black
+                        )
+
+                        IconButton(
+                            onClick = { onIncrease() },
+                            modifier = Modifier.size(28.dp).background(PanAppPrimary, CircleShape)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Más", modifier = Modifier.size(16.dp), tint = Color.White)
+                        }
+                    }
                 }
             }
         }
@@ -409,7 +493,7 @@ fun CartItem(name: String, desc: String, price: String, quantity: Int, isDarkMod
 
 @Composable
 fun PaymentMethodItem(
-    title: String, subtitle: String, icon: ImageVector, 
+    title: String, subtitle: String, icon: ImageVector,
     isSelected: Boolean, isDarkMode: Boolean, modifier: Modifier, onClick: () -> Unit
 ) {
     Surface(
@@ -425,12 +509,12 @@ fun PaymentMethodItem(
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                icon, contentDescription = null, 
+                icon, contentDescription = null,
                 tint = if (isSelected) Color.White else Color.Gray
             )
             Text(
-                title, 
-                fontWeight = FontWeight.Bold, 
+                title,
+                fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isDarkMode || isSelected) Color.White else Color.Black
             )

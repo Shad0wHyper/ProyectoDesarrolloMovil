@@ -67,5 +67,7 @@ dependencies {
     implementation(project(":core"))
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.stripe:stripe-android:20.35.0")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
 }

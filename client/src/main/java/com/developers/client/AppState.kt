@@ -4,31 +4,197 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.compose.runtime.mutableStateListOf
+import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class CartItem(
+    val id: String,
+    val name: String,
+    val desc: String,
+    val price: Double,
+    val imageUrl: String,
+    val quantity: Int
+)
+
+data class OrderData(
+    val id: String = "",
+    val userId: String = "",
+    val status: String = "Pendiente",
+    val date: String = "",
+    val mainItem: String = "",
+    val itemCount: Int = 0,
+    val total: String = "",
+    val timestamp: Long = 0L,
+    val direccionEnvio: String = "" // ✨ NUEVO: Guardamos la dirección en el pedido
+)
 
 class AppViewModel : ViewModel() {
     var isDarkMode by mutableStateOf(false)
     var currentLanguage by mutableStateOf("Español")
     var notificationsEnabled by mutableStateOf(true)
-    
-    var userName by mutableStateOf("Marco Antonio")
-    var userEmail by mutableStateOf("marco.antonio@email.com")
-    var userPhone by mutableStateOf("+52 555 123 4567")
 
-    val cartItems = mutableStateListOf<Product>()
+    var userName by mutableStateOf("Cargando...")
+    var userEmail by mutableStateOf("Cargando...")
+    var userPhone by mutableStateOf("...")
+    var userImageUrl by mutableStateOf("")
+    var userAddress by mutableStateOf("") // ✨ NUEVO: Variable para la dirección
 
-    fun addToCart(product: Product) {
-        cartItems.add(product)
+    var currentUserId by mutableStateOf("INVITADO")
+
+    var cartItems by mutableStateOf<List<CartItem>>(emptyList())
+
+    fun setSessionUser(uid: String, email: String) {
+        if (uid != "INVITADO") {
+            currentUserId = uid
+            userEmail = email
+
+            val db = FirebaseFirestore.getInstance()
+            db.collection("usuarios").document(uid).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        userName = document.getString("nombre") ?: "Usuario"
+                        userPhone = document.getString("telefono") ?: "Sin teléfono"
+                        userImageUrl = document.getString("fotoPerfil") ?: ""
+                        userAddress = document.getString("direccion") ?: "" // ✨ Descargamos dirección
+                    } else {
+                        userName = "Usuario"
+                    }
+                }
+                .addOnFailureListener {
+                    userName = "Usuario"
+                }
+        } else {
+            userName = "Invitado"
+            userEmail = "Inicia sesión para comprar"
+            currentUserId = "INVITADO"
+            userImageUrl = ""
+            userAddress = ""
+        }
     }
 
-    fun removeFromCart(product: Product) {
-        cartItems.remove(product)
+    // ✨ ACTUALIZADO: Ahora guarda la dirección también en la base de datos
+    fun updateProfileData(newName: String, newPhone: String, newAddress: String, onSuccess: () -> Unit) {
+        if (currentUserId == "INVITADO") {
+            onSuccess()
+            return
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        db.collection("usuarios").document(currentUserId)
+            .update(
+                "nombre", newName,
+                "telefono", newPhone,
+                "direccion", newAddress // ✨ Sube la dirección a Firestore
+            )
+            .addOnSuccessListener {
+                userName = newName
+                userPhone = newPhone
+                userAddress = newAddress
+                onSuccess()
+            }
+            .addOnFailureListener {
+                onSuccess()
+            }
+    }
+
+    fun updateProfileImage(newImageUrl: String) {
+        if (currentUserId == "INVITADO") return
+
+        val db = FirebaseFirestore.getInstance()
+        db.collection("usuarios").document(currentUserId)
+            .update("fotoPerfil", newImageUrl)
+            .addOnSuccessListener {
+                userImageUrl = newImageUrl
+            }
+    }
+
+    fun addToCart(product: Product) {
+        val existingItem = cartItems.find { it.id == product.id }
+        if (existingItem != null) {
+            cartItems = cartItems.map {
+                if (it.id == product.id) it.copy(quantity = it.quantity + 1) else it
+            }
+        } else {
+            cartItems = cartItems + CartItem(
+                id = product.id,
+                name = product.nombre,
+                desc = product.categoria,
+                price = product.precio,
+                imageUrl = product.imagenUrl,
+                quantity = 1
+            )
+        }
+    }
+
+    fun updateQuantity(productId: String, newQuantity: Int) {
+        if (newQuantity <= 0) {
+            cartItems = cartItems.filter { it.id != productId }
+        } else {
+            cartItems = cartItems.map {
+                if (it.id == productId) it.copy(quantity = newQuantity) else it
+            }
+        }
+    }
+
+    fun clearCart() {
+        cartItems = emptyList()
+    }
+
+    val cartUniqueItems: Int
+        get() = cartItems.size
+
+    val cartTotalQuantity: Int
+        get() = cartItems.sumOf { it.quantity }
+
+    val cartSubtotal: Double
+        get() = cartItems.sumOf { it.price * it.quantity }
+
+    fun placeOrder(onSuccess: () -> Unit) {
+        if (cartItems.isEmpty()) {
+            onSuccess()
+            return
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        val orderId = "BK-${(1000..9999).random()}"
+        val sdf = SimpleDateFormat("dd MMM yyyy • hh:mm a", Locale.getDefault())
+        val currentDate = sdf.format(Date())
+
+        val subtotal = cartSubtotal
+        val deliveryFee = if (subtotal > 0) 2.00 else 0.0
+        val taxes = subtotal * 0.08
+        val finalTotal = subtotal + deliveryFee + taxes
+        val totalFormatted = String.format(Locale.US, "%.2f", finalTotal)
+
+        val order = OrderData(
+            id = orderId,
+            userId = currentUserId,
+            status = "Pendiente",
+            date = currentDate,
+            mainItem = cartItems.first().name,
+            itemCount = cartTotalQuantity,
+            total = totalFormatted,
+            timestamp = System.currentTimeMillis(),
+            direccionEnvio = userAddress // ✨ Adjuntamos la dirección al ticket del pedido
+        )
+
+        db.collection("pedidos").document(orderId).set(order)
+            .addOnSuccessListener {
+                clearCart()
+                onSuccess()
+            }
+            .addOnFailureListener {
+                clearCart()
+                onSuccess()
+            }
     }
 
     fun toggleDarkMode(enabled: Boolean) {
         isDarkMode = enabled
     }
-    
+
     fun changeLanguage(language: String) {
         currentLanguage = language
     }
@@ -36,13 +202,6 @@ class AppViewModel : ViewModel() {
     fun toggleNotifications(enabled: Boolean) {
         notificationsEnabled = enabled
     }
-    
-    fun updateProfile(name: String, email: String, phone: String) {
-        userName = name
-        userEmail = email
-        userPhone = phone
-    }
-
     fun getString(key: String): String {
         val translations = mapOf(
             "Español" to mapOf(
@@ -91,7 +250,11 @@ class AppViewModel : ViewModel() {
                 "pendiente" to "Pendiente",
                 "en_camino" to "En Camino",
                 "entregado" to "Entregado",
-                "payment_form" to "Formulario de pago para"
+                "payment_form" to "Formulario de pago para",
+                "empty_cart" to "Tu carrito está vacío",
+                "subtotal" to "Subtotal",
+                "delivery" to "Envío",
+                "taxes" to "Impuestos"
             ),
             "English" to mapOf(
                 "hello" to "Hello",
@@ -139,7 +302,11 @@ class AppViewModel : ViewModel() {
                 "pendiente" to "Pending",
                 "en_camino" to "On the way",
                 "entregado" to "Delivered",
-                "payment_form" to "Payment form for"
+                "payment_form" to "Payment form for",
+                "empty_cart" to "Your cart is empty",
+                "subtotal" to "Subtotal",
+                "delivery" to "Delivery",
+                "taxes" to "Taxes"
             ),
             "Português" to mapOf(
                 "hello" to "Olá",
@@ -187,7 +354,11 @@ class AppViewModel : ViewModel() {
                 "pendiente" to "Pendente",
                 "en_camino" to "A caminho",
                 "entregado" to "Entregue",
-                "payment_form" to "Formulário de pagamento para"
+                "payment_form" to "Formulário de pagamento para",
+                "empty_cart" to "Seu carrinho está vazio",
+                "subtotal" to "Subtotal",
+                "delivery" to "Entrega",
+                "taxes" to "Impostos"
             ),
             "Italiano" to mapOf(
                 "hello" to "Ciao",
@@ -235,7 +406,11 @@ class AppViewModel : ViewModel() {
                 "pendiente" to "In attesa",
                 "en_camino" to "In viaggio",
                 "entregado" to "Consegnato",
-                "payment_form" to "Modulo di pagamento per"
+                "payment_form" to "Modulo di pagamento per",
+                "empty_cart" to "Il tuo carrello è vuoto",
+                "subtotal" to "Subtotale",
+                "delivery" to "Consegna",
+                "taxes" to "Tasse"
             ),
             "Français" to mapOf(
                 "hello" to "Bonjour",
@@ -283,7 +458,11 @@ class AppViewModel : ViewModel() {
                 "pendiente" to "En attente",
                 "en_camino" to "En chemin",
                 "entregado" to "Livré",
-                "payment_form" to "Formulaire de paiement pour"
+                "payment_form" to "Formulaire de paiement pour",
+                "empty_cart" to "Votre panier est vide",
+                "subtotal" to "Sous-total",
+                "delivery" to "Livraison",
+                "taxes" to "Taxes"
             )
         )
         return translations[currentLanguage]?.get(key) ?: key
