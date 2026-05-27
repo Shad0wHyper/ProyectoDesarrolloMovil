@@ -250,7 +250,7 @@ fun ArticuloItem(articulo: ArticuloPedido) {
 fun DetallePedidoPreview() {
     val dummyPedido = Pedido(
         id = "2023-001",
-        cliente = "Juan Pérez",
+        cliente = "Harinas Lidia",
         detalles = "Suministros varios",
         total = "50.00",
         hora = "10:00 AM",

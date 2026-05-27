@@ -204,12 +204,12 @@ data class Pedido(
 
 fun getPedidosEjemplo() = listOf(
     Pedido(
-        "1001", "Juan Pérez", "2x Croissant, 1x Baguette", "6.80", "10:15 AM",
+        "1001", "Harinas del Sol", "60 kg", "10,000", "10:15 AM",
         "Harinas del Sol", "En Camino", Color(0xFF0D47A1),
         listOf(ArticuloPedido("Croissant", "2 und"), ArticuloPedido("Baguette", "1 und"))
     ),
     Pedido(
-        "1002", "María García", "4x Muffin de Chocolate", "12.80", "10:20 AM",
+        "1002", "Cremeria la santa", "Leche 100Lts", "12,000", "10:20 AM",
         "Distribuidora Láctea", "Pendiente", Color(0xFFFFA000),
         listOf(ArticuloPedido("Muffin Chocolate", "4 und"))
     ),
