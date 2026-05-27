@@ -21,89 +21,141 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.google.firebase.firestore.FirebaseFirestore
+
+// ✨ 1. Modelo de Datos Mejorado
+data class Producto(
+    val id: String = "",
+    val nombre: String,
+    val categoria: String,
+    val stock: Int,
+    val statusLabel: String,
+    val statusColor: Color,
+    val precio: String,
+    val imagenUrl: String = "",
+    val calificacion: Double = 0.0
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardAdminScreen() {
     var currentScreen by remember { mutableStateOf("dashboard") }
-    
-    // 1. Base de Datos Simulada (Estado de la Lista)
-    val listaProductos = remember { 
-        mutableStateListOf<Producto>().apply { addAll(getProductosEjemplo()) } 
-    }
-    
-    // 3. Estado del Buscador
-    var textBusqueda by remember { mutableStateOf("") }
-    
-    // Estado para Nuevo Producto
-    var showAddProductDialog by remember { mutableStateOf(false) }
-    var nuevoNombre by remember { mutableStateOf("") }
-    var nuevaCategoria by remember { mutableStateOf("Panes") }
-    var nuevoPrecio by remember { mutableStateOf("") }
 
+    // ✨ 2. Base de Datos en Vivo desde Firebase
+    var listaProductos by remember { mutableStateOf<List<Producto>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var textBusqueda by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    if (showAddProductDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddProductDialog = false },
-            title = { Text("Nuevo Producto") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = nuevoNombre, onValueChange = { nuevoNombre = it }, label = { Text("Nombre") })
-                    OutlinedTextField(value = nuevaCategoria, onValueChange = { nuevaCategoria = it }, label = { Text("Categoría") })
-                    OutlinedTextField(value = nuevoPrecio, onValueChange = { nuevoPrecio = it }, label = { Text("Precio") })
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (nuevoNombre.isNotBlank() && nuevoPrecio.isNotBlank()) {
-                        listaProductos.add(Producto(nuevoNombre, nuevaCategoria, 0, "AGOTADO", Color.Red, nuevoPrecio))
-                        showAddProductDialog = false
-                        nuevoNombre = ""
-                        nuevoPrecio = ""
-                        Toast.makeText(context, "Producto agregado", Toast.LENGTH_SHORT).show()
+    // Descarga desde Firebase
+    LaunchedEffect(currentScreen) {
+        if (currentScreen == "dashboard") {
+            isLoading = true
+            val db = FirebaseFirestore.getInstance()
+            db.collection("productos").get().addOnSuccessListener { result ->
+                listaProductos = result.documents.map { doc ->
+                    val stockReal = doc.getLong("stock")?.toInt() ?: 0
+
+                    // Lógica inteligente de etiquetas que pediste en el cascarón
+                    val statusL = when {
+                        stockReal == 0 -> "AGOTADO"
+                        stockReal < 5 -> "Crítico"
+                        else -> "Óptimo"
                     }
-                }) { Text("Agregar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddProductDialog = false }) { Text("Cancelar") }
+                    val statusC = when {
+                        stockReal == 0 -> Color.Red
+                        stockReal < 5 -> Color(0xFFF44336)
+                        else -> Color(0xFF4CAF50)
+                    }
+
+                    Producto(
+                        id = doc.id,
+                        nombre = doc.getString("nombre") ?: "Sin nombre",
+                        categoria = doc.getString("categoria") ?: "Otros",
+                        stock = stockReal,
+                        statusLabel = statusL,
+                        statusColor = statusC,
+                        precio = String.format("%.2f", doc.getDouble("precio") ?: 0.0),
+                        imagenUrl = doc.getString("imagenUrl") ?: "",
+                        calificacion = doc.getDouble("calificacion") ?: 5.0
+                    )
+                }
+                isLoading = false
+            }.addOnFailureListener {
+                isLoading = false
+                Toast.makeText(context, "Error al cargar inventario", Toast.LENGTH_SHORT).show()
             }
-        )
+        }
     }
 
     Scaffold(
-        bottomBar = { 
-            AdminBottomBar(
-                currentScreen = currentScreen,
-                onScreenSelected = { currentScreen = it }
-            ) 
+        bottomBar = {
+            if (currentScreen != "add_product") {
+                AdminBottomBar(
+                    currentScreen = currentScreen,
+                    onScreenSelected = { currentScreen = it }
+                )
+            }
         },
-        floatingActionButton = { 
+        floatingActionButton = {
             if (currentScreen == "dashboard") {
-                AdminFAB(onAdd = { showAddProductDialog = true })
+                // ✨ 3. Llama a la pantalla real, no al diálogo de prueba
+                AdminFAB(onAdd = { currentScreen = "add_product" })
             }
         },
         containerColor = Color(0xFFF8F9FA)
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             when (currentScreen) {
-                "dashboard" -> DashboardContent(
-                    listaProductos = listaProductos,
-                    textBusqueda = textBusqueda,
-                    onTextBusquedaChange = { textBusqueda = it },
-                    onGestionarPedidosClick = { currentScreen = "pedidos" },
-                    onAIPredictionsClick = { currentScreen = "ia_report" },
-                    onAlmacenClick = { currentScreen = "almacen" },
-                    onAddClick = { showAddProductDialog = true }
-                )
+                "dashboard" -> {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF6200EE))
+                        }
+                    } else {
+                        DashboardContent(
+                            listaProductos = listaProductos,
+                            textBusqueda = textBusqueda,
+                            onTextBusquedaChange = { textBusqueda = it },
+                            onGestionarPedidosClick = { currentScreen = "pedidos" },
+                            onAIPredictionsClick = { currentScreen = "ia_report" },
+                            onAlmacenClick = { currentScreen = "almacen" },
+                            onAddClick = { currentScreen = "add_product" },
+                            onDecreaseStock = { productoToUpdate ->
+                                // ✨ 4. Disminuir stock directo en Firebase
+                                val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
+                                FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
+                                    .update("stock", newStock)
+                                    .addOnSuccessListener {
+                                        // Actualizamos UI en tiempo real
+                                        listaProductos = listaProductos.map {
+                                            if (it.id == productoToUpdate.id) {
+                                                it.copy(
+                                                    stock = newStock,
+                                                    statusLabel = if(newStock == 0) "AGOTADO" else if(newStock < 5) "Crítico" else "Óptimo",
+                                                    statusColor = if(newStock == 0) Color.Red else if(newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
+                                                )
+                                            } else it
+                                        }
+                                    }
+                            }
+                        )
+                    }
+                }
                 "almacen" -> AlmacenStockScreen()
                 "pedidos" -> PedidosScreen()
                 "ia_report" -> AIReportScreen(onBack = { currentScreen = "dashboard" })
+                "add_product" -> AddProductScreen(
+                    onBack = { currentScreen = "dashboard" },
+                    onSuccessSave = { currentScreen = "dashboard" }
+                )
             }
         }
     }
@@ -112,17 +164,17 @@ fun DashboardAdminScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardContent(
-    listaProductos: MutableList<Producto>,
+    listaProductos: List<Producto>,
     textBusqueda: String,
     onTextBusquedaChange: (String) -> Unit,
     onGestionarPedidosClick: () -> Unit,
     onAIPredictionsClick: () -> Unit,
     onAlmacenClick: () -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onDecreaseStock: (Producto) -> Unit
 ) {
     val context = LocalContext.current
 
-    // 3. Filtrado en tiempo real
     val productosFiltrados = if (textBusqueda.isEmpty()) {
         listaProductos
     } else {
@@ -136,61 +188,50 @@ fun DashboardContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { AdminTopBar() }
-        item { 
+        item {
             ResumenHoySection(
                 onGestionarPedidosClick = onGestionarPedidosClick
-            ) 
+            )
         }
         item { AIPredictionsSection(onClick = onAIPredictionsClick) }
-        item { 
+        item {
             GestionProductosSection(
                 textBusqueda = textBusqueda,
                 onTextBusquedaChange = onTextBusquedaChange,
                 onAddClick = onAddClick
-            ) 
+            )
         }
-        
+
         item {
             Text(
-                text = "CATEGORÍA: PANES & BOLLERÍA",
+                text = "CATÁLOGO DE PRODUCTOS ACTIVOS",
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.Gray,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
 
-        items(productosFiltrados) { producto ->
-            ProductoCard(
-                producto = producto,
-                onInventarioClick = onAlmacenClick,
-                onDarDeBajaClick = {
-                    // 2. Decrementar stock
-                    val index = listaProductos.indexOf(producto)
-                    if (index != -1) {
-                        val newStock = (producto.stock - 1).coerceAtLeast(0)
-                        listaProductos[index] = producto.copy(
-                            stock = newStock,
-                            statusLabel = when {
-                                newStock == 0 -> "AGOTADO"
-                                newStock < 5 -> "Crítico"
-                                else -> "Bajo"
-                            },
-                            statusColor = when {
-                                newStock == 0 -> Color.Red
-                                newStock < 5 -> Color(0xFFF44336)
-                                else -> Color(0xFFFFA000)
-                            }
-                        )
-                    }
-                },
-                onEditClick = {
-                    Toast.makeText(context, "Editando ${producto.nombre}...", Toast.LENGTH_SHORT).show()
+        if (productosFiltrados.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Text("No hay productos en inventario.", color = Color.Gray)
                 }
-            )
+            }
+        } else {
+            items(productosFiltrados) { producto ->
+                ProductoCard(
+                    producto = producto,
+                    onInventarioClick = onAlmacenClick,
+                    onDarDeBajaClick = { onDecreaseStock(producto) },
+                    onEditClick = {
+                        Toast.makeText(context, "Edición próximamente...", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
         }
 
         item { AlertaSuministrosCard(onClick = onAlmacenClick) }
-        
+
         item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 }
@@ -235,7 +276,6 @@ fun AdminTopBar() {
                 shape = CircleShape,
                 color = Color.LightGray
             ) {
-                // Imagen de perfil placeholder
                 Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(4.dp))
             }
         },
@@ -445,20 +485,41 @@ fun ProductoCard(
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFF0F0F0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray)
+                // ✨ 5. Ahora muestra la foto real de la base de datos
+                if (producto.imagenUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = producto.imagenUrl,
+                        contentDescription = producto.nombre,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF0F0F0))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF0F0F0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray)
+                    }
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(producto.nombre, fontWeight = FontWeight.Bold)
                     Text(producto.categoria, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                    Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall)
+
+                    // ✨ Muestra la Calificación con Estrellita
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
+                        Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Surface(
@@ -495,10 +556,11 @@ fun ProductoCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Inventario", color = Color(0xFF2196F3))
                 }
+                // ✨ Botón que disminuye el stock directo en Firebase
                 TextButton(onClick = onDarDeBajaClick) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Dar de baja", color = Color.Gray)
+                    Text("Reducir Stock", color = Color.Gray)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = { /* TODO */ }) {
@@ -593,33 +655,6 @@ fun AdminBottomBar(currentScreen: String, onScreenSelected: (String) -> Unit) {
         )
     }
 }
-
-@Composable
-fun ExtendedFAB(onClick: () -> Unit) {
-    ExtendedFloatingActionButton(
-        onClick = onClick,
-        containerColor = Color(0xFF6200EE),
-        contentColor = Color.White,
-        shape = RoundedCornerShape(16.dp),
-        icon = { Icon(Icons.Default.Add, contentDescription = null) },
-        text = { Text("Nuevo Item") }
-    )
-}
-
-data class Producto(
-    val nombre: String,
-    val categoria: String,
-    val stock: Int,
-    val statusLabel: String,
-    val statusColor: Color,
-    val precio: String
-)
-
-fun getProductosEjemplo() = listOf(
-    Producto("Croissant de Mantequilla", "Panes", 12, "Bajo", Color(0xFFFFA000), "2.50"),
-    Producto("Baguette Tradicional", "Panes", 45, "Óptimo", Color(0xFF4CAF50), "1.80"),
-    Producto("Muffin de Chocolate", "Bollería", 5, "Crítico", Color(0xFFF44336), "3.20")
-)
 
 @Preview(showBackground = true)
 @Composable

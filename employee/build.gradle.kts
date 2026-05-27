@@ -57,6 +57,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(project(":core"))
     
-    // QR Generation
     implementation("com.google.zxing:core:3.5.3")
 }
