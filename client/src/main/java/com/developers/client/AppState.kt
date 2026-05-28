@@ -9,6 +9,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// ✨ NUEVO: Modelo para leer los artículos detallados desde Firebase
+data class OrderItemDetail(
+    val nombre: String = "",
+    val cantidad: Int = 1,
+    val precio: Double = 0.0
+)
+
 data class CartItem(
     val id: String,
     val name: String,
@@ -27,7 +34,8 @@ data class OrderData(
     val itemCount: Int = 0,
     val total: String = "",
     val timestamp: Long = 0L,
-    val direccionEnvio: String = ""
+    val direccionEnvio: String = "",
+    val itemsList: List<OrderItemDetail> = emptyList() // ✨ AQUÍ SE GUARDAN TODOS LOS ARTÍCULOS
 )
 
 class AppViewModel : ViewModel() {
@@ -89,6 +97,16 @@ class AppViewModel : ViewModel() {
 
                         val estadoActual = d.getString("estado") ?: d.getString("status") ?: "PENDIENTE"
 
+                        // ✨ PARSEO COMPLETO DE LOS ARTÍCULOS
+                        val itemsRaw = d.get("items") as? List<HashMap<String, Any>> ?: emptyList()
+                        val parsedItems = itemsRaw.map { map ->
+                            OrderItemDetail(
+                                nombre = map["nombre"]?.toString() ?: "Producto",
+                                cantidad = (map["cantidad"] as? Number)?.toInt() ?: 1,
+                                precio = (map["precio"] as? Number)?.toDouble() ?: 0.0
+                            )
+                        }
+
                         OrderData(
                             id = d.id,
                             userId = d.getString("userId") ?: uid,
@@ -98,7 +116,8 @@ class AppViewModel : ViewModel() {
                             itemCount = d.getLong("itemCount")?.toInt() ?: 1,
                             total = String.format("$%.2f", d.getDouble("total") ?: 0.0),
                             timestamp = ts,
-                            direccionEnvio = d.getString("direccion") ?: d.getString("direccionEnvio") ?: ""
+                            direccionEnvio = d.getString("direccion") ?: d.getString("direccionEnvio") ?: "",
+                            itemsList = parsedItems // ✨ SE LO PASAMOS A LA TARJETA
                         )
                     }.sortedByDescending { it.timestamp }
                     ordersList = list
@@ -158,18 +177,9 @@ class AppViewModel : ViewModel() {
 
     fun clearCart() { cartItems = emptyList() }
 
-    // ✨ FUNCIONES RESTAURADAS PARA LA PANTALLA DE AJUSTES ✨
-    fun toggleDarkMode(enabled: Boolean) {
-        isDarkMode = enabled
-    }
-
-    fun changeLanguage(language: String) {
-        currentLanguage = language
-    }
-
-    fun toggleNotifications(enabled: Boolean) {
-        notificationsEnabled = enabled
-    }
+    fun toggleDarkMode(enabled: Boolean) { isDarkMode = enabled }
+    fun changeLanguage(language: String) { currentLanguage = language }
+    fun toggleNotifications(enabled: Boolean) { notificationsEnabled = enabled }
     fun getString(key: String): String {
         val translations = mapOf(
             "Español" to mapOf(

@@ -2,10 +2,13 @@ package com.developers.client
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -31,7 +34,6 @@ fun OrdersScreen(
 ) {
     var selectedOrder by remember { mutableStateOf<OrderData?>(null) }
     val isDarkMode = appViewModel.isDarkMode
-
     val orderList = appViewModel.ordersList
 
     Scaffold(
@@ -91,6 +93,7 @@ fun OrdersScreen(
                 }
             }
 
+            // ✨ POPUP DE DETALLES DEL PEDIDO
             if (selectedOrder != null) {
                 val statusKey = when(selectedOrder?.status?.uppercase()) {
                     "ENVIADO" -> "en_camino"
@@ -103,19 +106,46 @@ fun OrdersScreen(
                     text = {
                         Column {
                             Text("${appViewModel.getString("date")}: ${selectedOrder?.date}")
+                            Text("Envío a: ${selectedOrder?.direccionEnvio}", fontSize = 12.sp, color = Color.Gray)
                             Text("Total: ${selectedOrder?.total}")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("Status: ${appViewModel.getString(statusKey)}", fontWeight = FontWeight.Bold, color = PanAppPrimary)
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                             Spacer(modifier = Modifier.height(8.dp))
+
                             Text("${appViewModel.getString("items")}:", fontWeight = FontWeight.Bold)
-                            Text("- ${selectedOrder?.mainItem} y más...")
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // ✨ AQUÍ MOSTRAMOS LA LISTA COMPLETA DE ARTÍCULOS CON SCROLL SI SON MUCHOS
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 150.dp) // Solo escrolea si compran muchísimo pan
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                selectedOrder?.itemsList?.forEach { item ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("- ${item.cantidad}x ${item.nombre}", fontSize = 14.sp)
+                                        Text(String.format("$%.2f", item.precio * item.cantidad), fontSize = 14.sp, color = Color.Gray)
+                                    }
+                                }
+                            }
                         }
                     },
                     confirmButton = {
-                        TextButton(onClick = { selectedOrder = null }) {
-                            Text(appViewModel.getString("close"))
+                        Button(
+                            onClick = { selectedOrder = null },
+                            colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
+                        ) {
+                            Text(appViewModel.getString("close"), color = Color.White)
                         }
-                    }
+                    },
+                    containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
                 )
             }
         }
@@ -154,14 +184,15 @@ fun OrderItemCard(
                     Text(order.date, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
 
-                val statusKey = when(order.status.uppercase()) {
+                val statusUpper = order.status.uppercase()
+                val statusKey = when(statusUpper) {
                     "ENVIADO" -> "en_camino"
                     "ENTREGADO" -> "entregado"
                     else -> "pendiente"
                 }
 
                 Surface(
-                    color = when(order.status.uppercase()) {
+                    color = when(statusUpper) {
                         "ENVIADO" -> Color(0xFFE3F2FD)
                         "ENTREGADO" -> Color(0xFFE8F5E9)
                         else -> Color(0xFFFFF4E5)
@@ -171,7 +202,7 @@ fun OrderItemCard(
                     Text(
                         text = appViewModel.getString(statusKey),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        color = when(order.status.uppercase()) {
+                        color = when(statusUpper) {
                             "ENVIADO" -> Color(0xFF1565C0)
                             "ENTREGADO" -> Color(0xFF2E7D32)
                             else -> Color(0xFFE65100)
@@ -205,6 +236,7 @@ fun OrderItemCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isDarkMode) Color.White else Color.Black
                     )
+                    // En la tarjeta principal seguimos mostrando un resumen rápido
                     Text("${order.itemCount} ${appViewModel.getString("items")}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
                 Text(
@@ -233,8 +265,7 @@ fun OrderItemCard(
                     modifier = Modifier.weight(1.2f),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary),
-                    enabled = order.status.uppercase() == "ENTREGADO" // ✨ LECTURA DIRECTA
-                ) {
+                    enabled = order.status.uppercase() == "ENTREGADO"                ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(appViewModel.getString("buy_again"), fontSize = 12.sp)
