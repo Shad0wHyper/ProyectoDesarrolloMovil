@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 
-// ✨ 1. Modelo de Datos Mejorado
 data class Producto(
     val id: String = "",
     val nombre: String,
@@ -40,7 +39,8 @@ data class Producto(
     val statusColor: Color,
     val precio: String,
     val imagenUrl: String = "",
-    val calificacion: Double = 0.0
+    val calificacion: Double = 0.0,
+    val isNuevo: Boolean = false // Añadido para que el Dashboard lo lea bien
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,13 +48,14 @@ data class Producto(
 fun DashboardAdminScreen() {
     var currentScreen by remember { mutableStateOf("dashboard") }
 
-    // ✨ 2. Base de Datos en Vivo desde Firebase
+    // ✨ Variable para guardar el pan que queremos editar
+    var productoAEditar by remember { mutableStateOf<Producto?>(null) }
+
     var listaProductos by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var textBusqueda by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    // Descarga desde Firebase
     LaunchedEffect(currentScreen) {
         if (currentScreen == "dashboard") {
             isLoading = true
@@ -63,7 +64,6 @@ fun DashboardAdminScreen() {
                 listaProductos = result.documents.map { doc ->
                     val stockReal = doc.getLong("stock")?.toInt() ?: 0
 
-                    // Lógica inteligente de etiquetas que pediste en el cascarón
                     val statusL = when {
                         stockReal == 0 -> "AGOTADO"
                         stockReal < 5 -> "Crítico"
@@ -84,7 +84,8 @@ fun DashboardAdminScreen() {
                         statusColor = statusC,
                         precio = String.format("%.2f", doc.getDouble("precio") ?: 0.0),
                         imagenUrl = doc.getString("imagenUrl") ?: "",
-                        calificacion = doc.getDouble("calificacion") ?: 5.0
+                        calificacion = doc.getDouble("calificacion") ?: 5.0,
+                        isNuevo = doc.getBoolean("isNuevo") ?: false
                     )
                 }
                 isLoading = false
@@ -97,17 +98,17 @@ fun DashboardAdminScreen() {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen != "add_product") {
-                AdminBottomBar(
-                    currentScreen = currentScreen,
-                    onScreenSelected = { currentScreen = it }
-                )
+            // ✨ Ocultamos la barra inferior si estamos en el generador QR
+            if (currentScreen != "add_product" && currentScreen != "qr_generator") {
+                AdminBottomBar(currentScreen = currentScreen, onScreenSelected = { currentScreen = it })
             }
         },
         floatingActionButton = {
             if (currentScreen == "dashboard") {
-                // ✨ 3. Llama a la pantalla real, no al diálogo de prueba
-                AdminFAB(onAdd = { currentScreen = "add_product" })
+                AdminFAB(onAdd = {
+                    productoAEditar = null // Limpia la variable si vamos a agregar uno nuevo
+                    currentScreen = "add_product"
+                })
             }
         },
         containerColor = Color(0xFFF8F9FA)
@@ -127,14 +128,15 @@ fun DashboardAdminScreen() {
                             onGestionarPedidosClick = { currentScreen = "pedidos" },
                             onAIPredictionsClick = { currentScreen = "ia_report" },
                             onAlmacenClick = { currentScreen = "almacen" },
-                            onAddClick = { currentScreen = "add_product" },
+                            onAddClick = {
+                                productoAEditar = null
+                                currentScreen = "add_product"
+                            },
                             onDecreaseStock = { productoToUpdate ->
-                                // ✨ 4. Disminuir stock directo en Firebase
                                 val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
                                 FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
                                     .update("stock", newStock)
                                     .addOnSuccessListener {
-                                        // Actualizamos UI en tiempo real
                                         listaProductos = listaProductos.map {
                                             if (it.id == productoToUpdate.id) {
                                                 it.copy(
@@ -145,7 +147,13 @@ fun DashboardAdminScreen() {
                                             } else it
                                         }
                                     }
-                            }
+                            },
+                            onEditClick = { productoQueQueremosEditar ->
+                                productoAEditar = productoQueQueremosEditar
+                                currentScreen = "add_product"
+                            },
+                            // ✨ Conectamos el botón para abrir el Generador QR
+                            onQrClick = { currentScreen = "qr_generator" }
                         )
                     }
                 }
@@ -153,9 +161,12 @@ fun DashboardAdminScreen() {
                 "pedidos" -> PedidosScreen()
                 "ia_report" -> AIReportScreen(onBack = { currentScreen = "dashboard" })
                 "add_product" -> AddProductScreen(
+                    productoAEditar = productoAEditar,
                     onBack = { currentScreen = "dashboard" },
                     onSuccessSave = { currentScreen = "dashboard" }
                 )
+                // ✨ NUEVA RUTA PARA EL GENERADOR QR
+                "qr_generator" -> QrGeneratorScreen(onBack = { currentScreen = "dashboard" })
             }
         }
     }
@@ -171,7 +182,9 @@ fun DashboardContent(
     onAIPredictionsClick: () -> Unit,
     onAlmacenClick: () -> Unit,
     onAddClick: () -> Unit,
-    onDecreaseStock: (Producto) -> Unit
+    onDecreaseStock: (Producto) -> Unit,
+    onEditClick: (Producto) -> Unit,
+    onQrClick: () -> Unit // ✨ Nuevo parámetro para el clic del QR
 ) {
     val context = LocalContext.current
 
@@ -187,7 +200,9 @@ fun DashboardContent(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item { AdminTopBar() }
+        // ✨ Pasamos la acción al TopBar
+        item { AdminTopBar(onQrClick = onQrClick) }
+
         item {
             ResumenHoySection(
                 onGestionarPedidosClick = onGestionarPedidosClick
@@ -223,9 +238,7 @@ fun DashboardContent(
                     producto = producto,
                     onInventarioClick = onAlmacenClick,
                     onDarDeBajaClick = { onDecreaseStock(producto) },
-                    onEditClick = {
-                        Toast.makeText(context, "Edición próximamente...", Toast.LENGTH_SHORT).show()
-                    }
+                    onEditClick = { onEditClick(producto) }
                 )
             }
         }
@@ -238,7 +251,7 @@ fun DashboardContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminTopBar() {
+fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
     val context = LocalContext.current
     TopAppBar(
         title = {
@@ -248,6 +261,15 @@ fun AdminTopBar() {
             )
         },
         actions = {
+            // ✨ NUEVO BOTÓN GENERADOR DE QR
+            IconButton(onClick = onQrClick) {
+                Icon(
+                    imageVector = Icons.Default.QrCode,
+                    contentDescription = "Generar QR Asistencia",
+                    tint = Color(0xFF6200EE)
+                )
+            }
+
             Box(modifier = Modifier.padding(8.dp).clickable {
                 Toast.makeText(context, "No hay notificaciones nuevas", Toast.LENGTH_SHORT).show()
             }) {
@@ -485,7 +507,6 @@ fun ProductoCard(
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ✨ 5. Ahora muestra la foto real de la base de datos
                 if (producto.imagenUrl.isNotEmpty()) {
                     AsyncImage(
                         model = producto.imagenUrl,
@@ -510,10 +531,17 @@ fun ProductoCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(producto.nombre, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(producto.nombre, fontWeight = FontWeight.Bold)
+                        if (producto.isNuevo) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(color = Color.Red.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp)) {
+                                Text("NUEVO", fontSize = 9.sp, color = Color.Red, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                            }
+                        }
+                    }
                     Text(producto.categoria, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
 
-                    // ✨ Muestra la Calificación con Estrellita
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -556,7 +584,6 @@ fun ProductoCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Inventario", color = Color(0xFF2196F3))
                 }
-                // ✨ Botón que disminuye el stock directo en Firebase
                 TextButton(onClick = onDarDeBajaClick) {
                     Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray)
                     Spacer(modifier = Modifier.width(4.dp))

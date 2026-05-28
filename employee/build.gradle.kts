@@ -56,6 +56,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(project(":core"))
-    
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
     implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 }
