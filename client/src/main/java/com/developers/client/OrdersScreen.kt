@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.developers.client.ui.theme.PanAppPrimary
-import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,34 +32,7 @@ fun OrdersScreen(
     var selectedOrder by remember { mutableStateOf<OrderData?>(null) }
     val isDarkMode = appViewModel.isDarkMode
 
-    var orderList by remember { mutableStateOf<List<OrderData>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        // ✨ AHORA USAMOS EL ID DEL VIEWMODEL, NO DEL FIREBASE AUTH
-        val currentUserId = appViewModel.currentUserId
-
-        if (currentUserId == "INVITADO") {
-            isLoading = false
-            return@LaunchedEffect
-        }
-
-        val db = FirebaseFirestore.getInstance()
-        db.collection("pedidos")
-            .whereEqualTo("userId", currentUserId)
-            .get()
-            .addOnSuccessListener { result ->
-                val lista = result.documents.mapNotNull { doc ->
-                    doc.toObject(OrderData::class.java)
-                }.sortedByDescending { it.timestamp }
-
-                orderList = lista
-                isLoading = false
-            }
-            .addOnFailureListener {
-                isLoading = false
-            }
-    }
+    val orderList = appViewModel.ordersList
 
     Scaffold(
         topBar = {
@@ -100,20 +72,14 @@ fun OrdersScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                if (isLoading) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = PanAppPrimary)
-                        }
-                    }
-                } else if (orderList.isEmpty()) {
+                if (orderList.isEmpty() && appViewModel.currentUserId != "INVITADO") {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Text("Aún no tienes pedidos registrados.", color = Color.Gray)
                         }
                     }
                 } else {
-                    items(orderList) { order ->
+                    items(orderList, key = { it.id }) { order ->
                         OrderItemCard(
                             order = order,
                             appViewModel = appViewModel,
@@ -126,19 +92,20 @@ fun OrdersScreen(
             }
 
             if (selectedOrder != null) {
-                val statusKey = when(selectedOrder?.status) {
-                    "Pendiente" -> "pendiente"
-                    "En Camino" -> "en_camino"
-                    else -> "entregado"
+                val statusKey = when(selectedOrder?.status?.uppercase()) {
+                    "ENVIADO" -> "en_camino"
+                    "ENTREGADO" -> "entregado"
+                    else -> "pendiente"
                 }
                 AlertDialog(
                     onDismissRequest = { selectedOrder = null },
-                    title = { Text("${appViewModel.getString("order_details")} #${selectedOrder?.id}") },
+                    title = { Text("${appViewModel.getString("order_details")} #${selectedOrder?.id?.take(8)?.uppercase()}") },
                     text = {
                         Column {
                             Text("${appViewModel.getString("date")}: ${selectedOrder?.date}")
-                            Text("Total: $${selectedOrder?.total}")
-                            Text("Status: ${appViewModel.getString(statusKey)}")
+                            Text("Total: ${selectedOrder?.total}")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Status: ${appViewModel.getString(statusKey)}", fontWeight = FontWeight.Bold, color = PanAppPrimary)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("${appViewModel.getString("items")}:", fontWeight = FontWeight.Bold)
                             Text("- ${selectedOrder?.mainItem} y más...")
@@ -179,7 +146,7 @@ fun OrderItemCard(
             ) {
                 Column {
                     Text(
-                        text = "ID ${order.id}",
+                        text = "ID ${order.id.take(8).uppercase()}",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.Gray,
                         fontWeight = FontWeight.Bold
@@ -187,27 +154,27 @@ fun OrderItemCard(
                     Text(order.date, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
 
-                val statusKey = when(order.status) {
-                    "Pendiente" -> "pendiente"
-                    "En Camino" -> "en_camino"
-                    else -> "entregado"
+                val statusKey = when(order.status.uppercase()) {
+                    "ENVIADO" -> "en_camino"
+                    "ENTREGADO" -> "entregado"
+                    else -> "pendiente"
                 }
 
                 Surface(
-                    color = when(order.status) {
-                        "Pendiente" -> Color(0xFFFFF4E5)
-                        "En Camino" -> Color(0xFFE3F2FD)
-                        else -> Color(0xFFE8F5E9)
+                    color = when(order.status.uppercase()) {
+                        "ENVIADO" -> Color(0xFFE3F2FD)
+                        "ENTREGADO" -> Color(0xFFE8F5E9)
+                        else -> Color(0xFFFFF4E5)
                     },
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = appViewModel.getString(statusKey),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        color = when(order.status) {
-                            "Pendiente" -> Color(0xFFE65100)
-                            "En Camino" -> Color(0xFF1565C0)
-                            else -> Color(0xFF2E7D32)
+                        color = when(order.status.uppercase()) {
+                            "ENVIADO" -> Color(0xFF1565C0)
+                            "ENTREGADO" -> Color(0xFF2E7D32)
+                            else -> Color(0xFFE65100)
                         },
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
@@ -241,7 +208,7 @@ fun OrderItemCard(
                     Text("${order.itemCount} ${appViewModel.getString("items")}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
                 Text(
-                    "$${order.total}",
+                    order.total,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (isDarkMode) Color.White else Color.Black
@@ -265,7 +232,8 @@ fun OrderItemCard(
                     onClick = onReorder,
                     modifier = Modifier.weight(1.2f),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary),
+                    enabled = order.status.uppercase() == "ENTREGADO" // ✨ LECTURA DIRECTA
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))

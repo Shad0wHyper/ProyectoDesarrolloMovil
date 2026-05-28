@@ -21,13 +21,13 @@ data class CartItem(
 data class OrderData(
     val id: String = "",
     val userId: String = "",
-    val status: String = "Pendiente",
+    val status: String = "PENDIENTE",
     val date: String = "",
     val mainItem: String = "",
     val itemCount: Int = 0,
     val total: String = "",
     val timestamp: Long = 0L,
-    val direccionEnvio: String = "" // ✨ NUEVO: Guardamos la dirección en el pedido
+    val direccionEnvio: String = ""
 )
 
 class AppViewModel : ViewModel() {
@@ -35,162 +35,130 @@ class AppViewModel : ViewModel() {
     var currentLanguage by mutableStateOf("Español")
     var notificationsEnabled by mutableStateOf(true)
 
+    // Datos del Usuario
+    var currentUserId by mutableStateOf("INVITADO")
     var userName by mutableStateOf("Cargando...")
     var userEmail by mutableStateOf("Cargando...")
     var userPhone by mutableStateOf("...")
     var userImageUrl by mutableStateOf("")
-    var userAddress by mutableStateOf("") // ✨ NUEVO: Variable para la dirección
-
-    var currentUserId by mutableStateOf("INVITADO")
+    var userAddress by mutableStateOf("")
 
     var cartItems by mutableStateOf<List<CartItem>>(emptyList())
+    var ordersList by mutableStateOf<List<OrderData>>(emptyList())
+
+    val deliveryFee = 3.50
+    val taxRate = 0.08
+
+    val cartUniqueItems: Int get() = cartItems.size
+    val cartTotalQuantity: Int get() = cartItems.sumOf { it.quantity }
+
+    val cartSubtotal: Double get() = cartItems.sumOf { it.price * it.quantity }
+    val taxes: Double get() = cartSubtotal * taxRate
+    val total: Double get() = if (cartItems.isEmpty()) 0.0 else cartSubtotal + taxes + deliveryFee
 
     fun setSessionUser(uid: String, email: String) {
-        if (uid != "INVITADO") {
-            currentUserId = uid
-            userEmail = email
-
-            val db = FirebaseFirestore.getInstance()
-            db.collection("usuarios").document(uid).get()
-                .addOnSuccessListener { document ->
-                    if (document.exists()) {
-                        userName = document.getString("nombre") ?: "Usuario"
-                        userPhone = document.getString("telefono") ?: "Sin teléfono"
-                        userImageUrl = document.getString("fotoPerfil") ?: ""
-                        userAddress = document.getString("direccion") ?: "" // ✨ Descargamos dirección
-                    } else {
-                        userName = "Usuario"
-                    }
-                }
-                .addOnFailureListener {
-                    userName = "Usuario"
-                }
-        } else {
-            userName = "Invitado"
-            userEmail = "Inicia sesión para comprar"
+        if (uid == "INVITADO" || uid.isEmpty()) {
             currentUserId = "INVITADO"
-            userImageUrl = ""
-            userAddress = ""
-        }
-    }
-
-    // ✨ ACTUALIZADO: Ahora guarda la dirección también en la base de datos
-    fun updateProfileData(newName: String, newPhone: String, newAddress: String, onSuccess: () -> Unit) {
-        if (currentUserId == "INVITADO") {
-            onSuccess()
+            userName = "Invitado"
+            userEmail = "Inicia sesión para ordenar"
             return
         }
-
+        currentUserId = uid
+        userEmail = email
         val db = FirebaseFirestore.getInstance()
-        db.collection("usuarios").document(currentUserId)
-            .update(
-                "nombre", newName,
-                "telefono", newPhone,
-                "direccion", newAddress // ✨ Sube la dirección a Firestore
-            )
-            .addOnSuccessListener {
-                userName = newName
-                userPhone = newPhone
-                userAddress = newAddress
-                onSuccess()
+
+        db.collection("usuarios").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    userName = doc.getString("nombre") ?: "Usuario"
+                    userPhone = doc.getString("telefono") ?: "..."
+                    userImageUrl = doc.getString("imageUrl") ?: ""
+                    userAddress = doc.getString("direccion") ?: ""
+                } else {
+                    userName = "PanApp User"
+                }
             }
-            .addOnFailureListener {
-                onSuccess()
+
+        // ESCUCHA EN VIVO DE PEDIDOS
+        db.collection("usuarios").document(uid).collection("pedidos")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val list = snapshot.documents.map { d ->
+                        val ts = d.getLong("timestamp") ?: 0L
+                        val dateStr = if (ts > 0) SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(ts)) else d.getString("date") ?: ""
+
+                        val estadoActual = d.getString("estado") ?: d.getString("status") ?: "PENDIENTE"
+
+                        OrderData(
+                            id = d.id,
+                            userId = d.getString("userId") ?: uid,
+                            status = estadoActual.uppercase(),
+                            date = dateStr,
+                            mainItem = d.getString("mainItem") ?: "Pedido PanApp",
+                            itemCount = d.getLong("itemCount")?.toInt() ?: 1,
+                            total = String.format("$%.2f", d.getDouble("total") ?: 0.0),
+                            timestamp = ts,
+                            direccionEnvio = d.getString("direccion") ?: d.getString("direccionEnvio") ?: ""
+                        )
+                    }.sortedByDescending { it.timestamp }
+                    ordersList = list
+                }
             }
     }
 
-    fun updateProfileImage(newImageUrl: String) {
-        if (currentUserId == "INVITADO") return
-
-        val db = FirebaseFirestore.getInstance()
-        db.collection("usuarios").document(currentUserId)
-            .update("fotoPerfil", newImageUrl)
+    fun updateProfileData(name: String, phone: String, address: String, onComplete: () -> Unit) {
+        val uid = currentUserId
+        if (uid == "INVITADO") return
+        val updates = mapOf("nombre" to name, "telefono" to phone, "direccion" to address)
+        FirebaseFirestore.getInstance().collection("usuarios").document(uid).update(updates)
             .addOnSuccessListener {
-                userImageUrl = newImageUrl
+                userName = name; userPhone = phone; userAddress = address
+                onComplete()
             }
     }
 
-    fun addToCart(product: Product) {
-        val existingItem = cartItems.find { it.id == product.id }
-        if (existingItem != null) {
-            cartItems = cartItems.map {
-                if (it.id == product.id) it.copy(quantity = it.quantity + 1) else it
+    fun updateProfileImage(imageUrl: String) {
+        val uid = currentUserId
+        if (uid == "INVITADO") return
+        FirebaseFirestore.getInstance().collection("usuarios").document(uid).update("imageUrl", imageUrl)
+            .addOnSuccessListener {
+                userImageUrl = imageUrl
             }
+    }
+
+    fun addToCart(product: HomeScreenKtProduct) {
+        val existing = cartItems.find { it.id == product.id }
+        if (existing != null) {
+            cartItems = cartItems.map { if (it.id == product.id) it.copy(quantity = it.quantity + 1) else it }
         } else {
-            cartItems = cartItems + CartItem(
-                id = product.id,
-                name = product.nombre,
-                desc = product.categoria,
-                price = product.precio,
-                imageUrl = product.imagenUrl,
-                quantity = 1
-            )
+            cartItems = cartItems + CartItem(product.id, product.nombre, product.categoria, product.precio, product.imagenUrl, 1)
         }
     }
 
-    fun updateQuantity(productId: String, newQuantity: Int) {
+    fun increaseQuantity(itemId: String) {
+        cartItems = cartItems.map { if (it.id == itemId) it.copy(quantity = it.quantity + 1) else it }
+    }
+
+    fun decreaseQuantity(itemId: String) {
+        val item = cartItems.find { it.id == itemId } ?: return
+        if (item.quantity > 1) {
+            cartItems = cartItems.map { if (it.id == itemId) it.copy(quantity = it.quantity - 1) else it }
+        } else {
+            cartItems = cartItems.filter { it.id != itemId }
+        }
+    }
+
+    fun updateQuantity(itemId: String, newQuantity: Int) {
         if (newQuantity <= 0) {
-            cartItems = cartItems.filter { it.id != productId }
+            cartItems = cartItems.filter { it.id != itemId }
         } else {
-            cartItems = cartItems.map {
-                if (it.id == productId) it.copy(quantity = newQuantity) else it
-            }
+            cartItems = cartItems.map { if (it.id == itemId) it.copy(quantity = newQuantity) else it }
         }
     }
 
-    fun clearCart() {
-        cartItems = emptyList()
-    }
+    fun clearCart() { cartItems = emptyList() }
 
-    val cartUniqueItems: Int
-        get() = cartItems.size
-
-    val cartTotalQuantity: Int
-        get() = cartItems.sumOf { it.quantity }
-
-    val cartSubtotal: Double
-        get() = cartItems.sumOf { it.price * it.quantity }
-
-    fun placeOrder(onSuccess: () -> Unit) {
-        if (cartItems.isEmpty()) {
-            onSuccess()
-            return
-        }
-
-        val db = FirebaseFirestore.getInstance()
-        val orderId = "BK-${(1000..9999).random()}"
-        val sdf = SimpleDateFormat("dd MMM yyyy • hh:mm a", Locale.getDefault())
-        val currentDate = sdf.format(Date())
-
-        val subtotal = cartSubtotal
-        val deliveryFee = if (subtotal > 0) 2.00 else 0.0
-        val taxes = subtotal * 0.08
-        val finalTotal = subtotal + deliveryFee + taxes
-        val totalFormatted = String.format(Locale.US, "%.2f", finalTotal)
-
-        val order = OrderData(
-            id = orderId,
-            userId = currentUserId,
-            status = "Pendiente",
-            date = currentDate,
-            mainItem = cartItems.first().name,
-            itemCount = cartTotalQuantity,
-            total = totalFormatted,
-            timestamp = System.currentTimeMillis(),
-            direccionEnvio = userAddress // ✨ Adjuntamos la dirección al ticket del pedido
-        )
-
-        db.collection("pedidos").document(orderId).set(order)
-            .addOnSuccessListener {
-                clearCart()
-                onSuccess()
-            }
-            .addOnFailureListener {
-                clearCart()
-                onSuccess()
-            }
-    }
-
+    // ✨ FUNCIONES RESTAURADAS PARA LA PANTALLA DE AJUSTES ✨
     fun toggleDarkMode(enabled: Boolean) {
         isDarkMode = enabled
     }
@@ -468,3 +436,4 @@ class AppViewModel : ViewModel() {
         return translations[currentLanguage]?.get(key) ?: key
     }
 }
+typealias HomeScreenKtProduct = com.developers.client.Product

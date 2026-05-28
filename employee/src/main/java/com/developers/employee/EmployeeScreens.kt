@@ -30,19 +30,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
-data class OrderItem(val name: String, val quantity: Int, val isReady: Boolean)
-data class OrderData(val id: String, val timeWaiting: String, val customerName: String, val address: String, val items: List<OrderItem>, val total: String, val isReady: Boolean)
+// Datos falsos solo para proveedores, los pedidos ahora son 100% reales
 data class SupplierItem(val name: String, val quantity: String)
 data class SupplierOrder(val id: String, val supplierName: String, val statusBadgeRes: String, val orderDate: String, val items: List<SupplierItem>, val trackingStatus: String, val trackingDate: String)
 
-val globalOrders = listOf(
-    OrderData("PED-2841", "12 min", "Lucia Fernández", "Calle 45 #12-80", listOf(OrderItem("Croissant", 4, true), OrderItem("Baguette", 1, false)), "$24.500", false),
-    OrderData("PED-2845", "8 min", "Carlos Ruiz", "Av. Principal #45-12", listOf(OrderItem("Pan de Chocolate", 3, true)), "$18.200", true)
-)
 val globalSupplierOrders = listOf(SupplierOrder("ORD-2023", "Harinas del Sol", "En Camino", "12 Oct, 2023", listOf(SupplierItem("Harina 000", "10 sacos")), "Pedido Confirmado", "12 Oct, 2023"))
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,27 +67,165 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
     }
 }
 
+// ✨ PANTALLA DE PEDIDOS CONECTADA A FIREBASE
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PedidosScreen(onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (OrderData) -> Unit) {
-    val context = LocalContext.current
+fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Pedidos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text("Cola de Despacho", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         bottomBar = { BottomNav(AppScreen.PEDIDOS, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Cola de Despacho", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Actualizar", color = PrimaryBlue, fontSize = 12.sp, modifier = Modifier.clickable { Toast.makeText(context, "Actualizado", Toast.LENGTH_SHORT).show() })
-                }
+        if (viewModel.pedidosActivos.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+                Text("No hay pedidos activos.", color = Color.Gray)
             }
-            items(globalOrders) { order -> OrderCard(order, isLaunching = false, onSendClick = { onSendWhatsapp(order) }) }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                items(viewModel.pedidosActivos, key = { it.id }) { order ->
+                    OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
+                }
+                item { Spacer(modifier = Modifier.height(60.dp)) }
+            }
         }
     }
 }
 
+// ✨ TARJETA DE PEDIDO DINÁMICA CON DROPDOWN Y BLOQUEO DE SEGURIDAD
+@Composable
+fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching: Boolean, onSendClick: () -> Unit) {
+    val isEntregado = pedido.estado == "ENTREGADO"
+    var expandedDropdown by remember { mutableStateOf(false) }
+    val opcionesEstado = listOf("PENDIENTE", "ENVIADO", "ENTREGADO")
+
+    // Colores dinámicos solicitados
+    val statusColor = when (pedido.estado) {
+        "PENDIENTE" -> CardPink // Rojo/Rosa
+        "ENVIADO" -> Color(0xFFFFA000) // Amarillo/Naranja
+        "ENTREGADO" -> Color(0xFF4CAF50) // Verde
+        else -> Color.Gray
+    }
+
+    val dateFormateada = if (pedido.fecha > 0) SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(pedido.fecha)) else "Reciente"
+
+    Card(
+        modifier = Modifier.fillMaxWidth().border(if (isEntregado) 2.dp else 0.dp, if (isEntregado) statusColor else Color.Transparent, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = if (isEntregado) statusColor.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                Column {
+                    Text("ID: ${pedido.id.take(8).uppercase()}", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                        Icon(Icons.Default.AccessTime, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Text(" $dateFormateada", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    }
+                }
+
+                // ✨ SELECTOR DE ESTADO (DROPDOWN MENU)
+                Box {
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(enabled = !isEntregado) { expandedDropdown = true } // Se bloquea si ya se entregó
+                            .border(1.dp, statusColor, RoundedCornerShape(12.dp)),
+                        color = if (isEntregado) statusColor.copy(alpha = 0.2f) else statusColor
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                            Text(if (isEntregado) "CERRADO - ENTREGADO" else pedido.estado, color = if (isEntregado) statusColor else Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            if (!isEntregado) {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp).padding(start = 4.dp))
+                            }
+                        }
+                    }
+
+                    DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                        opcionesEstado.forEach { estadoItem ->
+                            DropdownMenuItem(
+                                text = { Text(estadoItem, fontWeight = FontWeight.Bold) },
+                                onClick = {
+                                    expandedDropdown = false
+                                    viewModel.actualizarEstadoPedido(pedido.path, estadoItem) // Guarda en la nube al instante
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.background)
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                Text(" ${pedido.clienteNombre}", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp), color = MaterialTheme.colorScheme.onSurface)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                Icon(Icons.Outlined.LocationOn, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                Text(" ${pedido.direccion}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+            }
+
+            Text("Detalles del Pedido", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+            pedido.items.forEach { item ->
+                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(item.nombre, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Cantidad: ${item.cantidad}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                        }
+                    }
+                    Text(String.format("$%.2f", item.precio), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Total a Cobrar", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(String.format("$%.2f", pedido.total), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = statusColor)
+            }
+
+            if (isLaunching) {
+                OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) { Icon(Icons.AutoMirrored.Outlined.Chat, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(modifier = Modifier.width(8.dp)); Text("Iniciando WhatsApp...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+            } else if (!isEntregado) {
+                Button(onClick = onSendClick, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = WhatsappGreen, contentColor = Color.White), shape = RoundedCornerShape(8.dp)) {
+                    Icon(Icons.AutoMirrored.Outlined.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Avisar por WhatsApp", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LaunchingWhatsappScreen(order: PedidoFirebase, onBackClick: () -> Unit) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        delay(1500)
+        val mensajeEstado = if (order.estado == "ENVIADO") "¡Tu pedido está en camino a tu domicilio!" else "¡Tu pedido está siendo preparado y pronto saldrá!"
+        val message = "Hola ${order.clienteNombre},\n$mensajeEstado\nTotal a pagar: $${order.total}\nAtte: Panadería"
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply { data = Uri.parse("https://api.whatsapp.com/send?text=${URLEncoder.encode(message, "UTF-8")}") }
+            context.startActivity(intent)
+        } catch (e: Exception) { Toast.makeText(context, "Error abriendo WhatsApp", Toast.LENGTH_SHORT).show() }
+    }
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Abriendo WhatsApp...", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Card(modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F0EA))) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(WhatsappGreen), contentAlignment = Alignment.Center) { Icon(Icons.Default.Call, null, tint = Color.White, modifier = Modifier.size(50.dp)) } }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            // Pasamos un viewModel nulo o creamos un estado estático, solo para mostrarlo
+            OrderCard(pedido = order, viewModel = viewModel(), isLaunching = true, onSendClick = {})
+        }
+    }
+}
+
+// ==========================================
+// EL RESTO DEL CÓDIGO (Proveedores, Perfil, etc) QUEDA INTACTO
+// ==========================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
@@ -160,59 +296,6 @@ fun PerfilScreen(viewModel: EmployeeViewModel, isDark: Boolean, onToggleDark: ()
                     }
                 }
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LaunchingWhatsappScreen(order: OrderData, onBackClick: () -> Unit) {
-    val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        delay(1500)
-        val message = "Hola ${order.customerName},\n¡Tu pedido ${order.id} está listo!\nTotal: ${order.total}"
-        try {
-            val intent = Intent(Intent.ACTION_VIEW).apply { data = Uri.parse("https://api.whatsapp.com/send?text=${URLEncoder.encode(message, "UTF-8")}") }
-            context.startActivity(intent)
-        } catch (e: Exception) { Toast.makeText(context, "Error abriendo WhatsApp", Toast.LENGTH_SHORT).show() }
-    }
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Abriendo WhatsApp...", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Card(modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F0EA))) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(WhatsappGreen), contentAlignment = Alignment.Center) { Icon(Icons.Default.Call, null, tint = Color.White, modifier = Modifier.size(50.dp)) } }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            OrderCard(order = order, isLaunching = true, onSendClick = {})
-        }
-    }
-}
-
-@Composable
-fun OrderCard(order: OrderData, isLaunching: Boolean, onSendClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Column {
-                    Text("ID: ${order.id}", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) { Icon(Icons.Default.AccessTime, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp)); Text(" ${order.timeWaiting}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp) }
-                }
-                if (order.isReady) { Text("Listo para enviar", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface) } else { Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(OrangePrep).padding(horizontal = 10.dp, vertical = 4.dp)) { Text("PREPARANDO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp) } }
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.background)
-            Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp)); Text(" ${order.customerName}", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp), color = MaterialTheme.colorScheme.onSurface) }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) { Icon(Icons.Outlined.LocationOn, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp)); Text(" ${order.address}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp)) }
-            Text("Detalles del Pedido", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-            order.items.forEach { item ->
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(if (item.isReady) Color(0xFFEBEBFC) else MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, if (item.isReady) Color(0xFFEBEBFC) else MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) { Icon(if (item.isReady) Icons.Outlined.CheckCircle else Icons.Outlined.Info, null, tint = if (item.isReady) PrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp)); Column(modifier = Modifier.padding(start = 8.dp)) { Text(item.name, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface); Text("Cantidad: ${item.quantity}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp) } }
-                    Box(modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = 4.dp).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))) { Text(if (item.isReady) "LISTO" else "EN PREP", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (item.isReady) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant) }
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("Total a Cobrar", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp); Text(order.total, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface) }
-            if (isLaunching) { OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) { Icon(Icons.AutoMirrored.Outlined.Chat, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(modifier = Modifier.width(8.dp)); Text("Iniciando WhatsApp...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) } } else { Button(onClick = onSendClick, modifier = Modifier.fillMaxWidth(), enabled = order.isReady, colors = ButtonDefaults.buttonColors(containerColor = if (order.isReady) WhatsappGreen else MaterialTheme.colorScheme.background, contentColor = if (order.isReady) Color.White else MaterialTheme.colorScheme.onSurfaceVariant), shape = RoundedCornerShape(8.dp)) { Icon(Icons.AutoMirrored.Outlined.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Avisar por WhatsApp", fontWeight = FontWeight.Bold) } }
         }
     }
 }

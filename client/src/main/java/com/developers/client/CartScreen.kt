@@ -34,6 +34,7 @@ import coil.request.ImageRequest
 import com.developers.client.ui.theme.PanAppPrimary
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.rememberPaymentSheet
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +46,7 @@ fun CartScreen(
     var selectedPaymentMethod by remember { mutableStateOf("Tarjeta") }
     var showPaymentSheet by remember { mutableStateOf(false) }
 
-    // ✨ NUEVO: Estado para controlar el pop-up de error de dirección
+    // ✨ Estado para controlar el pop-up de error de dirección
     var showAddressErrorDialog by remember { mutableStateOf(false) }
 
     val isDarkMode = appViewModel.isDarkMode
@@ -58,7 +59,33 @@ fun CartScreen(
     val paymentSheet = rememberPaymentSheet { paymentSheetResult ->
         when (paymentSheetResult) {
             is com.stripe.android.paymentsheet.PaymentSheetResult.Completed -> {
-                onPaymentSuccess()
+                // ✨ CORRECCIÓN: Leemos el ID desde nuestro ViewModel Inteligente
+                val uid = appViewModel.currentUserId
+                if (uid != "INVITADO" && uid.isNotEmpty()) {
+                    val db = FirebaseFirestore.getInstance()
+                    val itemsListFirebase = appViewModel.cartItems.map { item ->
+                        hashMapOf("nombre" to item.name, "cantidad" to item.quantity, "precio" to item.price)
+                    }
+                    val nuevoPedido = hashMapOf(
+                        "userId" to uid,
+                        "clienteNombre" to appViewModel.userName,
+                        "cliente" to appViewModel.userName,
+                        "direccion" to appViewModel.userAddress,
+                        "direccionEnvio" to appViewModel.userAddress,
+                        "total" to finalTotal,
+                        "estado" to "PENDIENTE",
+                        "status" to "PENDIENTE",
+                        "timestamp" to System.currentTimeMillis(),
+                        "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
+                        "itemCount" to appViewModel.cartTotalQuantity,
+                        "items" to itemsListFirebase
+                    )
+                    db.collection("usuarios").document(uid).collection("pedidos").add(nuevoPedido)
+                        .addOnSuccessListener {
+                            appViewModel.clearCart()
+                            onPaymentSuccess()
+                        }
+                }
             }
             is com.stripe.android.paymentsheet.PaymentSheetResult.Canceled -> { }
             is com.stripe.android.paymentsheet.PaymentSheetResult.Failed -> { }
@@ -282,8 +309,35 @@ fun CartScreen(
             dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkMode) Color.Gray else Color.LightGray) }
         ) {
             PaymentGatewayContent(selectedPaymentMethod, isDarkMode, appViewModel) {
-                showPaymentSheet = false
-                onPaymentSuccess()
+                // ✨ CORRECCIÓN: Leemos el ID desde nuestro ViewModel Inteligente
+                val uid = appViewModel.currentUserId
+                if (uid != "INVITADO" && uid.isNotEmpty()) {
+                    val db = FirebaseFirestore.getInstance()
+                    val itemsListFirebase = appViewModel.cartItems.map { item ->
+                        hashMapOf("nombre" to item.name, "cantidad" to item.quantity, "precio" to item.price)
+                    }
+                    val nuevoPedido = hashMapOf(
+                        "userId" to uid,
+                        "clienteNombre" to appViewModel.userName,
+                        "cliente" to appViewModel.userName,
+                        "direccion" to appViewModel.userAddress,
+                        "direccionEnvio" to appViewModel.userAddress,
+                        "total" to finalTotal,
+                        "estado" to "PENDIENTE",
+                        "status" to "PENDIENTE",
+                        "timestamp" to System.currentTimeMillis(),
+                        "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
+                        "itemCount" to appViewModel.cartTotalQuantity,
+                        "items" to itemsListFirebase
+                    )
+                    db.collection("usuarios").document(uid).collection("pedidos").add(nuevoPedido).addOnSuccessListener {
+                        showPaymentSheet = false
+                        appViewModel.clearCart()
+                        onPaymentSuccess()
+                    }
+                } else {
+                    showPaymentSheet = false
+                }
             }
         }
     }
@@ -409,7 +463,7 @@ fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: App
             )
         }
 
-        TextButton(onClick = onDismiss) {
+        TextButton(onClick = { /* Aquí puedes manejar cancelar */ }) {
             Text(appViewModel.getString("close"), color = Color.Gray)
         }
         Spacer(modifier = Modifier.height(16.dp))

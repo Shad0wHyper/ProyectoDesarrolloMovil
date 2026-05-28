@@ -19,14 +19,8 @@ val OrangePrep = Color(0xFFE88A64)
 val WhatsappGreen = Color(0xFF25D366)
 val DarkPurpleText = Color(0xFF4A4E91)
 
-val darkColors = darkColorScheme(
-    background = Color(0xFF121212), surface = Color(0xFF1E1E1E),
-    onSurface = Color.White, onBackground = Color.White, onSurfaceVariant = Color(0xFFAAAAAA)
-)
-val lightColors = lightColorScheme(
-    background = Color(0xFFF5F6FA), surface = Color.White,
-    onSurface = Color.DarkGray, onBackground = Color.Black, onSurfaceVariant = Color(0xFF7A869A)
-)
+val darkColors = darkColorScheme(background = Color(0xFF121212), surface = Color(0xFF1E1E1E), onSurface = Color.White, onBackground = Color.White, onSurfaceVariant = Color(0xFFAAAAAA))
+val lightColors = lightColorScheme(background = Color(0xFFF5F6FA), surface = Color.White, onSurface = Color.DarkGray, onBackground = Color.Black, onSurfaceVariant = Color(0xFF7A869A))
 
 enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, PROVEEDORES, PERFIL, LAUNCHING_WS, HISTORIAL }
 
@@ -63,12 +57,14 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
             when (currentScreen) {
                 AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
-                AppScreen.PEDIDOS -> PedidosScreen(onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
+                // ✨ PASAMOS EL VIEWMODEL A PEDIDOS SCREEN
+                AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
                 AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
                 AppScreen.PERFIL -> PerfilScreen(viewModel, isDark = isDarkTheme, onToggleDark = { isDarkTheme = !isDarkTheme }, onNavigate = { currentScreen = it })
                 AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
                 AppScreen.LAUNCHING_WS -> {
-                    val order = globalOrders.find { it.id == selectedOrderId }
+                    // ✨ BUSCAMOS EL PEDIDO EN LA LISTA REAL DE FIREBASE
+                    val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
                     if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
                 }
             }

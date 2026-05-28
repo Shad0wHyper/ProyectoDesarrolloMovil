@@ -123,10 +123,9 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                     appViewModel = appViewModel,
                     onNavigateBack = { navController.popBackStack() },
                     onPaymentSuccess = {
-                        appViewModel.placeOrder {
-                            navController.navigate("payment_success") {
-                                popUpTo("cart") { inclusive = true }
-                            }
+                        // ✨ Ya no llamamos a placeOrder(), simplemente navegamos directo a la pantalla de éxito
+                        navController.navigate("payment_success") {
+                            popUpTo("cart") { inclusive = true }
                         }
                     }
                 )
