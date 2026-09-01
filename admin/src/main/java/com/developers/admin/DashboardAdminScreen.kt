@@ -26,7 +26,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -45,8 +51,9 @@ data class Producto(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardAdminScreen() {
-    var currentScreen by remember { mutableStateOf("dashboard") }
+fun DashboardAdminScreen(navController: NavHostController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: AdminScreen.Dashboard.route
 
     // ✨ Variable para guardar el pan que queremos editar
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
@@ -56,8 +63,8 @@ fun DashboardAdminScreen() {
     var textBusqueda by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    LaunchedEffect(currentScreen) {
-        if (currentScreen == "dashboard") {
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == AdminScreen.Dashboard.route) {
             isLoading = true
             val db = FirebaseFirestore.getInstance()
             db.collection("productos").get().addOnSuccessListener { result ->
@@ -98,76 +105,91 @@ fun DashboardAdminScreen() {
 
     Scaffold(
         bottomBar = {
-            // ✨ Ocultamos la barra inferior si estamos en el generador QR
-            if (currentScreen != "add_product" && currentScreen != "qr_generator") {
-                AdminBottomBar(currentScreen = currentScreen, onScreenSelected = { currentScreen = it })
+            // ✨ Ocultamos la barra inferior si estamos en el generador QR o agregar producto
+            if (currentRoute != AdminScreen.AddProduct.route && currentRoute != AdminScreen.QrGenerator.route) {
+                AdminBottomBar(currentRoute = currentRoute, onScreenSelected = { route ->
+                    navController.navigate(route) {
+                        popUpTo(AdminScreen.Dashboard.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                })
             }
         },
         floatingActionButton = {
-            if (currentScreen == "dashboard") {
+            if (currentRoute == AdminScreen.Dashboard.route) {
                 AdminFAB(onAdd = {
                     productoAEditar = null // Limpia la variable si vamos a agregar uno nuevo
-                    currentScreen = "add_product"
+                    navController.navigate(AdminScreen.AddProduct.route)
                 })
             }
         },
         containerColor = Color(0xFFF8F9FA)
     ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (currentScreen) {
-                "dashboard" -> {
-                    if (isLoading) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFF6200EE))
-                        }
-                    } else {
-                        DashboardContent(
-                            listaProductos = listaProductos,
-                            textBusqueda = textBusqueda,
-                            onTextBusquedaChange = { textBusqueda = it },
-                            onGestionarPedidosClick = { currentScreen = "pedidos" },
-                            onAIPredictionsClick = { currentScreen = "ia_report" },
-                            onAlmacenClick = { currentScreen = "almacen" },
-                            onAddClick = {
-                                productoAEditar = null
-                                currentScreen = "add_product"
-                            },
-                            onDecreaseStock = { productoToUpdate ->
-                                val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
-                                FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
-                                    .update("stock", newStock)
-                                    .addOnSuccessListener {
-                                        listaProductos = listaProductos.map {
-                                            if (it.id == productoToUpdate.id) {
-                                                it.copy(
-                                                    stock = newStock,
-                                                    statusLabel = if(newStock == 0) "AGOTADO" else if(newStock < 5) "Crítico" else "Óptimo",
-                                                    statusColor = if(newStock == 0) Color.Red else if(newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
-                                                )
-                                            } else it
-                                        }
-                                    }
-                            },
-                            onEditClick = { productoQueQueremosEditar ->
-                                productoAEditar = productoQueQueremosEditar
-                                currentScreen = "add_product"
-                            },
-                            // ✨ Conectamos el botón para abrir el Generador QR
-                            onQrClick = { currentScreen = "qr_generator" }
-                        )
+        NavHost(
+            navController = navController,
+            startDestination = AdminScreen.Dashboard.route,
+            modifier = Modifier
+                .padding(paddingValues)
+                .background(Color(0xFFF8F9FA)), // Fondo sólido para evitar transparencias
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+        ) {
+            composable(AdminScreen.Dashboard.route) {
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF6200EE))
                     }
+                } else {
+                    DashboardContent(
+                        listaProductos = listaProductos,
+                        textBusqueda = textBusqueda,
+                        onTextBusquedaChange = { textBusqueda = it },
+                        onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
+                        onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
+                        onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
+                        onAddClick = {
+                            productoAEditar = null
+                            navController.navigate(AdminScreen.AddProduct.route)
+                        },
+                        onDecreaseStock = { productoToUpdate ->
+                            val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
+                            FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
+                                .update("stock", newStock)
+                                .addOnSuccessListener {
+                                    listaProductos = listaProductos.map {
+                                        if (it.id == productoToUpdate.id) {
+                                            it.copy(
+                                                stock = newStock,
+                                                statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
+                                                statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
+                                            )
+                                        } else it
+                                    }
+                                }
+                        },
+                        onEditClick = { productoQueQueremosEditar ->
+                            productoAEditar = productoQueQueremosEditar
+                            navController.navigate(AdminScreen.AddProduct.route)
+                        },
+                        // ✨ Conectamos el botón para abrir el Generador QR
+                        onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) }
+                    )
                 }
-                "almacen" -> AlmacenStockScreen()
-                "pedidos" -> PedidosScreen()
-                "ia_report" -> AIReportScreen(onBack = { currentScreen = "dashboard" })
-                "add_product" -> AddProductScreen(
-                    productoAEditar = productoAEditar,
-                    onBack = { currentScreen = "dashboard" },
-                    onSuccessSave = { currentScreen = "dashboard" }
-                )
-                // ✨ NUEVA RUTA PARA EL GENERADOR QR
-                "qr_generator" -> QrGeneratorScreen(onBack = { currentScreen = "dashboard" })
             }
+            composable(AdminScreen.Almacen.route) { AlmacenStockScreen() }
+            composable(AdminScreen.Pedidos.route) { PedidosScreen() }
+            composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
+            composable(AdminScreen.AddProduct.route) {
+                AddProductScreen(
+                    productoAEditar = productoAEditar,
+                    onBack = { navController.popBackStack() },
+                    onSuccessSave = { navController.popBackStack() }
+                )
+            }
+            composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }
@@ -641,11 +663,11 @@ fun AdminFAB(onAdd: () -> Unit) {
 }
 
 @Composable
-fun AdminBottomBar(currentScreen: String, onScreenSelected: (String) -> Unit) {
+fun AdminBottomBar(currentRoute: String, onScreenSelected: (String) -> Unit) {
     NavigationBar(containerColor = Color.White) {
         NavigationBarItem(
-            selected = currentScreen == "dashboard",
-            onClick = { onScreenSelected("dashboard") },
+            selected = currentRoute == AdminScreen.Dashboard.route,
+            onClick = { onScreenSelected(AdminScreen.Dashboard.route) },
             icon = { Icon(Icons.Default.GridView, contentDescription = null) },
             label = { Text("Dashboard") },
             colors = NavigationBarItemDefaults.colors(
@@ -655,11 +677,11 @@ fun AdminBottomBar(currentScreen: String, onScreenSelected: (String) -> Unit) {
             )
         )
         NavigationBarItem(
-            selected = currentScreen == "almacen",
-            onClick = { onScreenSelected("almacen") },
+            selected = currentRoute == AdminScreen.Almacen.route,
+            onClick = { onScreenSelected(AdminScreen.Almacen.route) },
             icon = {
                 BadgedBox(badge = { Badge { Text("9") } }) {
-                    Icon(if (currentScreen == "almacen") Icons.Filled.Inventory2 else Icons.Outlined.Inventory2, contentDescription = null)
+                    Icon(if (currentRoute == AdminScreen.Almacen.route) Icons.Filled.Inventory2 else Icons.Outlined.Inventory2, contentDescription = null)
                 }
             },
             label = { Text("Almacén") },
@@ -670,9 +692,9 @@ fun AdminBottomBar(currentScreen: String, onScreenSelected: (String) -> Unit) {
             )
         )
         NavigationBarItem(
-            selected = currentScreen == "pedidos",
-            onClick = { onScreenSelected("pedidos") },
-            icon = { Icon(if (currentScreen == "pedidos") Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null) },
+            selected = currentRoute == AdminScreen.Pedidos.route,
+            onClick = { onScreenSelected(AdminScreen.Pedidos.route) },
+            icon = { Icon(if (currentRoute == AdminScreen.Pedidos.route) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null) },
             label = { Text("Pedidos") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFF6200EE),
@@ -686,5 +708,6 @@ fun AdminBottomBar(currentScreen: String, onScreenSelected: (String) -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun DashboardAdminPreview() {
-    DashboardAdminScreen()
+    val navController = androidx.navigation.compose.rememberNavController()
+    DashboardAdminScreen(navController = navController)
 }

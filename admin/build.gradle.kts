@@ -62,5 +62,6 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.google.zxing:core:3.5.3")
+    implementation("androidx.navigation:navigation-compose:2.8.5")
 
 }
