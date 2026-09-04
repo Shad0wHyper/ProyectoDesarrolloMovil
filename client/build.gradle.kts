@@ -69,5 +69,6 @@ dependencies {
     implementation("com.stripe:stripe-android:20.35.0")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
 }

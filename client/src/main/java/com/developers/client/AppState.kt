@@ -4,7 +4,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,6 +78,10 @@ class AppViewModel : ViewModel() {
         }
         currentUserId = uid
         userEmail = email
+
+        // Obtener y guardar token FCM para notificaciones
+        registrarTokenFCM()
+
         val db = FirebaseFirestore.getInstance()
 
         db.collection("usuarios").document(uid).get()
@@ -180,7 +189,75 @@ class AppViewModel : ViewModel() {
     fun toggleDarkMode(enabled: Boolean) { isDarkMode = enabled }
     fun changeLanguage(language: String) { currentLanguage = language }
     fun toggleNotifications(enabled: Boolean) { notificationsEnabled = enabled }
+
+    fun registrarTokenFCM() {
+        if (currentUserId == "INVITADO" || currentUserId.isEmpty()) return
+
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Log.w("AppViewModel", "Error al obtener token FCM de Firebase", task.exception)
+                    return@addOnCompleteListener
+                }
+
+                val token = task.result
+                if (token != null) {
+                    val db = FirebaseFirestore.getInstance()
+                    db.collection("usuarios").document(currentUserId)
+                        .set(mapOf("fcmToken" to token), SetOptions.merge())
+                        .addOnSuccessListener {
+                            Log.d("AppViewModel", "Token FCM guardado exitosamente en Firestore para $currentUserId")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("AppViewModel", "Error al guardar token FCM en Firestore", e)
+                        }
+                }
+            }
+    }
+
+    /**
+     * Cierre de sesión seguro:
+     * 1. Elimina el fcmToken de Firestore en usuarios/{currentUserId} para evitar notificaciones fantasma
+     * 2. Limpia los datos locales del ViewModel
+     * 3. Cierra la sesión en FirebaseAuth
+     * 4. Llama al callback onComplete
+     */
+    fun cerrarSesion(onComplete: () -> Unit = {}) {
+        val uid = currentUserId
+
+        val resetLocalState = {
+            currentUserId = "INVITADO"
+            userName = "Invitado"
+            userEmail = "Inicia sesión para ordenar"
+            userPhone = "..."
+            userImageUrl = ""
+            userAddress = ""
+            cartItems = emptyList()
+            ordersList = emptyList()
+
+            FirebaseAuth.getInstance().signOut()
+            onComplete()
+        }
+
+        if (uid != "INVITADO" && uid.isNotEmpty()) {
+            val db = FirebaseFirestore.getInstance()
+            db.collection("usuarios").document(uid)
+                .update("fcmToken", FieldValue.delete())
+                .addOnSuccessListener {
+                    Log.d("AppViewModel", "fcmToken eliminado de Firestore exitosamente al cerrar sesión")
+                    resetLocalState()
+                }
+                .addOnFailureListener { e ->
+                    Log.e("AppViewModel", "Error al eliminar fcmToken de Firestore", e)
+                    resetLocalState()
+                }
+        } else {
+            resetLocalState()
+        }
+    }
+
     fun getString(key: String): String {
+
         val translations = mapOf(
             "Español" to mapOf(
                 "hello" to "¡Hola",

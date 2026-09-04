@@ -1,11 +1,14 @@
 package com.developers.client
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
@@ -90,9 +93,24 @@ fun SettingsScreen(
                     onClick = onNavigateToNotifications,
                     isDarkMode = appViewModel.isDarkMode
                 )
+
+                val context = LocalContext.current
+                SettingsClickableItem(
+                    title = appViewModel.getString("logout"),
+                    subtitle = "Cerrar sesión de forma segura",
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    onClick = {
+                        appViewModel.cerrarSesion {
+                            Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
+                            onNavigateBack()
+                        }
+                    },
+                    isDarkMode = appViewModel.isDarkMode
+                )
             }
         }
     }
+
 
     if (showLanguageDialog) {
         AlertDialog(

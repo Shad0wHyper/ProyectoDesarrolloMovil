@@ -138,7 +138,10 @@ fun HomeScreen(
                             HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color.LightGray)
                             DropdownMenuItem(
                                 text = { Text(appViewModel.getString("logout"), color = Color.Red) },
-                                onClick = { showMenu = false },
+                                onClick = {
+                                    showMenu = false
+                                    appViewModel.cerrarSesion()
+                                },
                                 leadingIcon = { Icon(Icons.Outlined.Logout, contentDescription = null, tint = Color.Red) }
                             )
                         }

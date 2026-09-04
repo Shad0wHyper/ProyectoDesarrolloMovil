@@ -1,8 +1,13 @@
 package com.developers.client
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -14,6 +19,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -40,10 +47,35 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appViewModel: AppViewModel = viewModel()
+            val context = LocalContext.current
 
-            // ✨ 2. FORZAMOS A LA APP A RECONOCER AL USUARIO ANTES DE DIBUJAR NADA
+            // Launcher para solicitar el permiso de notificaciones en Android 13+ (API 33+)
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    appViewModel.registrarTokenFCM()
+                }
+            }
+
+            // ✨ 2. FORZAMOS A LA APP A RECONOCER AL USUARIO Y SOLICITAR PERMISOS DE NOTIFICACIÓN
             LaunchedEffect(Unit) {
                 appViewModel.setSessionUser(userIdFromIntent, userEmailFromIntent)
+
+                // Verificación y solicitud del permiso POST_NOTIFICATIONS en Android 13+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        appViewModel.registrarTokenFCM()
+                    }
+                } else {
+                    appViewModel.registrarTokenFCM()
+                }
             }
 
             PanAppClientTheme(darkTheme = appViewModel.isDarkMode) {

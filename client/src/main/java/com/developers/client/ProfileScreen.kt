@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
@@ -269,6 +270,26 @@ fun ProfileScreen(
                 } else {
                     Text(appViewModel.getString("save_changes"), modifier = Modifier.padding(vertical = 8.dp))
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // BOTÓN CERRAR SESIÓN SEGURO
+            OutlinedButton(
+                onClick = {
+                    appViewModel.cerrarSesion {
+                        Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
+                        onNavigateBack()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(appViewModel.getString("logout"), fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
             }
         }
     }
