@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -109,10 +110,7 @@ fun ProfileScreen(
             // SECCIÓN FOTO DE PERFIL
             Box(
                 modifier = Modifier
-                    .size(130.dp) // ✨ Incrementamos ligeramente para evitar recortes
-                    .padding(8.dp)
-                    .clip(CircleShape)
-                    .background(if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFEEEEEE))
+                    .size(130.dp)
                     .clickable {
                         if (!isUploadingImage && appViewModel.currentUserId != "INVITADO") {
                             photoPickerLauncher.launch(
@@ -126,40 +124,62 @@ fun ProfileScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (appViewModel.userImageUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(appViewModel.userImageUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Foto de perfil",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(65.dp), tint = Color.Gray)
+                // CÍRCULO PRINCIPAL DE LA FOTO (Clipped estricto solo a la imagen)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFEEEEEE)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (appViewModel.userImageUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(appViewModel.userImageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Foto de perfil",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(65.dp), tint = Color.Gray)
+                    }
+
+                    if (isUploadingImage) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
+                        }
+                    }
                 }
 
-                if (isUploadingImage) {
-                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
-                    }
-                } else {
-                    // ✨ CORRECCIÓN ÍCONO CÁMARA: Ajustamos posición y agregamos padding para evitar cortes
+                // BURBUJA DE LA CÁMARA (Superpuesta fuera del clip principal para dibujarse completa)
+                if (!isUploadingImage) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .offset(x = (-4).dp, y = (-4).dp)
-                            .size(36.dp)
+                            .offset(x = (-2).dp, y = (-2).dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(PanAppPrimary)
-                            .padding(2.dp),
+                            .border(2.dp, if (isDarkMode) Color.Black else Color.White, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = "Cambiar foto",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(24.dp))
 

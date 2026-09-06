@@ -107,12 +107,23 @@ fun HomeScreen(
                     }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                Icons.Default.AccountCircle,
-                                contentDescription = "Perfil",
-                                modifier = Modifier.size(32.dp),
-                                tint = if (isDarkMode) Color.White else Color.Black
-                            )
+                            if (appViewModel.userImageUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = appViewModel.userImageUrl,
+                                    contentDescription = "Perfil",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.AccountCircle,
+                                    contentDescription = "Perfil",
+                                    modifier = Modifier.size(32.dp),
+                                    tint = if (isDarkMode) Color.White else Color.Black
+                                )
+                            }
                         }
                         DropdownMenu(
                             expanded = showMenu,
