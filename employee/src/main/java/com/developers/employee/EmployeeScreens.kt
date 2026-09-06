@@ -141,13 +141,12 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
                     }
 
                     DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                        val context = LocalContext.current
                         opcionesEstado.forEach { estadoItem ->
                             DropdownMenuItem(
                                 text = { Text(estadoItem, fontWeight = FontWeight.Bold) },
                                 onClick = {
                                     expandedDropdown = false
-                                    viewModel.actualizarEstadoPedido(context, pedido, estadoItem) // Guarda en la nube y dispara notificación
+                                    viewModel.actualizarEstadoPedido(pedido.path, estadoItem) // Guarda en Firestore
                                 }
                             )
                         }

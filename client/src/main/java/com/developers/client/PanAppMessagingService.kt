@@ -3,9 +3,7 @@ package com.developers.client
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.auth.FirebaseAuth
@@ -31,11 +29,22 @@ class PanAppMessagingService : FirebaseMessagingService() {
 
         Log.d("PanAppMessaging", "Mensaje recibido de: ${remoteMessage.from}")
 
-        // Extraer título y cuerpo de la notificación
-        val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "PanApp Client"
-        val body = remoteMessage.notification?.body ?: remoteMessage.data["body"] ?: "Tienes una nueva notificación"
+        // 1. Si la Cloud Function envió la clave 'notification', el SDK de Firebase
+        // ya genera y muestra la notificación automáticamente en el sistema.
+        // Retornamos inmediatamente para evitar crear una segunda notificación duplicada.
+        if (remoteMessage.notification != null) {
+            Log.d("PanAppMessaging", "Notificación manejada automáticamente por el SDK de Firebase.")
+            return
+        }
 
-        mostrarNotificacion(title, body)
+        // 2. Si la Cloud Function o Servidor envía un mensaje de sólo datos ('data'),
+        // extraemos el título y cuerpo para construir la notificación local manualmente.
+        val title = remoteMessage.data["title"] ?: remoteMessage.data["titulo"]
+        val body = remoteMessage.data["body"] ?: remoteMessage.data["cuerpo"]
+
+        if (!title.isNullOrEmpty() && !body.isNullOrEmpty()) {
+            mostrarNotificacion(title, body)
+        }
     }
 
     private fun mostrarNotificacion(title: String, body: String) {

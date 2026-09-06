@@ -2,9 +2,7 @@ package com.developers.employee
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -17,7 +15,7 @@ data class PedidoItem(
 
 data class PedidoFirebase(
     val id: String = "",
-    val userId: String = "", // ✨ ID DEL CLIENTE PARA NOTIFICACIONES FCM
+    val userId: String = "",
     val clienteNombre: String = "Cliente",
     val direccion: String = "Sin Dirección",
     val total: Double = 0.0,
@@ -103,43 +101,10 @@ class EmployeeViewModel : ViewModel() {
             }
     }
 
-    // ✨ ACTUALIZADOR DE ESTADOS EN FIREBASE CON NOTIFICACIÓN PUSH PREDETERMINADA
-    fun actualizarEstadoPedido(context: android.content.Context, pedido: PedidoFirebase, nuevoEstado: String) {
-        if (pedido.path.isEmpty()) return
-
-        FirebaseFirestore.getInstance().document(pedido.path).update("estado", nuevoEstado)
-            .addOnSuccessListener {
-                // Notificar al cliente si se envía o entrega el pedido
-                if (nuevoEstado == "ENVIADO" || nuevoEstado == "ENTREGADO") {
-                    notificarCambioEstadoCliente(context, pedido, nuevoEstado)
-                }
-            }
-    }
-
-    private fun notificarCambioEstadoCliente(context: android.content.Context, pedido: PedidoFirebase, nuevoEstado: String) {
-        val userId = pedido.userId
-        if (userId.isEmpty()) return
-
-        FcmNotificationSender.obtenerFcmTokenCliente(userId) { fcmToken ->
-            val titulo = if (nuevoEstado == "ENVIADO") "¡Tu pedido está en camino! 🚚" else "¡Pedido Entregado! 🥐"
-            val cuerpo = if (nuevoEstado == "ENVIADO") {
-                "Hola ${pedido.clienteNombre}, tu pedido de PanApp ya fue despachado y va en camino."
-            } else {
-                "Hola ${pedido.clienteNombre}, tu pedido ha sido entregado. ¡Que lo disfrutes!"
-            }
-
-            viewModelScope.launch {
-                FcmNotificationSender.enviarNotificacionPushHttpV1(
-                    context = context.applicationContext,
-                    projectId = "cloud-panaap", // ID del proyecto de Firebase
-                    fcmToken = fcmToken,
-                    titulo = titulo,
-                    cuerpo = cuerpo,
-                    pedidoId = pedido.id,
-                    nuevoEstado = nuevoEstado
-                )
-            }
-        }
+    // ✨ ACTUALIZADOR DE ESTADOS EN FIREBASE MINIMALISTA
+    fun actualizarEstadoPedido(pathReferencia: String, nuevoEstado: String) {
+        if (pathReferencia.isEmpty()) return
+        FirebaseFirestore.getInstance().document(pathReferencia).update("estado", nuevoEstado)
     }
 
     // (Aquí siguen intactos fetchLogs y registerAttendance...)
