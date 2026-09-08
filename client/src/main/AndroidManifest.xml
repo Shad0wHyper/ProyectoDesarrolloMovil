@@ -9,6 +9,7 @@
         android:allowBackup="true"
         android:label="Cliente PanApp"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.AppCompat.Light"
         tools:targetApi="31">
 
