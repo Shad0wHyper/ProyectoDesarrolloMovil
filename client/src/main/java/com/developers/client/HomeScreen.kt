@@ -18,11 +18,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.developers.client.ui.theme.PanAppPrimary
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -50,7 +52,7 @@ fun HomeScreen(
     var showMenu by remember { mutableStateOf(false) }
     var selectedProduct by remember { mutableStateOf<Product?>(null) } // ✨ ESTADO PARA EL BOTTOM SHEET DE DETALLE DE PRODUCTO
 
-    val categories = listOf("TODO", "PANES", "CAFÉ", "OTROS")
+    val categories = remember { listOf("TODO", "PANES", "CAFÉ", "OTROS") }
     val pagerState = rememberPagerState(pageCount = { categories.size })
     val coroutineScope = rememberCoroutineScope()
 
@@ -73,6 +75,30 @@ fun HomeScreen(
     }
 
     val isDarkMode = appViewModel.isDarkMode
+
+    // ✨ MEMORIZAR NOMBRE DE USUARIO PARA EVITAR .split() EN CADA FRAME DE SCROLL (120Hz)
+    val userFirstName = remember(appViewModel.userName) {
+        appViewModel.userName.split(" ").firstOrNull() ?: "Cliente"
+    }
+
+    // ✨ MEMORIZAR TRADUCCIONES DE CATEGORÍAS
+    val categoryItems = remember(appViewModel.currentLanguage) {
+        categories.mapIndexed { index, catKey ->
+            val translatedName = when (catKey) {
+                "PANES" -> appViewModel.getString("cat_breads")
+                "CAFÉ" -> appViewModel.getString("cat_coffee")
+                "OTROS" -> appViewModel.getString("cat_others")
+                else -> appViewModel.getString("cat_all")
+            }
+            val icon = when (catKey) {
+                "PANES" -> Icons.Default.BakeryDining
+                "CAFÉ" -> Icons.Default.Coffee
+                "OTROS" -> Icons.Default.StarBorder
+                else -> Icons.Default.RestaurantMenu
+            }
+            Triple(index, translatedName, icon)
+        }
+    }
 
     Scaffold(
         containerColor = if (isDarkMode) Color(0xFF121212) else Color.White,
@@ -184,7 +210,7 @@ fun HomeScreen(
             // BLOQUE DE SALUDO Y CATEGORÍAS
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text(
-                    text = "${appViewModel.getString("hello")}, ${appViewModel.userName.split(" ")[0]}! 👋",
+                    text = "${appViewModel.getString("hello")}, $userFirstName! 👋",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (isDarkMode) Color.White else Color.Black
@@ -201,19 +227,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    categories.forEachIndexed { index, catKey ->
-                        val translatedName = when (catKey) {
-                            "PANES" -> appViewModel.getString("cat_breads")
-                            "CAFÉ" -> appViewModel.getString("cat_coffee")
-                            "OTROS" -> appViewModel.getString("cat_others")
-                            else -> appViewModel.getString("cat_all")
-                        }
-                        val icon = when (catKey) {
-                            "PANES" -> Icons.Default.BakeryDining
-                            "CAFÉ" -> Icons.Default.Coffee
-                            "OTROS" -> Icons.Default.StarBorder
-                            else -> Icons.Default.RestaurantMenu
-                        }
+                    categoryItems.forEach { (index, translatedName, icon) ->
                         CategoryItem(
                             name = translatedName,
                             icon = icon,
@@ -236,17 +250,23 @@ fun HomeScreen(
                 verticalAlignment = Alignment.Top
             ) { pageIndex ->
                 val currentCat = categories[pageIndex]
-                val filteredProducts = if (currentCat == "TODO") {
-                    allProducts
-                } else {
-                    allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) }
+
+                // ✨ OPTIMIZACIÓN ULTRA 120Hz: MEMORIZAR LISTA FILTRADA PARA EVITAR RE-FILTRAR EN CADA FRAME DE SCROLL
+                val filteredProducts = remember(currentCat, allProducts) {
+                    if (currentCat == "TODO") {
+                        allProducts
+                    } else {
+                        allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) }
+                    }
                 }
 
-                val currentCategoryDisplayName = when (currentCat) {
-                    "PANES" -> appViewModel.getString("cat_breads")
-                    "CAFÉ" -> appViewModel.getString("cat_coffee")
-                    "OTROS" -> appViewModel.getString("cat_others")
-                    else -> appViewModel.getString("cat_all")
+                val currentCategoryDisplayName = remember(currentCat, appViewModel.currentLanguage) {
+                    when (currentCat) {
+                        "PANES" -> appViewModel.getString("cat_breads")
+                        "CAFÉ" -> appViewModel.getString("cat_coffee")
+                        "OTROS" -> appViewModel.getString("cat_others")
+                        else -> appViewModel.getString("cat_all")
+                    }
                 }
 
                 Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -280,11 +300,12 @@ fun HomeScreen(
                                 key = { product -> product.id },
                                 contentType = { "Producto" }
                             ) { product ->
+                                val onCardClick = remember(product) { { selectedProduct = product } }
                                 ProductCard(
                                     product = product,
                                     isDarkMode = isDarkMode,
                                     appViewModel = appViewModel,
-                                    onClick = { selectedProduct = product } // ✨ ASIGNA EL PRODUCTO PARA ABRIR EL BOTTOM SHEET
+                                    onClick = onCardClick
                                 )
                             }
                         }
@@ -355,8 +376,18 @@ fun ProductCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     val formattedPrice = remember(product.precio) {
         String.format(Locale.getDefault(), "$%.2f", product.precio)
+    }
+
+    // ✨ CACHÉ OPTIMIZADO DE COIL PARA CADA IMAGEN DE PRODUCTO
+    val imageRequest = remember(product.imagenUrl, context) {
+        ImageRequest.Builder(context)
+            .data(product.imagenUrl)
+            .crossfade(true)
+            .build()
     }
 
     Card(
@@ -372,7 +403,7 @@ fun ProductCard(
         Column {
             Box(modifier = Modifier.height(120.dp).fillMaxWidth()) {
                 AsyncImage(
-                    model = product.imagenUrl,
+                    model = imageRequest,
                     contentDescription = product.nombre,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -466,8 +497,17 @@ fun ProductDetailBottomSheetContent(
     isDarkMode: Boolean,
     onAddToCart: () -> Unit
 ) {
+    val context = LocalContext.current
+
     val formattedPrice = remember(product.precio) {
         String.format(Locale.getDefault(), "$%.2f", product.precio)
+    }
+
+    val imageRequest = remember(product.imagenUrl, context) {
+        ImageRequest.Builder(context)
+            .data(product.imagenUrl)
+            .crossfade(true)
+            .build()
     }
 
     Column(
@@ -485,7 +525,7 @@ fun ProductDetailBottomSheetContent(
                 .background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5))
         ) {
             AsyncImage(
-                model = product.imagenUrl,
+                model = imageRequest,
                 contentDescription = product.nombre,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
