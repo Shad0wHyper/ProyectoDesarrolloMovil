@@ -14,6 +14,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -66,6 +67,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             val appViewModel: AppViewModel = viewModel()
             val context = LocalContext.current
+            val systemDarkTheme = isSystemInDarkTheme()
+
+            // ✨ Modo oscuro 100% automático derivado del tema del sistema Android
+            LaunchedEffect(systemDarkTheme) {
+                appViewModel.isDarkMode = systemDarkTheme
+            }
 
             // Launcher para solicitar el permiso de notificaciones en Android 13+ (API 33+)
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -118,14 +125,16 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
     // ✨ 1. SCROLL INFINITO (SUPERPOSICIÓN REAL CON BOX)
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = if (appViewModel.isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
+            containerColor = if (appViewModel.isDarkMode) Color(0xFF121212) else Color.White,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
             NavHost(
                 navController = navController,
                 startDestination = "home",
                 modifier = Modifier
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .background(if (appViewModel.isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)),
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .background(if (appViewModel.isDarkMode) Color(0xFF121212) else Color.White),
                 enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                 exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
                 popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },

@@ -37,6 +37,8 @@ fun OrdersScreen(
     val orderList = appViewModel.ordersList
 
     Scaffold(
+        containerColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(appViewModel.getString("my_orders"), fontWeight = FontWeight.Bold) },
@@ -46,10 +48,11 @@ fun OrdersScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = if (isDarkMode) Color.White else Color.Black,
                     navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
-                )
+                ),
+                windowInsets = WindowInsets.statusBars
             )
         }
     ) { padding ->
@@ -61,7 +64,8 @@ fun OrdersScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(bottom = 120.dp)
             ) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))

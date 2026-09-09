@@ -59,15 +59,6 @@ fun SettingsScreen(
             item {
                 SettingsSectionTitle(appViewModel.getString("preferences"))
                 
-                SettingsToggleItem(
-                    title = appViewModel.getString("dark_mode"),
-                    subtitle = appViewModel.getString("dark_mode_desc"),
-                    icon = Icons.Default.DarkMode,
-                    checked = appViewModel.isDarkMode,
-                    onCheckedChange = { appViewModel.toggleDarkMode(it) },
-                    isDarkMode = appViewModel.isDarkMode
-                )
-                
                 SettingsClickableItem(
                     title = appViewModel.getString("language"),
                     subtitle = appViewModel.currentLanguage,
@@ -115,7 +106,13 @@ fun SettingsScreen(
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
-            title = { Text(appViewModel.getString("language")) },
+            title = {
+                Text(
+                    appViewModel.getString("language"),
+                    fontWeight = FontWeight.Bold,
+                    color = if (appViewModel.isDarkMode) Color.White else Color.Black
+                )
+            },
             text = {
                 Column {
                     listOf("Español", "English", "Português", "Italiano", "Français").forEach { language ->
@@ -133,18 +130,20 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(language)
+                            Text(language, color = if (appViewModel.isDarkMode) Color.White else Color.Black)
                         }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showLanguageDialog = false }) {
-                    Text(appViewModel.getString("close"))
+                    Text(appViewModel.getString("close"), color = PanAppPrimary)
                 }
-            }
+            },
+            containerColor = if (appViewModel.isDarkMode) Color(0xFF1E1E1E) else Color.White
         )
     }
+
 }
 
 @Composable

@@ -75,7 +75,8 @@ fun HomeScreen(
     val isDarkMode = appViewModel.isDarkMode
 
     Scaffold(
-        containerColor = if (isDarkMode) Color(0xFF121212) else Color.White
+        containerColor = if (isDarkMode) Color(0xFF121212) else Color.White,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         // ✨ 1. CONTENEDOR PRINCIPAL QUE OCUPA TODA LA PANTALLA
         Column(

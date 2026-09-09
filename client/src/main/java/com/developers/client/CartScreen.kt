@@ -289,18 +289,31 @@ fun CartScreen(
     if (showAddressErrorDialog) {
         AlertDialog(
             onDismissRequest = { showAddressErrorDialog = false },
-            title = { Text("Falta Dirección de Envío", fontWeight = FontWeight.Bold) },
-            text = { Text("Se necesita registrar una dirección de entrega en los ajustes de tu perfil para poder realizar una compra.") },
+            title = {
+                Text(
+                    "Falta Dirección de Envío",
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDarkMode) Color.White else Color.Black
+                )
+            },
+            text = {
+                Text(
+                    "Se necesita registrar una dirección de entrega en los ajustes de tu perfil para poder realizar una compra.",
+                    color = if (isDarkMode) Color.LightGray else Color.DarkGray
+                )
+            },
             confirmButton = {
                 Button(
                     onClick = { showAddressErrorDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                 ) {
-                    Text("Entendido")
+                    Text("Entendido", color = Color.White)
                 }
-            }
+            },
+            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
         )
     }
+
 
     if (showPaymentSheet) {
         ModalBottomSheet(
