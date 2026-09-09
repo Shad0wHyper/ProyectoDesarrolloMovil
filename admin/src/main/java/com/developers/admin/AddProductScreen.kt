@@ -34,26 +34,39 @@ import java.util.UUID
 
 val AdminPrimary = Color(0xFF6200EE)
 
+// 1. Data Class IngredienteReceta
+data class IngredienteReceta(
+    val materiaPrimaId: String = "",
+    val nombre: String = "",
+    val cantidad: Int = 0
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
-    productoAEditar: Producto? = null, // ✨ Puede recibir un producto para editar
+    productoAEditar: Producto? = null, // Puede recibir un producto para editar
     onBack: () -> Unit,
     onSuccessSave: () -> Unit
 ) {
-    // ✨ Si recibe un producto, rellena los campos automáticamente
+    // Relleno de campos iniciales
     var nombre by remember { mutableStateOf(productoAEditar?.nombre ?: "") }
     var precio by remember { mutableStateOf(productoAEditar?.precio ?: "") }
-    var stockInicial by remember { mutableStateOf(productoAEditar?.stock?.toString() ?: "") }
     var calificacion by remember { mutableStateOf(productoAEditar?.calificacion?.toString() ?: "5.0") }
     var isNuevo by remember { mutableStateOf(productoAEditar?.isNuevo ?: false) }
     var categoriaSeleccionada by remember { mutableStateOf(productoAEditar?.categoria ?: "PANES") }
+
+    // 1. Estados para el Motor de Recetas
+    var insumosDisponibles by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
+    var ingredientesAgregados by remember { mutableStateOf<List<IngredienteReceta>>(emptyList()) }
+    var insumoSeleccionado by remember { mutableStateOf<MateriaPrima?>(null) }
+    var cantidadInsumoText by remember { mutableStateOf("") }
+    var expandedInsumoDropdown by remember { mutableStateOf(false) }
 
     val categoriasDisponibles = listOf("PANES", "CAFÉ", "OTROS")
     var expandedDropdown by remember { mutableStateOf(false) }
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    val imageUrlGuardada = productoAEditar?.imagenUrl ?: "" // La foto que ya tenía en la nube
+    val imageUrlGuardada = productoAEditar?.imagenUrl ?: "" // Foto guardada previamente
 
     var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -63,6 +76,35 @@ fun AddProductScreen(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> imageUri = uri }
     )
+
+    // 2. Lectura Inicial de materia_prima y recetas existentes
+    LaunchedEffect(Unit) {
+        val db = FirebaseFirestore.getInstance()
+        
+        // Cargar materias primas disponibles para el Dropdown
+        db.collection("materia_prima").get().addOnSuccessListener { snapshot ->
+            insumosDisponibles = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(MateriaPrima::class.java)?.copy(id = doc.id)
+            }
+        }
+
+        // Cargar receta del producto si está en modo edición
+        if (productoAEditar != null) {
+            db.collection("recetas").document(productoAEditar.id).get().addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val rawList = doc.get("ingredientes") as? List<HashMap<String, Any>> ?: emptyList()
+                    val parsed = rawList.map { map ->
+                        IngredienteReceta(
+                            materiaPrimaId = map["materiaPrimaId"]?.toString() ?: "",
+                            nombre = map["nombre"]?.toString() ?: "",
+                            cantidad = (map["cantidad"] as? Number)?.toInt() ?: 0
+                        )
+                    }
+                    ingredientesAgregados = parsed
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -87,7 +129,7 @@ fun AddProductScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // 📸 FOTO
+            // 📸 FOTO DEL PRODUCTO
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,7 +148,6 @@ fun AddProductScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                // Muestra la nueva foto que escogiste, o la que ya tenía en Firebase
                 if (imageUri != null) {
                     AsyncImage(model = imageUri, contentDescription = "Vista previa", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else if (imageUrlGuardada.isNotEmpty()) {
@@ -158,7 +199,7 @@ fun AddProductScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // PRECIO Y STOCK
+            // PRECIO Y CALIFICACIÓN
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = precio, onValueChange = { precio = it }, label = { Text("Precio ($)") },
@@ -167,26 +208,156 @@ fun AddProductScreen(
                     modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true
                 )
                 OutlinedTextField(
-                    value = stockInicial, onValueChange = { stockInicial = it }, label = { Text("Stock Actual") },
-                    leadingIcon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+                    value = calificacion, onValueChange = { calificacion = it }, label = { Text("Estrellas (1.0 - 5.0)") },
+                    leadingIcon = { Icon(Icons.Default.StarBorder, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // CALIFICACIÓN
-            OutlinedTextField(
-                value = calificacion, onValueChange = { calificacion = it }, label = { Text("Estrellas (1.0 - 5.0)") },
-                leadingIcon = { Icon(Icons.Default.StarBorder, contentDescription = null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), singleLine = true
-            )
+            // 3. SECCIÓN: CONSTRUCTOR DE RECETAS (REEMPLAZO DEL STOCK MANUAL)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Receta (Insumos por unidad)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Seleccione la materia prima y la cantidad necesaria para elaborar 1 pan.", fontSize = 12.sp, color = Color.Gray)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Selector de Materia Prima
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = insumoSeleccionado?.let { "${it.nombre} (${it.unidadMedida})" } ?: "Seleccionar Insumo...",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Materia Prima") },
+                            leadingIcon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+                            trailingIcon = {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.clickable { expandedInsumoDropdown = true })
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expandedInsumoDropdown = true },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        DropdownMenu(
+                            expanded = expandedInsumoDropdown,
+                            onDismissRequest = { expandedInsumoDropdown = false },
+                            modifier = Modifier.fillMaxWidth(0.85f).background(Color.White)
+                        ) {
+                            if (insumosDisponibles.isEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("No hay insumos en almacén", color = Color.Gray) },
+                                    onClick = { expandedInsumoDropdown = false }
+                                )
+                            } else {
+                                insumosDisponibles.forEach { insumo ->
+                                    DropdownMenuItem(
+                                        text = { Text("${insumo.nombre} (${insumo.unidadMedida})", fontWeight = FontWeight.Medium) },
+                                        onClick = {
+                                            insumoSeleccionado = insumo
+                                            expandedInsumoDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = cantidadInsumoText,
+                            onValueChange = { cantidadInsumoText = it },
+                            label = { Text("Cantidad (${insumoSeleccionado?.unidadMedida ?: "g"})") },
+                            leadingIcon = { Icon(Icons.Default.Scale, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true
+                        )
+
+                        Button(
+                            onClick = {
+                                val cantInt = cantidadInsumoText.toIntOrNull() ?: 0
+                                if (insumoSeleccionado != null && cantInt > 0) {
+                                    val sel = insumoSeleccionado!!
+                                    val nuevoIngrediente = IngredienteReceta(
+                                        materiaPrimaId = sel.id,
+                                        nombre = "${sel.nombre} (${sel.unidadMedida})",
+                                        cantidad = cantInt
+                                    )
+                                    // Reemplaza o agrega el ingrediente
+                                    ingredientesAgregados = ingredientesAgregados.filter { it.materiaPrimaId != sel.id } + nuevoIngrediente
+                                    cantidadInsumoText = ""
+                                    insumoSeleccionado = null
+                                } else {
+                                    Toast.makeText(context, "Seleccione un insumo e ingrese una cantidad válida", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Agregar Insumo")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Añadir")
+                        }
+                    }
+
+                    // Lista de ingredientes agregados
+                    if (ingredientesAgregados.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Ingredientes de la Receta:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        ingredientesAgregados.forEach { ing ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                color = Color(0xFFF3E5F5),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${ing.nombre}: ${ing.cantidad}",
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AdminPrimary
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            ingredientesAgregados = ingredientesAgregados.filter { it.materiaPrimaId != ing.materiaPrimaId }
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = "Eliminar", tint = Color.Red, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ES NUEVO
+            // MARCAR COMO NUEVO
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
@@ -199,11 +370,10 @@ fun AddProductScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // BOTÓN GUARDAR (EDITAR O CREAR)
+            // 4. BOTÓN GUARDAR (GUARDADO EN 2 PASOS: PRODUCTO Y RECETA)
             Button(
                 onClick = {
                     val priceDouble = precio.toDoubleOrNull()
-                    val stockInt = stockInicial.toIntOrNull() ?: 0
                     val califDouble = calificacion.toDoubleOrNull() ?: 5.0
 
                     if (nombre.trim().isEmpty() || priceDouble == null || (imageUri == null && imageUrlGuardada.isEmpty())) {
@@ -211,41 +381,65 @@ fun AddProductScreen(
                     } else {
                         isSaving = true
 
-                        // Función interna para subir todo a Firebase
+                        // Función interna para guardar todo en Firestore
                         fun guardarEnFirestore(urlFinal: String) {
                             val db = FirebaseFirestore.getInstance()
                             val itemReal = hashMapOf<String, Any>(
                                 "nombre" to nombre.trim().uppercase(),
                                 "precio" to priceDouble,
                                 "categoria" to categoriaSeleccionada,
-                                "stock" to stockInt,
+                                "stock" to (productoAEditar?.stock ?: 0), // 0 si es creación
                                 "calificacion" to califDouble,
                                 "isNuevo" to isNuevo,
                                 "imagenUrl" to urlFinal
                             )
 
                             if (productoAEditar != null) {
-                                // MODO EDICIÓN: Actualizar el documento existente
+                                // MODO EDICIÓN: Actualiza producto y receta
                                 db.collection("productos").document(productoAEditar.id).update(itemReal)
                                     .addOnSuccessListener {
+                                        val recetaMap = hashMapOf("ingredientes" to ingredientesAgregados)
+                                        db.collection("recetas").document(productoAEditar.id).set(recetaMap)
+                                            .addOnSuccessListener {
+                                                isSaving = false
+                                                Toast.makeText(context, "Producto y receta actualizados", Toast.LENGTH_SHORT).show()
+                                                onSuccessSave()
+                                            }
+                                            .addOnFailureListener {
+                                                isSaving = false
+                                                Toast.makeText(context, "Producto actualizado pero falló receta", Toast.LENGTH_SHORT).show()
+                                            }
+                                    }
+                                    .addOnFailureListener {
                                         isSaving = false
-                                        Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
-                                        onSuccessSave()
+                                        Toast.makeText(context, "Error al actualizar producto", Toast.LENGTH_SHORT).show()
                                     }
                             } else {
-                                // MODO CREACIÓN: Agregar uno nuevo
+                                // MODO CREACIÓN: Crea producto, obtiene id y guarda receta
                                 db.collection("productos").add(itemReal)
-                                    .addOnSuccessListener {
+                                    .addOnSuccessListener { docRef ->
+                                        val nuevoId = docRef.id
+                                        val recetaMap = hashMapOf("ingredientes" to ingredientesAgregados)
+                                        db.collection("recetas").document(nuevoId).set(recetaMap)
+                                            .addOnSuccessListener {
+                                                isSaving = false
+                                                Toast.makeText(context, "Producto y receta creados", Toast.LENGTH_SHORT).show()
+                                                onSuccessSave()
+                                            }
+                                            .addOnFailureListener {
+                                                isSaving = false
+                                                Toast.makeText(context, "Producto creado pero falló receta", Toast.LENGTH_SHORT).show()
+                                            }
+                                    }
+                                    .addOnFailureListener {
                                         isSaving = false
-                                        Toast.makeText(context, "Producto guardado", Toast.LENGTH_SHORT).show()
-                                        onSuccessSave()
+                                        Toast.makeText(context, "Error al crear producto", Toast.LENGTH_SHORT).show()
                                     }
                             }
                         }
 
                         // Lógica de imágenes
                         if (imageUri != null) {
-                            // Subir foto nueva
                             val imageId = UUID.randomUUID().toString()
                             val storageRef = FirebaseStorage.getInstance().reference.child("productos/$imageId.jpg")
                             storageRef.putFile(imageUri!!)
@@ -257,7 +451,6 @@ fun AddProductScreen(
                                     Toast.makeText(context, "Error al subir foto", Toast.LENGTH_SHORT).show()
                                 }
                         } else {
-                            // Mantener foto vieja
                             guardarEnFirestore(imageUrlGuardada)
                         }
                     }
@@ -270,7 +463,7 @@ fun AddProductScreen(
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(if (productoAEditar != null) "Actualizar Producto" else "Dar de Alta Producto", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(if (productoAEditar != null) "Actualizar Producto y Receta" else "Dar de Alta Producto y Receta", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(30.dp))

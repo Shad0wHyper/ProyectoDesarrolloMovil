@@ -174,12 +174,12 @@ fun DashboardAdminScreen(navController: NavHostController) {
                             productoAEditar = productoQueQueremosEditar
                             navController.navigate(AdminScreen.AddProduct.route)
                         },
-                        // ✨ Conectamos el botón para abrir el Generador QR
-                        onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) }
+                        onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
+                        onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
                     )
                 }
             }
-            composable(AdminScreen.Almacen.route) { AlmacenStockScreen() }
+            composable(AdminScreen.Almacen.route) { AlmacenScreen() }
             composable(AdminScreen.Pedidos.route) { PedidosScreen() }
             composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
             composable(AdminScreen.AddProduct.route) {
@@ -190,6 +190,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
                 )
             }
             composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
+            composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }
@@ -206,7 +207,8 @@ fun DashboardContent(
     onAddClick: () -> Unit,
     onDecreaseStock: (Producto) -> Unit,
     onEditClick: (Producto) -> Unit,
-    onQrClick: () -> Unit // ✨ Nuevo parámetro para el clic del QR
+    onQrClick: () -> Unit,
+    onProduccionClick: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -231,6 +233,7 @@ fun DashboardContent(
             )
         }
         item { AIPredictionsSection(onClick = onAIPredictionsClick) }
+        item { ProduccionDiariaCard(onClick = onProduccionClick) }
         item {
             GestionProductosSection(
                 textBusqueda = textBusqueda,
@@ -378,6 +381,59 @@ fun AIPredictionsSection(onClick: () -> Unit) {
         }
     }
 }
+
+@Composable
+fun ProduccionDiariaCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF3F51B5)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Factory,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Gestor de Producción ERP",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Registrar horneados y produccion del dia",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 12.sp
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color.White
+            )
+        }
+    }
+}
+
 
 @Composable
 fun ResumenHoySection(onGestionarPedidosClick: () -> Unit) {
