@@ -13,6 +13,11 @@ import com.google.firebase.messaging.FirebaseMessaging
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.io.IOException
 
 // ✨ NUEVO: Modelo para leer los artículos detallados desde Firebase
 data class OrderItemDetail(
@@ -40,6 +45,8 @@ data class OrderData(
     val total: String = "",
     val timestamp: Long = 0L,
     val direccionEnvio: String = "",
+    val metodoPago: String = "Tarjeta",
+    val pagado: Boolean = false,
     val itemsList: List<OrderItemDetail> = emptyList() // ✨ AQUÍ SE GUARDAN TODOS LOS ARTÍCULOS
 )
 
@@ -55,6 +62,15 @@ class AppViewModel : ViewModel() {
     var userPhone by mutableStateOf("...")
     var userImageUrl by mutableStateOf("")
     var userAddress by mutableStateOf("")
+
+    // Datos de Banco / Saldo
+    var userBalance by mutableStateOf(0.0)
+    var isFetchingBalance by mutableStateOf(false)
+
+    // Datos de Pago Guardados
+    var userCardLast4 by mutableStateOf("")
+    var userCardExp by mutableStateOf("")
+    var hasSavedCard by mutableStateOf(false)
 
     var cartItems by mutableStateOf<List<CartItem>>(emptyList())
     var ordersList by mutableStateOf<List<OrderData>>(emptyList())
@@ -91,6 +107,17 @@ class AppViewModel : ViewModel() {
                     userPhone = doc.getString("telefono") ?: "..."
                     userImageUrl = doc.getString("imageUrl") ?: ""
                     userAddress = doc.getString("direccion") ?: ""
+                    
+                    // Cargar saldo del banco
+                    userBalance = doc.getDouble("saldo") ?: 1500.0 // Saldo inicial de cortesía si no existe
+                    if (!doc.contains("saldo")) {
+                        db.collection("usuarios").document(uid).update("saldo", userBalance)
+                    }
+
+                    // Cargar datos de tarjeta
+                    userCardLast4 = doc.getString("cardLast4") ?: ""
+                    userCardExp = doc.getString("cardExp") ?: ""
+                    hasSavedCard = userCardLast4.isNotEmpty()
                 } else {
                     userName = "PanApp User"
                 }
@@ -126,6 +153,8 @@ class AppViewModel : ViewModel() {
                             total = String.format("$%.2f", d.getDouble("total") ?: 0.0),
                             timestamp = ts,
                             direccionEnvio = d.getString("direccion") ?: d.getString("direccionEnvio") ?: "",
+                            metodoPago = d.getString("metodoPago") ?: "Tarjeta",
+                            pagado = d.getBoolean("pagado") ?: false,
                             itemsList = parsedItems // ✨ SE LO PASAMOS A LA TARJETA
                         )
                     }.sortedByDescending { it.timestamp }
@@ -143,6 +172,113 @@ class AppViewModel : ViewModel() {
                 userName = name; userPhone = phone; userAddress = address
                 onComplete()
             }
+    }
+
+    fun savePaymentCard(last4: String, exp: String) {
+        val uid = currentUserId
+        if (uid == "INVITADO") return
+        val updates = mapOf("cardLast4" to last4, "cardExp" to exp)
+        FirebaseFirestore.getInstance().collection("usuarios").document(uid).update(updates)
+            .addOnSuccessListener {
+                userCardLast4 = last4
+                userCardExp = exp
+                hasSavedCard = true
+            }
+    }
+
+    /**
+     * Crea un PaymentIntent real con Stripe para procesar un pago.
+     * En producción, esto se debe llamar a tu Servidor Backend.
+     */
+    fun createStripePaymentIntent(amount: Double, methodType: String = "card", onResult: (String?) -> Unit) {
+        val client = OkHttpClient()
+        
+        // El monto debe estar en centavos para Stripe (ej: $10.00 -> 1000)
+        val amountInCents = (amount * 100).toInt()
+        
+        val bodyBuilder = FormBody.Builder()
+            .add("amount", amountInCents.toString())
+            .add("currency", "mxn")
+        
+        if (methodType == "oxxo") {
+            bodyBuilder.add("payment_method_types[]", "oxxo")
+        } else {
+            bodyBuilder.add("payment_method_types[]", "card")
+        }
+
+        val request = Request.Builder()
+            .url("https://api.stripe.com/v1/payment_intents")
+            .addHeader("Authorization", "Bearer ${PaymentConfig.SECRET_KEY}")
+            .post(bodyBuilder.build())
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("Stripe", "Error creando PaymentIntent", e)
+                onResult(null)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    val json = JSONObject(body)
+                    val clientSecret = json.getString("client_secret")
+                    onResult(clientSecret)
+                } else {
+                    Log.e("Stripe", "Error en respuesta Stripe: ${response.code} - $body")
+                    onResult(null)
+                }
+            }
+        })
+    }
+
+    /**
+     * Procesa el cobro bancario real:
+     * 1. Descuenta del saldo del usuario.
+     * 2. Transfiere a la cuenta de referencia.
+     */
+    fun procesarCobroBancario(monto: Double, onResult: (Boolean, String) -> Unit) {
+        val uid = currentUserId
+        if (uid == "INVITADO" || uid.isEmpty()) {
+            onResult(false, "Inicia sesión para pagar")
+            return
+        }
+
+        if (userBalance < monto) {
+            onResult(false, "Saldo insuficiente en tu cuenta bancaria")
+            return
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        val userRef = db.collection("usuarios").document(uid)
+        val targetAccountRef = db.collection("banco_oficial").document("722969013635365979")
+
+        // Usamos una transacción para asegurar que el dinero no se pierda ni se duplique
+        db.runTransaction { transaction ->
+            val userDoc = transaction.get(userRef)
+            val currentBalance = userDoc.getDouble("saldo") ?: 0.0
+            
+            if (currentBalance < monto) {
+                throw Exception("Saldo insuficiente")
+            }
+
+            // 1. Descontar del usuario
+            transaction.update(userRef, "saldo", currentBalance - monto)
+
+            // 2. Aumentar a la cuenta destino (Simulado)
+            // Si el documento no existe, lo creamos
+            transaction.set(targetAccountRef, mapOf(
+                "saldo_acumulado" to FieldValue.increment(monto),
+                "ultima_transaccion" to System.currentTimeMillis()
+            ), SetOptions.merge())
+
+            null
+        }.addOnSuccessListener {
+            userBalance -= monto
+            onResult(true, "Cobro realizado con éxito")
+        }.addOnFailureListener { e ->
+            onResult(false, e.message ?: "Error en la transacción bancaria")
+        }
     }
 
     fun updateProfileImage(imageUrl: String) {

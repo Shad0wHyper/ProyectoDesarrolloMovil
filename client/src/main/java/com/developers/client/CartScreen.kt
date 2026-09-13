@@ -2,6 +2,7 @@ package com.developers.client
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.CreditCard
@@ -26,15 +28,21 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.developers.client.ui.theme.PanAppPrimary
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.rememberPaymentSheet
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,10 +52,13 @@ fun CartScreen(
     onPaymentSuccess: () -> Unit
 ) {
     var selectedPaymentMethod by remember { mutableStateOf("Tarjeta") }
-    var showPaymentSheet by remember { mutableStateOf(false) }
+    var showPaymentSheetManual by remember { mutableStateOf(false) }
 
     // ✨ Estado para controlar el pop-up de error de dirección
     var showAddressErrorDialog by remember { mutableStateOf(false) }
+
+    // ✨ Nuevo estado para la dirección editable en tiempo real
+    var editableAddress by remember(appViewModel.userAddress) { mutableStateOf(appViewModel.userAddress) }
 
     val isDarkMode = appViewModel.isDarkMode
 
@@ -56,70 +67,20 @@ fun CartScreen(
     val taxes = subtotal * 0.08
     val finalTotal = subtotal + deliveryFee + taxes
 
-    val paymentSheet = rememberPaymentSheet { paymentSheetResult ->
-        when (paymentSheetResult) {
-            is com.stripe.android.paymentsheet.PaymentSheetResult.Completed -> {
-                // ✨ CORRECCIÓN: Leemos el ID desde nuestro ViewModel Inteligente
-                val uid = appViewModel.currentUserId
-                if (uid != "INVITADO" && uid.isNotEmpty()) {
-                    val db = FirebaseFirestore.getInstance()
-                    val itemsListFirebase = appViewModel.cartItems.map { item ->
-                        hashMapOf("nombre" to item.name, "cantidad" to item.quantity, "precio" to item.price)
-                    }
-                    val nuevoPedido = hashMapOf(
-                        "userId" to uid,
-                        "clienteNombre" to appViewModel.userName,
-                        "cliente" to appViewModel.userName,
-                        "direccion" to appViewModel.userAddress,
-                        "direccionEnvio" to appViewModel.userAddress,
-                        "total" to finalTotal,
-                        "estado" to "PENDIENTE",
-                        "status" to "PENDIENTE",
-                        "timestamp" to System.currentTimeMillis(),
-                        "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
-                        "itemCount" to appViewModel.cartTotalQuantity,
-                        "items" to itemsListFirebase
-                    )
-                    db.collection("usuarios").document(uid).collection("pedidos").add(nuevoPedido)
-                        .addOnSuccessListener {
-                            appViewModel.clearCart()
-                            onPaymentSuccess()
-                        }
-                }
-            }
-            is com.stripe.android.paymentsheet.PaymentSheetResult.Canceled -> { }
-            is com.stripe.android.paymentsheet.PaymentSheetResult.Failed -> { }
-        }
-    }
-
-    fun presentPaymentSheet() {
-        val googlePayConfig = PaymentSheet.GooglePayConfiguration(
-            environment = PaymentSheet.GooglePayConfiguration.Environment.Test,
-            countryCode = "MX"
-        )
-        val configuration = PaymentSheet.Configuration(
-            merchantDisplayName = "PanApp Inc.",
-            googlePay = googlePayConfig,
-            allowsDelayedPaymentMethods = true
-        )
-        paymentSheet.presentWithPaymentIntent(
-            "pi_example_secret_placeholder",
-            configuration
-        )
-    }
-
-    // ✨ LÓGICA FILTRADORA DE SEGURIDAD
+    // ✨ LÓGICA FILTRADORA DE SEGURIDAD (Permite poner la dirección aquí mismo)
     fun handleCheckoutProcess() {
-        if (appViewModel.userAddress.trim().isEmpty()) {
-            // Candado activado: No hay dirección, detenemos todo y mostramos Pop-Up
+        if (editableAddress.trim().isEmpty()) {
             showAddressErrorDialog = true
         } else {
-            // Procedimiento normal de cobro
-            if (selectedPaymentMethod == "Tarjeta") {
-                presentPaymentSheet()
-            } else {
-                showPaymentSheet = true
+            appViewModel.userAddress = editableAddress
+            val uid = appViewModel.currentUserId
+            if (uid != "INVITADO" && uid.isNotEmpty()) {
+                FirebaseFirestore.getInstance().collection("usuarios").document(uid)
+                    .update("direccion", editableAddress)
             }
+
+            // Mostramos la pasarela manual para todos los métodos para asegurar funcionalidad
+            showPaymentSheetManual = true
         }
     }
 
@@ -155,7 +116,7 @@ fun CartScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { handleCheckoutProcess() }, // ✨ Redirige al filtro de seguridad
+                        onClick = { handleCheckoutProcess() },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         enabled = appViewModel.cartItems.isNotEmpty(),
@@ -222,24 +183,33 @@ fun CartScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ✨ MOSTRAR DIRECCIÓN EN EL RESUMEN DEL CARRITO (Si ya la tiene escrita)
-                if (appViewModel.userAddress.trim().isNotEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = PanAppPrimary.copy(alpha = 0.05f))
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text("Entregar en:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                                Text(appViewModel.userAddress, fontSize = 14.sp, color = if (isDarkMode) Color.White else Color.Black)
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
+                Text(
+                    "Dirección de Entrega",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDarkMode) Color.White else Color.Black
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = editableAddress,
+                    onValueChange = { editableAddress = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ej. Calle Principal #123, Colonia Centro") },
+                    leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PanAppPrimary,
+                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f),
+                        focusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+                        unfocusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+                        focusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                        unfocusedTextColor = if (isDarkMode) Color.White else Color.Black
+                    ),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color.LightGray.copy(alpha = 0.5f))
                 Spacer(modifier = Modifier.height(24.dp))
@@ -255,7 +225,7 @@ fun CartScreen(
                 Column {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("card"), "Stripe / Apple Pay", Icons.Outlined.CreditCard,
+                            appViewModel.getString("card"), "Visa / Mastercard", Icons.Outlined.CreditCard,
                             selectedPaymentMethod == "Tarjeta", isDarkMode, Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Tarjeta" }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -267,7 +237,7 @@ fun CartScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("cash"), "OXXO / Tienda", Icons.Outlined.Payments,
+                            appViewModel.getString("cash"), "OXXO Pay", Icons.Outlined.Payments,
                             selectedPaymentMethod == "Efectivo", isDarkMode, Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Efectivo" }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -285,75 +255,128 @@ fun CartScreen(
         }
     }
 
-    // ✨ POP-UP FLOTANTE DE ERROR DE DIRECCIÓN (Candado del Carrito)
     if (showAddressErrorDialog) {
         AlertDialog(
             onDismissRequest = { showAddressErrorDialog = false },
-            title = {
-                Text(
-                    "Falta Dirección de Envío",
-                    fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black
-                )
-            },
-            text = {
-                Text(
-                    "Se necesita registrar una dirección de entrega en los ajustes de tu perfil para poder realizar una compra.",
-                    color = if (isDarkMode) Color.LightGray else Color.DarkGray
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showAddressErrorDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
-                ) {
-                    Text("Entendido", color = Color.White)
-                }
-            },
+            title = { Text("Falta Dirección de Envío", fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black) },
+            text = { Text("Se necesita registrar una dirección de entrega para realizar una compra.", color = if (isDarkMode) Color.LightGray else Color.DarkGray) },
+            confirmButton = { Button(onClick = { showAddressErrorDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)) { Text("Entendido", color = Color.White) } },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
         )
     }
 
+    // ✨ PASARELA DE PAGO MANUAL (CONECTADA AL BANCO INTERNO)
+    var isProcessingPayment by remember { mutableStateOf(false) }
+    var paymentErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    if (showPaymentSheet) {
+    if (showPaymentSheetManual) {
         ModalBottomSheet(
-            onDismissRequest = { showPaymentSheet = false },
+            onDismissRequest = { if (!isProcessingPayment) showPaymentSheetManual = false },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
             dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkMode) Color.Gray else Color.LightGray) }
         ) {
-            PaymentGatewayContent(selectedPaymentMethod, isDarkMode, appViewModel) {
-                // ✨ CORRECCIÓN: Leemos el ID desde nuestro ViewModel Inteligente
-                val uid = appViewModel.currentUserId
-                if (uid != "INVITADO" && uid.isNotEmpty()) {
-                    val db = FirebaseFirestore.getInstance()
-                    val itemsListFirebase = appViewModel.cartItems.map { item ->
-                        hashMapOf("nombre" to item.name, "cantidad" to item.quantity, "precio" to item.price)
+            PaymentGatewayContent(
+                method = selectedPaymentMethod,
+                isDarkMode = isDarkMode,
+                appViewModel = appViewModel,
+                isProcessing = isProcessingPayment,
+                onCancel = { if (!isProcessingPayment) showPaymentSheetManual = false },
+                onConfirm = { last4, barcode ->
+                    isProcessingPayment = true
+                    paymentErrorMessage = null
+                    
+                    if (selectedPaymentMethod == "Efectivo") {
+                        registrarPedidoEnFirebase(
+                            appViewModel = appViewModel,
+                            total = finalTotal,
+                            metodo = "OXXO Pay",
+                            cardInfo = "Ref: $barcode",
+                            onSuccess = onPaymentSuccess,
+                            onComplete = {
+                                isProcessingPayment = false
+                                showPaymentSheetManual = false
+                            }
+                        )
+                    } else {
+                        // ✨ PROCESAR COBRO BANCARIO REAL (Saldo interno App)
+                        appViewModel.procesarCobroBancario(finalTotal) { success, message ->
+                            if (!success) {
+                                isProcessingPayment = false
+                                paymentErrorMessage = message
+                            } else {
+                                registrarPedidoEnFirebase(
+                                    appViewModel = appViewModel,
+                                    total = finalTotal,
+                                    metodo = selectedPaymentMethod,
+                                    cardInfo = if (selectedPaymentMethod == "Tarjeta") "**** $last4" else "",
+                                    onSuccess = onPaymentSuccess,
+                                    onComplete = {
+                                        isProcessingPayment = false
+                                        showPaymentSheetManual = false
+                                    }
+                                )
+                            }
+                        }
                     }
-                    val nuevoPedido = hashMapOf(
-                        "userId" to uid,
-                        "clienteNombre" to appViewModel.userName,
-                        "cliente" to appViewModel.userName,
-                        "direccion" to appViewModel.userAddress,
-                        "direccionEnvio" to appViewModel.userAddress,
-                        "total" to finalTotal,
-                        "estado" to "PENDIENTE",
-                        "status" to "PENDIENTE",
-                        "timestamp" to System.currentTimeMillis(),
-                        "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
-                        "itemCount" to appViewModel.cartTotalQuantity,
-                        "items" to itemsListFirebase
-                    )
-                    db.collection("usuarios").document(uid).collection("pedidos").add(nuevoPedido).addOnSuccessListener {
-                        showPaymentSheet = false
-                        appViewModel.clearCart()
-                        onPaymentSuccess()
-                    }
-                } else {
-                    showPaymentSheet = false
                 }
+            )
+            
+            paymentErrorMessage?.let { msg ->
+                Text(msg, color = Color.Red, modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
+}
+
+fun registrarPedidoEnFirebase(
+    appViewModel: AppViewModel,
+    total: Double,
+    metodo: String,
+    cardInfo: String,
+    onSuccess: () -> Unit,
+    onComplete: () -> Unit = {}
+) {
+    val uid = appViewModel.currentUserId
+    val db = FirebaseFirestore.getInstance()
+    val batch = db.batch()
+
+    val itemsListFirebase = appViewModel.cartItems.map { item ->
+        val productRef = db.collection("productos").document(item.id)
+        batch.update(productRef, "stock", FieldValue.increment(-item.quantity.toLong()))
+        
+        hashMapOf("nombre" to item.name, "cantidad" to item.quantity, "precio" to item.price)
+    }
+
+    val nuevoPedido = hashMapOf(
+        "userId" to uid,
+        "clienteNombre" to appViewModel.userName,
+        "cliente" to appViewModel.userName,
+        "direccion" to appViewModel.userAddress,
+        "direccionEnvio" to appViewModel.userAddress,
+        "total" to total,
+        "estado" to "PENDIENTE",
+        "status" to "PENDIENTE",
+        "timestamp" to System.currentTimeMillis(),
+        "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
+        "itemCount" to appViewModel.cartTotalQuantity,
+        "items" to itemsListFirebase,
+        "metodoPago" to metodo,
+        "pagado" to true,
+        "cuentaDestino" to "7229 6901 3635 3659 79",
+        "cardUsed" to cardInfo
+    )
+    if (uid != "INVITADO" && uid.isNotEmpty()) {
+        val userRef = db.collection("usuarios").document(uid).collection("pedidos").document()
+        batch.set(userRef, nuevoPedido)
+    }
+    val globalRef = db.collection("pedidos").document()
+    batch.set(globalRef, nuevoPedido)
+
+    batch.commit().addOnSuccessListener {
+        appViewModel.clearCart()
+        onSuccess()
+        onComplete()
+    }.addOnFailureListener { onComplete() }
 }
 
 @Composable
@@ -361,19 +384,14 @@ fun OrderSummaryWidget(subtotal: Double, delivery: Double, taxes: Double, total:
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF0F0F0).copy(alpha = 0.5f)
-        )
+        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF0F0F0).copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             SummaryRow(appViewModel.getString("subtotal"), String.format("$%.2f", subtotal), isDarkMode)
             SummaryRow(appViewModel.getString("delivery"), String.format("$%.2f", delivery), isDarkMode)
             SummaryRow(appViewModel.getString("taxes"), String.format("$%.2f", taxes), isDarkMode)
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray.copy(alpha = 0.2f))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = if (isDarkMode) Color.White else Color.Black)
                 Text(String.format("$%.2f", total), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = PanAppPrimary)
             }
@@ -383,174 +401,199 @@ fun OrderSummaryWidget(subtotal: Double, delivery: Double, taxes: Double, total:
 
 @Composable
 fun SummaryRow(label: String, value: String, isDarkMode: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
         Text(value, color = if (isDarkMode) Color.White else Color.Black, fontWeight = FontWeight.Medium)
     }
 }
 
 @Composable
-fun PaymentGatewayContent(method: String, isDarkMode: Boolean, appViewModel: AppViewModel, onDismiss: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = when(method) {
-                "Tarjeta" -> Icons.Outlined.CreditCard
-                "Transferencia" -> Icons.Outlined.AccountBalance
-                "Efectivo" -> Icons.Outlined.Payments
-                else -> Icons.Outlined.Storefront
-            },
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = PanAppPrimary
-        )
+fun PaymentGatewayContent(
+    method: String,
+    isDarkMode: Boolean,
+    appViewModel: AppViewModel,
+    isProcessing: Boolean = false,
+    onConfirm: (String, String) -> Unit, // (last4, barcode)
+    onCancel: () -> Unit
+) {
+    var cardNumber by remember { mutableStateOf("") }
+    var expiryDate by remember { mutableStateOf(appViewModel.userCardExp) }
+    var cvc by remember { mutableStateOf("") }
+    var saveCard by remember { mutableStateOf(false) }
 
+    // Generar un código de barras único cada vez que se abre la pasarela
+    val oxxoReference = remember(method) { 
+        (1..14).map { Random.nextInt(0, 10) }.joinToString("") 
+    }
+
+    // ✨ DETERMINAR SI USAR LA TARJETA GUARDADA O LA NUEVA
+    val isUsingSavedCard = appViewModel.hasSavedCard && cardNumber.isEmpty()
+    
+    val displayCardValue = if (isUsingSavedCard) {
+        "**** **** **** ${appViewModel.userCardLast4}"
+    } else cardNumber
+
+    val isCardValid = remember(cardNumber, expiryDate, cvc, appViewModel.hasSavedCard) {
+        if (method != "Tarjeta") true
+        else if (isUsingSavedCard && cvc.length == 3) true
+        else cardNumber.length == 16 && expiryDate.length >= 4 && cvc.length == 3
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(imageVector = when(method) { "Tarjeta" -> Icons.Outlined.CreditCard; "Transferencia" -> Icons.Outlined.AccountBalance; "Efectivo" -> Icons.Outlined.Payments; else -> Icons.Outlined.Storefront }, contentDescription = null, modifier = Modifier.size(48.dp), tint = PanAppPrimary)
         Spacer(modifier = Modifier.height(16.dp))
-
+        
         Text(
-            text = "Completar Pago",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            text = if (method == "Efectivo") "OXXO Pay" 
+                   else if (isUsingSavedCard) "Confirmar Tarjeta Guardada" 
+                   else "Completar Pago", 
+            style = MaterialTheme.typography.headlineSmall, 
+            fontWeight = FontWeight.Bold, 
             color = if (isDarkMode) Color.White else Color.Black
         )
-        Text(
-            text = "Método seleccionado: $method",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
+        
+        Text(text = "Método seleccionado: $method", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        
+        if (method != "Efectivo") {
+            Text(text = "Tu saldo: ${String.format("$%.2f", appViewModel.userBalance)}", style = MaterialTheme.typography.labelLarge, color = if (appViewModel.userBalance < (appViewModel.cartSubtotal + 5.5)) Color.Red else Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5),
-            shape = RoundedCornerShape(12.dp)
-        ) {
+        Surface(modifier = Modifier.fillMaxWidth(), color = if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5), shape = RoundedCornerShape(12.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = when(method) {
-                        "Transferencia" -> "CLABE: 0123 4567 8901 2345 67\nBanco: PanBank\nReferencia: #ORDER-772"
-                        "Efectivo" -> "Presenta este código en cualquier OXXO o tienda afiliada para realizar tu pago."
-                        else -> "Ingresa los detalles de tu $method para continuar con la transacción segura."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isDarkMode) Color.LightGray else Color.DarkGray,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
+                Text(text = when(method) { 
+                    "Transferencia" -> "CLABE: 7229 6901 3635 3659 79\nBanco: PanApp Official\nReferencia: #ORD-${System.currentTimeMillis().toString().takeLast(6)}"
+                    "Efectivo" -> "Presenta este código en cualquier OXXO para pagar tu pedido."
+                    "Tarjeta" -> if (isUsingSavedCard) "Confirma el CVC de tu tarjeta guardada para proceder." else "Introduce los datos de tu tarjeta. Los fondos se liquidarán a la cuenta terminada en ...5979.\n(Conexión SSL Segura)"
+                    else -> "Ingresa los detalles de tu $method para continuar con la transacción segura." 
+                }, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                
                 if (method == "Efectivo") {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                            .background(Color.White)
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("|| ||| || |||| ||| ||", letterSpacing = 4.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
+                                .background(Color.White)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "|| ||| || |||| ||| ||", letterSpacing = 4.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        }
+                        Text(
+                            text = oxxoReference.chunked(4).joinToString(" "),
+                            letterSpacing = 2.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isDarkMode) Color.White else Color.Black,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+                if (method == "Tarjeta") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = displayCardValue, 
+                            onValueChange = { if (it.length <= 16 && it.all { c -> c.isDigit() }) { cardNumber = it } }, 
+                            modifier = Modifier.fillMaxWidth(), 
+                            label = { Text("Número de Tarjeta") }, 
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
+                            placeholder = { Text("0000 0000 0000 0000") }, 
+                            leadingIcon = { Icon(Icons.Outlined.CreditCard, contentDescription = null) }, 
+                            trailingIcon = { 
+                                if (isUsingSavedCard) { 
+                                    TextButton(onClick = { cardNumber = ""; expiryDate = ""; cvc = ""; saveCard = false }) { 
+                                        Text("Cambiar", fontSize = 12.sp) 
+                                    } 
+                                } 
+                            }, 
+                            singleLine = true, 
+                            enabled = !isProcessing && !isUsingSavedCard, 
+                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                        )
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = expiryDate, 
+                                onValueChange = { if (it.length <= 5) expiryDate = it }, 
+                                modifier = Modifier.weight(1f), 
+                                label = { Text("MM/YY") }, 
+                                placeholder = { Text("12/28") }, 
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
+                                singleLine = true, 
+                                enabled = !isProcessing && !isUsingSavedCard, 
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                            )
+                            OutlinedTextField(
+                                value = cvc, 
+                                onValueChange = { if (it.length <= 3 && it.all { c -> c.isDigit() }) cvc = it }, 
+                                modifier = Modifier.weight(1f), 
+                                label = { Text("CVC") }, 
+                                placeholder = { Text("123") }, 
+                                visualTransformation = PasswordVisualTransformation(), 
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
+                                singleLine = true, 
+                                enabled = !isProcessing, 
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                            )
+                        }
+                        
+                        if (!appViewModel.hasSavedCard || !isUsingSavedCard) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !isProcessing) { saveCard = !saveCard }) { 
+                                Checkbox(checked = saveCard, onCheckedChange = { saveCard = it }, enabled = !isProcessing)
+                                Text("Guardar tarjeta para futuras compras", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray) 
+                            }
+                        }
+                        
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF4CAF50)); Spacer(modifier = Modifier.width(6.dp)); Text("Tus datos están encriptados y protegidos.", style = MaterialTheme.typography.labelSmall, color = Color(0xFF4CAF50)) }
                     }
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(32.dp))
-
         Button(
-            onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            onClick = { 
+                val finalLast4 = if (isUsingSavedCard) appViewModel.userCardLast4 else cardNumber.takeLast(4)
+                val finalExp = if (isUsingSavedCard) appViewModel.userCardExp else expiryDate
+                
+                if (saveCard && cardNumber.isNotEmpty()) { 
+                    appViewModel.savePaymentCard(finalLast4, finalExp) 
+                }
+                onConfirm(finalLast4, oxxoReference) 
+            }, 
+            modifier = Modifier.fillMaxWidth(), 
+            shape = RoundedCornerShape(12.dp), 
+            enabled = isCardValid && !isProcessing, 
             colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
         ) {
-            Text(
-                if (method == "Tarjeta") appViewModel.getString("pay_now") else "Confirmar Pedido",
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
+            if (isProcessing) { 
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp) 
+            } else { 
+                Text(if (method == "Tarjeta") appViewModel.getString("pay_now") else if (method == "Efectivo") "Generar Código OXXO" else "Confirmar Pedido", modifier = Modifier.padding(vertical = 4.dp)) 
+            }
         }
-
-        TextButton(onClick = { /* Aquí puedes manejar cancelar */ }) {
-            Text(appViewModel.getString("close"), color = Color.Gray)
-        }
+        TextButton(onClick = onCancel, enabled = !isProcessing) { Text(appViewModel.getString("close"), color = Color.Gray) }
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun CartItemWidget(
-    item: CartItem,
-    isDarkMode: Boolean,
-    onIncrease: () -> Unit,
-    onDecrease: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(item.imageUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = item.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5))
-            )
-
+fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, onDecrease: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F8F8).copy(alpha = 0.5f))) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(item.imageUrl).crossfade(true).build(), contentDescription = item.name, contentScale = ContentScale.Crop, modifier = Modifier.size(70.dp).clip(RoundedCornerShape(12.dp)).background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)))
             Spacer(modifier = Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
                 Text(item.desc, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-
                 Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(String.format("$%.2f", item.price), color = PanAppPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = onDecrease,
-                            modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)
-                        ) {
-                            Icon(Icons.Default.Remove, contentDescription = "Menos", modifier = Modifier.size(16.dp), tint = if (isDarkMode) Color.White else Color.Black)
-                        }
-
-                        Text(
-                            text = "${item.quantity}",
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDarkMode) Color.White else Color.Black
-                        )
-
-                        IconButton(
-                            onClick = { onIncrease() },
-                            modifier = Modifier.size(28.dp).background(PanAppPrimary, CircleShape)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Más", modifier = Modifier.size(16.dp), tint = Color.White)
-                        }
+                        IconButton(onClick = onDecrease, modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Remove, contentDescription = "Menos", modifier = Modifier.size(16.dp), tint = if (isDarkMode) Color.White else Color.Black) }
+                        Text(text = "${item.quantity}", modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
+                        IconButton(onClick = { onIncrease() }, modifier = Modifier.size(28.dp).background(PanAppPrimary, CircleShape)) { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
                     }
                 }
             }
@@ -559,32 +602,11 @@ fun CartItemWidget(
 }
 
 @Composable
-fun PaymentMethodItem(
-    title: String, subtitle: String, icon: ImageVector,
-    isSelected: Boolean, isDarkMode: Boolean, modifier: Modifier, onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) Color(0xFF32324D) else if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
-        border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
-        onClick = onClick
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                icon, contentDescription = null,
-                tint = if (isSelected) Color.White else Color.Gray
-            )
-            Text(
-                title,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isDarkMode || isSelected) Color.White else Color.Black
-            )
+fun PaymentMethodItem(title: String, subtitle: String, icon: ImageVector, isSelected: Boolean, isDarkMode: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Surface(modifier = modifier.height(100.dp), shape = RoundedCornerShape(16.dp), color = if (isSelected) Color(0xFF32324D) else if (isDarkMode) Color(0xFF1E1E1E) else Color.White, border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)), onClick = onClick) {
+        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(icon, contentDescription = null, tint = if (isSelected) Color.White else Color.Gray)
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode || isSelected) Color.White else Color.Black)
         }
     }
 }

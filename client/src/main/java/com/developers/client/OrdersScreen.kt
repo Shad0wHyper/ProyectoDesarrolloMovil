@@ -112,8 +112,18 @@ fun OrdersScreen(
                             Text("${appViewModel.getString("date")}: ${selectedOrder?.date}")
                             Text("Envío a: ${selectedOrder?.direccionEnvio}", fontSize = 12.sp, color = Color.Gray)
                             Text("Total: ${selectedOrder?.total}")
+                            Text("Método: ${selectedOrder?.metodoPago}", fontSize = 12.sp, color = Color.Gray)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Status: ${appViewModel.getString(statusKey)}", fontWeight = FontWeight.Bold, color = PanAppPrimary)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Status: ${appViewModel.getString(statusKey)}", fontWeight = FontWeight.Bold, color = PanAppPrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = if (selectedOrder?.pagado == true) "● PAGADO" else "● PAGO PENDIENTE",
+                                    color = if (selectedOrder?.pagado == true) Color(0xFF2E7D32) else Color(0xFFC62828),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(12.dp))
                             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
@@ -195,25 +205,43 @@ fun OrderItemCard(
                     else -> "pendiente"
                 }
 
-                Surface(
-                    color = when(statusUpper) {
-                        "ENVIADO" -> Color(0xFFE3F2FD)
-                        "ENTREGADO" -> Color(0xFFE8F5E9)
-                        else -> Color(0xFFFFF4E5)
-                    },
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = appViewModel.getString(statusKey),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // ✨ Badge de Pago
+                    Surface(
+                        color = if (order.pagado) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text(
+                            text = if (order.pagado) "PAGADO" else "PAGO PENDIENTE",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = if (order.pagado) Color(0xFF2E7D32) else Color(0xFFC62828),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+
+                    // Badge de Estado de Envío
+                    Surface(
                         color = when(statusUpper) {
-                            "ENVIADO" -> Color(0xFF1565C0)
-                            "ENTREGADO" -> Color(0xFF2E7D32)
-                            else -> Color(0xFFE65100)
+                            "ENVIADO" -> Color(0xFFE3F2FD)
+                            "ENTREGADO" -> Color(0xFFE8F5E9)
+                            else -> Color(0xFFFFF4E5)
                         },
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = appViewModel.getString(statusKey),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            color = when(statusUpper) {
+                                "ENVIADO" -> Color(0xFF1565C0)
+                                "ENTREGADO" -> Color(0xFF2E7D32)
+                                else -> Color(0xFFE65100)
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
