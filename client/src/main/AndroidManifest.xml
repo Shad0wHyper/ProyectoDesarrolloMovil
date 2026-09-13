@@ -36,6 +36,31 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@android:drawable/ic_dialog_info" />
 
+        <service
+            android:name=".SampleIsReadyToPayService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="org.chromium.intent.action.IS_READY_TO_PAY" />
+            </intent-filter>
+        </service>
+
+        <activity
+            android:name=".PaymentActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SamplePay.Dialog">
+            <intent-filter>
+                <action android:name="org.chromium.intent.action.PAY" />
+            </intent-filter>
+
+            <meta-data
+                android:name="org.chromium.default_payment_method_name"
+                android:value="https://panapp.com/pay" />
+
+            <meta-data
+                android:name="org.chromium.payment_method_names"
+                android:resource="@array/chromium_payment_method_names" />
+        </activity>
+
     </application>
 
 </manifest>
