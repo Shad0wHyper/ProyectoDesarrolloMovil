@@ -59,14 +59,31 @@ fun DashboardAdminScreen(navController: NavHostController) {
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
 
     var listaProductos by remember { mutableStateOf<List<Producto>>(emptyList()) }
+    var insumosCriticosNombres by remember { mutableStateOf<List<String>>(emptyList()) } // ✨ ESTADO DE ALERTAS DINÁMICO
     var isLoading by remember { mutableStateOf(true) }
     var textBusqueda by remember { mutableStateOf("") }
     val context = LocalContext.current
 
+    // ✨ 2. BADGES DINÁMICOS: ESTADO GLOBAL
+    var globalCriticosCount by remember { mutableIntStateOf(0) }
+
     LaunchedEffect(currentRoute) {
+        val db = FirebaseFirestore.getInstance()
+
+        // ✨ 1. ALERTA DINÁMICA: Nombres reales en vez de sólo el count
+        db.collection("materia_prima").addSnapshotListener { snap, _ ->
+            if (snap != null) {
+                val criticos = snap.documents.filter { 
+                    (it.getDouble("cantidadActual") ?: 0.0) <= (it.getDouble("nivelCritico") ?: 0.0) 
+                }.map { it.getString("nombre") ?: "Desconocido" }
+                
+                insumosCriticosNombres = criticos
+                globalCriticosCount = criticos.size
+            }
+        }
+
         if (currentRoute == AdminScreen.Dashboard.route) {
             isLoading = true
-            val db = FirebaseFirestore.getInstance()
             db.collection("productos").get().addOnSuccessListener { result ->
                 listaProductos = result.documents.map { doc ->
                     val stockReal = doc.getLong("stock")?.toInt() ?: 0
@@ -107,13 +124,17 @@ fun DashboardAdminScreen(navController: NavHostController) {
         bottomBar = {
             // ✨ Ocultamos la barra inferior si estamos en el generador QR o agregar producto
             if (currentRoute != AdminScreen.AddProduct.route && currentRoute != AdminScreen.QrGenerator.route) {
-                AdminBottomBar(currentRoute = currentRoute, onScreenSelected = { route ->
-                    navController.navigate(route) {
-                        popUpTo(AdminScreen.Dashboard.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+                AdminBottomBar(
+                    currentRoute = currentRoute,
+                    globalCriticosCount = globalCriticosCount,
+                    onScreenSelected = { route ->
+                        navController.navigate(route) {
+                            popUpTo(AdminScreen.Dashboard.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
-                })
+                )
             }
         },
         floatingActionButton = {
@@ -145,6 +166,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
                 } else {
                     DashboardContent(
                         listaProductos = listaProductos,
+                        insumosCriticosNombres = insumosCriticosNombres,
                         textBusqueda = textBusqueda,
                         onTextBusquedaChange = { textBusqueda = it },
                         onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
@@ -199,6 +221,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
 @Composable
 fun DashboardContent(
     listaProductos: List<Producto>,
+    insumosCriticosNombres: List<String>,
     textBusqueda: String,
     onTextBusquedaChange: (String) -> Unit,
     onGestionarPedidosClick: () -> Unit,
@@ -229,6 +252,7 @@ fun DashboardContent(
 
         item {
             ResumenHoySection(
+                insumosCriticosNombres = insumosCriticosNombres,
                 onGestionarPedidosClick = onGestionarPedidosClick
             )
         }
@@ -436,7 +460,7 @@ fun ProduccionDiariaCard(onClick: () -> Unit) {
 
 
 @Composable
-fun ResumenHoySection(onGestionarPedidosClick: () -> Unit) {
+fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Actualizado 10:30 AM",
@@ -458,13 +482,20 @@ fun ResumenHoySection(onGestionarPedidosClick: () -> Unit) {
                 trendText = "+12% vs ayer",
                 trendColor = Color(0xFF4CAF50)
             )
+            
+            // ✨ Tarjeta de Alertas Dinámica
+            val insumosCriticosCount = insumosCriticosNombres.size
+            val icon = if (insumosCriticosCount > 0) Icons.Default.ErrorOutline else Icons.Default.CheckCircle
+            val color = if (insumosCriticosCount > 0) Color.Red else Color(0xFF4CAF50)
+            val valueText = if (insumosCriticosCount > 0) "$insumosCriticosCount items" else "Óptimo"
+            
             ResumenCard(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Default.ErrorOutline,
-                iconColor = Color.Red,
-                label = "Stock Bajo",
-                value = "8 items",
-                isAlert = true
+                icon = icon,
+                iconColor = color,
+                label = "Estado de Almacén",
+                value = valueText,
+                isAlert = insumosCriticosCount > 0
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -719,7 +750,11 @@ fun AdminFAB(onAdd: () -> Unit) {
 }
 
 @Composable
-fun AdminBottomBar(currentRoute: String, onScreenSelected: (String) -> Unit) {
+fun AdminBottomBar(
+    currentRoute: String,
+    globalCriticosCount: Int,
+    onScreenSelected: (String) -> Unit
+) {
     NavigationBar(containerColor = Color.White) {
         NavigationBarItem(
             selected = currentRoute == AdminScreen.Dashboard.route,
@@ -736,7 +771,7 @@ fun AdminBottomBar(currentRoute: String, onScreenSelected: (String) -> Unit) {
             selected = currentRoute == AdminScreen.Almacen.route,
             onClick = { onScreenSelected(AdminScreen.Almacen.route) },
             icon = {
-                BadgedBox(badge = { Badge { Text("9") } }) {
+                BadgedBox(badge = { if (globalCriticosCount > 0) Badge { Text(globalCriticosCount.toString()) } }) {
                     Icon(if (currentRoute == AdminScreen.Almacen.route) Icons.Filled.Inventory2 else Icons.Outlined.Inventory2, contentDescription = null)
                 }
             },
@@ -750,7 +785,11 @@ fun AdminBottomBar(currentRoute: String, onScreenSelected: (String) -> Unit) {
         NavigationBarItem(
             selected = currentRoute == AdminScreen.Pedidos.route,
             onClick = { onScreenSelected(AdminScreen.Pedidos.route) },
-            icon = { Icon(if (currentRoute == AdminScreen.Pedidos.route) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null) },
+            icon = {
+                BadgedBox(badge = { if (globalCriticosCount > 0) Badge { Text(globalCriticosCount.toString()) } }) {
+                    Icon(if (currentRoute == AdminScreen.Pedidos.route) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null)
+                }
+            },
             label = { Text("Pedidos") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFF6200EE),

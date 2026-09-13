@@ -42,7 +42,8 @@ data class MateriaPrima(
     val codigosBarras: List<String> = emptyList(), // Array para usar whereArrayContains / contains
     val cantidadesPorCodigo: Map<String, Double> = emptyMap(), // Diccionario codigo -> cantidad que aporta
     val nivelCritico: Double = 0.0,
-    val colorHex: String = "#4CAF50"
+    val colorHex: String = "#4CAF50",
+    val alertasEnviadas: Int = 0
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,6 +59,7 @@ fun AlmacenScreen() {
 
     var unregisteredCode by remember { mutableStateOf<String?>(null) }
     var modoAprendizajeOpcion by remember { mutableStateOf("A") } // "A" = Vincular, "B" = Alta Nueva
+    var isSavingInsumo by remember { mutableStateOf(false) }
 
     // Campos Opción A (Vincular)
     var insumoASeleccionar by remember { mutableStateOf<MateriaPrima?>(null) }
@@ -349,6 +351,26 @@ fun AlmacenScreen() {
                             singleLine = true
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = nuevoNivelCriticoText,
+                            onValueChange = { nuevoNivelCriticoText = it },
+                            label = { Text("Se considera stock bajo cuando queda...", fontSize = 12.sp) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            trailingIcon = {
+                                Text(
+                                    text = nuevaUnidad,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Gray
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
@@ -384,10 +406,13 @@ fun AlmacenScreen() {
             confirmButton = {
                 Button(
                     onClick = {
+                        if (isSavingInsumo) return@Button
+                        
                         val db = FirebaseFirestore.getInstance()
                         if (modoAprendizajeOpcion == "A") {
                             val cantAporta = cantidadAportaTextA.toDoubleOrNull() ?: 0.0
                             if (insumoASeleccionar != null && cantAporta > 0) {
+                                isSavingInsumo = true
                                 val targetDoc = db.collection("materia_prima").document(insumoASeleccionar!!.id)
                                 val updates = hashMapOf<String, Any>(
                                     "cantidadActual" to FieldValue.increment(cantAporta),
@@ -395,8 +420,12 @@ fun AlmacenScreen() {
                                     "cantidadesPorCodigo.$code" to cantAporta
                                 )
                                 targetDoc.update(updates).addOnSuccessListener {
+                                    isSavingInsumo = false
                                     Toast.makeText(context, "Código $code vinculado a ${insumoASeleccionar!!.nombre}", Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
+                                }.addOnFailureListener { e ->
+                                    isSavingInsumo = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
                                 Toast.makeText(context, "Seleccione un insumo e ingrese la cantidad que aporta", Toast.LENGTH_SHORT).show()
@@ -405,6 +434,7 @@ fun AlmacenScreen() {
                             val cantAporta = cantidadAportaTextB.toDoubleOrNull() ?: 0.0
                             val critico = nuevoNivelCriticoText.toDoubleOrNull() ?: 10.0
                             if (nuevoNombre.isNotBlank() && cantAporta > 0) {
+                                isSavingInsumo = true
                                 val nuevoMap = hashMapOf<String, Any>(
                                     "nombre" to nuevoNombre.trim(),
                                     "unidadMedida" to nuevaUnidad.trim(),
@@ -416,17 +446,26 @@ fun AlmacenScreen() {
                                     "colorHex" to "#4CAF50"
                                 )
                                 db.collection("materia_prima").add(nuevoMap).addOnSuccessListener {
+                                    isSavingInsumo = false
                                     Toast.makeText(context, "Nuevo insumo registrado y vinculado", Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
+                                }.addOnFailureListener { e ->
+                                    isSavingInsumo = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
                                 Toast.makeText(context, "Ingrese el nombre y la cantidad aportada", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
+                    enabled = !isSavingInsumo,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
                 ) {
-                    Text("Confirmar y Guardar")
+                    if (isSavingInsumo) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Confirmar y Guardar")
+                    }
                 }
             },
             dismissButton = {
@@ -493,16 +532,21 @@ fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color
 
 @Composable
 fun InsumoCard(insumo: MateriaPrima) {
-    val parsedColor = remember(insumo.colorHex) {
-        try {
-            Color(android.graphics.Color.parseColor(insumo.colorHex))
-        } catch (e: Exception) {
-            Color(0xFF4CAF50)
+    val isCritico = insumo.cantidadActual <= insumo.nivelCritico
+    val parsedColor = remember(insumo.colorHex, isCritico) {
+        if (isCritico) {
+            Color(0xFFF44336) // Rojo de alerta
+        } else {
+            try {
+                Color(android.graphics.Color.parseColor(insumo.colorHex))
+            } catch (e: Exception) {
+                Color(0xFF4CAF50) // Verde por defecto
+            }
         }
     }
 
     val progress = remember(insumo.cantidadActual, insumo.nivelCritico) {
-        val maxEstimado = if (insumo.nivelCritico > 0) insumo.nivelCritico * 2.0 else maxOf(insumo.cantidadActual, 1.0)
+        val maxEstimado = if (insumo.nivelCritico > 0) insumo.nivelCritico * 5.0 else maxOf(insumo.cantidadActual, 1.0)
         (insumo.cantidadActual / maxEstimado).coerceIn(0.0, 1.0).toFloat()
     }
 
