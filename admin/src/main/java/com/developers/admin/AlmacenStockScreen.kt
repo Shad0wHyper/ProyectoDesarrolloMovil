@@ -131,7 +131,7 @@ fun AlmacenStockScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Top Bar
         CenterAlignedTopAppBar(
@@ -242,7 +242,7 @@ fun AlmacenStockScreen() {
                 )
             }
             
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 }

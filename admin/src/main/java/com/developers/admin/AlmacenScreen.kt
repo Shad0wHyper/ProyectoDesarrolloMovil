@@ -152,16 +152,18 @@ fun AlmacenScreen() {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { ejecutarEscaneo() },
-                containerColor = Color(0xFF6200EE),
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
+            Box(modifier = Modifier.padding(bottom = 80.dp)) { // ✨ Elevamos para no chocar con la navbar
+                FloatingActionButton(
+                    onClick = { ejecutarEscaneo() },
+                    containerColor = Color(0xFF6200EE),
+                    contentColor = Color.White,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
+                }
             }
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier

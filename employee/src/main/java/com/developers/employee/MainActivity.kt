@@ -4,10 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,8 +43,14 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppNavigation(viewModel: EmployeeViewModel) {
-    var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+    val systemDark = isSystemInDarkTheme()
+    var isDarkTheme by rememberSaveable { mutableStateOf(systemDark) }
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
+    
+    // Sincronizar con el tema del sistema si cambia mientras la app está abierta
+    LaunchedEffect(systemDark) {
+        isDarkTheme = systemDark
+    }
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
 
     BackHandler(enabled = currentScreen != AppScreen.INICIO) {
@@ -54,18 +63,26 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
 
     MaterialTheme(colorScheme = if (isDarkTheme) darkColors else lightColors) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            when (currentScreen) {
-                AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
-                AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
-                // ✨ PASAMOS EL VIEWMODEL A PEDIDOS SCREEN
-                AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
-                AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
-                AppScreen.PERFIL -> PerfilScreen(viewModel, isDark = isDarkTheme, onToggleDark = { isDarkTheme = !isDarkTheme }, onNavigate = { currentScreen = it })
-                AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
-                AppScreen.LAUNCHING_WS -> {
-                    // ✨ BUSCAMOS EL PEDIDO EN LA LISTA REAL DE FIREBASE
-                    val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
-                    if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (currentScreen) {
+                    AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
+                    AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
+                    AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
+                    AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
+                    AppScreen.PERFIL -> PerfilScreen(viewModel, isDark = isDarkTheme, onToggleDark = { isDarkTheme = !isDarkTheme }, onNavigate = { currentScreen = it })
+                    AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
+                    AppScreen.LAUNCHING_WS -> {
+                        val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
+                        if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
+                    }
+                }
+
+                // ✨ Barra de navegación flotante
+                val screensWithBottomNav = listOf(AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.PROVEEDORES, AppScreen.PERFIL)
+                if (currentScreen in screensWithBottomNav) {
+                    Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                        BottomNav(currentScreen = currentScreen, onNavigate = { currentScreen = it })
+                    }
                 }
             }
         }

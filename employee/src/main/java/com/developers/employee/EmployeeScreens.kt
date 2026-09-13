@@ -3,6 +3,7 @@ package com.developers.employee
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,7 +49,6 @@ val globalSupplierOrders = listOf(SupplierOrder("ORD-2023", "Harinas del Sol", "
 fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Dashboard", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        bottomBar = { BottomNav(AppScreen.INICIO, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -63,6 +63,7 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
                 DashboardButton(modifier = Modifier.weight(1f), icon = Icons.Outlined.CheckCircle, text = "Asistencia", onClick = { onNavigate(AppScreen.ASISTENCIA) })
                 DashboardButton(modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Outlined.List, text = "Despachar", onClick = { onNavigate(AppScreen.PEDIDOS) })
             }
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -73,7 +74,6 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
 fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Cola de Despacho", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        bottomBar = { BottomNav(AppScreen.PEDIDOS, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (viewModel.pedidosActivos.isEmpty()) {
@@ -167,7 +167,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
 
             Text("Detalles del Pedido", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
             pedido.items.forEach { item ->
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Column(modifier = Modifier.padding(start = 8.dp)) {
@@ -236,7 +236,6 @@ fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Proveedores", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        bottomBar = { BottomNav(AppScreen.PROVEEDORES, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -246,6 +245,7 @@ fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
                     Column(modifier = Modifier.padding(16.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFFDF3F0)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.LocalShipping, null, tint = OrangePrep) }; Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) { Text(order.supplierName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface); Text(order.id, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp) }; Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0xFFEBEBFC)).padding(horizontal = 10.dp, vertical = 4.dp)) { Text(order.statusBadgeRes, color = DarkPurpleText, fontWeight = FontWeight.Bold, fontSize = 10.sp) } } }
                 }
             }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 
@@ -256,7 +256,7 @@ fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).padding(bottom = 32.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column { Text("Detalles del Pedido", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface); Text("ID: ${order.id}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp) }; IconButton(onClick = { showBottomSheet = false }) { Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
                     Spacer(modifier = Modifier.height(24.dp)); Text("Items del Pedido", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(modifier = Modifier.height(8.dp))
-                    order.items.forEach { item -> Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))) { Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFEBEBFC)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Inventory2, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp)) }; Text(item.name, fontWeight = FontWeight.Medium, fontSize = 14.sp, modifier = Modifier.padding(start = 12.dp), color = MaterialTheme.colorScheme.onSurface) }; Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.background).padding(horizontal = 8.dp, vertical = 4.dp)) { Text(item.quantity, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface) } } } }
+                    order.items.forEach { item -> Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))) { Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Inventory2, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp)) }; Text(item.name, fontWeight = FontWeight.Medium, fontSize = 14.sp, modifier = Modifier.padding(start = 12.dp), color = MaterialTheme.colorScheme.onSurface) }; Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 8.dp, vertical = 4.dp)) { Text(item.quantity, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface) } } } }
                     Spacer(modifier = Modifier.height(32.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { OutlinedButton(onClick = { Toast.makeText(context, "Reporte Enviado", Toast.LENGTH_SHORT).show() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("Reportar", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) }; Button(onClick = { showBottomSheet = false; Toast.makeText(context, "Recepción confirmada", Toast.LENGTH_SHORT).show() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) { Text("Confirmar", color = Color.White, fontSize = 12.sp) } }
                 }
@@ -271,7 +271,6 @@ fun PerfilScreen(viewModel: EmployeeViewModel, isDark: Boolean, onToggleDark: ()
     val context = LocalContext.current
     Scaffold(
         topBar = { TopAppBar(title = { Text("Mi Perfil", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        bottomBar = { BottomNav(AppScreen.PERFIL, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -290,12 +289,13 @@ fun PerfilScreen(viewModel: EmployeeViewModel, isDark: Boolean, onToggleDark: ()
                         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text("Idioma", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp)) }
                         Text(Locale.getDefault().displayLanguage.replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.background)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.DarkMode, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text("Modo Oscuro", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp)) }; Switch(checked = isDark, onCheckedChange = { onToggleDark() })
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -312,11 +312,111 @@ fun DashboardButton(modifier: Modifier, icon: ImageVector, text: String, onClick
 
 @Composable
 fun BottomNav(currentScreen: AppScreen, onNavigate: (AppScreen) -> Unit) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-        NavigationBarItem(icon = { Icon(Icons.Outlined.Home, null) }, label = { Text("Inicio") }, selected = currentScreen == AppScreen.INICIO, onClick = { onNavigate(AppScreen.INICIO) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
-        NavigationBarItem(icon = { Icon(Icons.Outlined.AccessTime, null) }, label = { Text("Asistencia") }, selected = currentScreen == AppScreen.ASISTENCIA || currentScreen == AppScreen.HISTORIAL, onClick = { onNavigate(AppScreen.ASISTENCIA) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
-        NavigationBarItem(icon = { Icon(Icons.AutoMirrored.Outlined.List, null) }, label = { Text("Pedidos") }, selected = currentScreen == AppScreen.PEDIDOS || currentScreen == AppScreen.LAUNCHING_WS, onClick = { onNavigate(AppScreen.PEDIDOS) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
-        NavigationBarItem(icon = { Icon(Icons.Outlined.LocalShipping, null) }, label = { Text("Proveedores") }, selected = currentScreen == AppScreen.PROVEEDORES, onClick = { onNavigate(AppScreen.PROVEEDORES) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
-        NavigationBarItem(icon = { Icon(Icons.Outlined.Person, null) }, label = { Text("Perfil") }, selected = currentScreen == AppScreen.PERFIL, onClick = { onNavigate(AppScreen.PERFIL) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
+    val navItems = remember {
+        listOf(
+            Triple(AppScreen.INICIO, "Inicio", Icons.Outlined.Home),
+            Triple(AppScreen.ASISTENCIA, "Asistencia", Icons.Outlined.AccessTime),
+            Triple(AppScreen.PEDIDOS, "Pedidos", Icons.AutoMirrored.Outlined.List),
+            Triple(AppScreen.PROVEEDORES, "Stock", Icons.Outlined.LocalShipping),
+            Triple(AppScreen.PERFIL, "Perfil", Icons.Outlined.Person)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(bottom = 12.dp, start = 8.dp, end = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 8.dp,
+                tonalElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    navItems.forEach { (screen, title, icon) ->
+                        val isSelected = currentScreen == screen || (screen == AppScreen.ASISTENCIA && currentScreen == AppScreen.HISTORIAL) || (screen == AppScreen.PEDIDOS && currentScreen == AppScreen.LAUNCHING_WS)
+
+                        EmployeeFloatingNavItem(
+                            title = title,
+                            icon = icon,
+                            isSelected = isSelected,
+                            onClick = { onNavigate(screen) }
+                        )
+                    }
+                }
+            }
+
+            // Botón de búsqueda flotante
+            Surface(
+                onClick = { /* Búsqueda Empleado */ },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 8.dp,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EmployeeFloatingNavItem(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val activeBackgroundColor = PrimaryBlue.copy(alpha = 0.15f)
+    val contentColor = if (isSelected) PrimaryBlue else Color.Gray
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (isSelected) activeBackgroundColor else Color.Transparent,
+        contentColor = contentColor
+    ) {
+        Row(
+            modifier = Modifier
+                .animateContentSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp)
+            )
+            if (isSelected) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }

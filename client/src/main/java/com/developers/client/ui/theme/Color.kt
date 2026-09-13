@@ -13,3 +13,11 @@ val PanAppCardBg = Color(0xFFF8F8F8)
 val PanAppSuccess = Color(0xFF4CAF50)
 val PanAppPending = Color(0xFFFFB74D)
 val PanAppInTransit = Color(0xFF42A5F5)
+
+// PanApp Dark Theme Colors
+val PanAppPrimaryDark = Color(0xFF8B84FF)
+val PanAppBackgroundDark = Color(0xFF121212)
+val PanAppTextPrimaryDark = Color(0xFFF5F5F5)
+val PanAppTextSecondaryDark = Color(0xFFB0B0B0)
+val PanAppSurfaceDark = Color(0xFF1E1E2E)
+val PanAppCardBgDark = Color(0xFF1E1E1E)

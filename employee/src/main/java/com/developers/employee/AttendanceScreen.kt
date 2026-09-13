@@ -50,6 +50,7 @@ fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Un
             DigitalIdCard(viewModel.userName)
             AttendanceScannerControl(viewModel)
             RecentLogs(viewModel.logs, onViewHistoryClick = { onNavigate(AppScreen.HISTORIAL) })
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -151,7 +152,7 @@ fun RenderLogItem(log: LogData) {
                 Text(log.type, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(log.dateFormatted, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
-            Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.background).padding(horizontal = 12.dp, vertical = 4.dp)) {
+            Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 4.dp)) {
                 Text(log.timeFormatted, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -172,6 +173,7 @@ fun FullHistoryScreen(viewModel: EmployeeViewModel, onBackClick: () -> Unit) {
     ) { paddingValues ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(viewModel.logs, key = { it.id }) { log -> RenderLogItem(log) }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 }

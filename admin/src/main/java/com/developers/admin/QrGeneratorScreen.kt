@@ -194,6 +194,7 @@ private fun generarQrConLogo(context: android.content.Context, content: String, 
             for (y in 0 until size) { bmp.setPixel(x, y, if (bitMatrix[x, y]) colorInt else android.graphics.Color.WHITE) }
         }
 
+        /*
         // Pega directamente tu imagen .png con transparencias o bordes redondos nativos
         val logoOriginal = BitmapFactory.decodeResource(context.resources, R.drawable.log)
         if (logoOriginal != null) {
@@ -201,6 +202,7 @@ private fun generarQrConLogo(context: android.content.Context, content: String, 
             val scaledLogo = Bitmap.createScaledBitmap(logoOriginal, logoSize, logoSize, false)
             Canvas(bmp).drawBitmap(scaledLogo, ((size - logoSize) / 2).toFloat(), ((size - logoSize) / 2).toFloat(), null)
         }
+        */
         bmp
     } catch (e: Exception) { null }
 }

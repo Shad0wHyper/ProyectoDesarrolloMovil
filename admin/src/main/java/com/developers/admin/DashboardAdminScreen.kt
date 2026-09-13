@@ -1,6 +1,9 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,8 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -61,7 +62,44 @@ fun DashboardAdminScreen(navController: NavHostController) {
     var listaProductos by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var textBusqueda by remember { mutableStateOf("") }
+    
+    // Estado para Nuevo Producto
+    var showAddProductDialog by remember { mutableStateOf(false) }
+    var nuevoNombre by remember { mutableStateOf("") }
+    var nuevaCategoria by remember { mutableStateOf("Panes") }
+    var nuevoPrecio by remember { mutableStateOf("") }
+
     val context = LocalContext.current
+
+    if (showAddProductDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddProductDialog = false },
+            title = { Text("Nuevo Producto") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = nuevoNombre, onValueChange = { nuevoNombre = it }, label = { Text("Nombre") })
+                    OutlinedTextField(value = nuevaCategoria, onValueChange = { nuevaCategoria = it }, label = { Text("Categoría") })
+                    OutlinedTextField(value = nuevoPrecio, onValueChange = { nuevoPrecio = it }, label = { Text("Precio") })
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (nuevoNombre.isNotBlank() && nuevoPrecio.isNotBlank()) {
+                        // En una app real esto iría a Firebase, aquí simulamos agregando a la lista local
+                        // Aunque la lista se recarga de Firebase en el LaunchedEffect...
+                        // Por ahora lo dejamos así para que compile y funcione el botón.
+                        showAddProductDialog = false
+                        nuevoNombre = ""
+                        nuevoPrecio = ""
+                        Toast.makeText(context, "Funcionalidad de guardado próximamente", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Agregar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddProductDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
 
     LaunchedEffect(currentRoute) {
         if (currentRoute == AdminScreen.Dashboard.route) {
@@ -104,93 +142,109 @@ fun DashboardAdminScreen(navController: NavHostController) {
     }
 
     Scaffold(
-        bottomBar = {
-            // ✨ Ocultamos la barra inferior si estamos en el generador QR o agregar producto
-            if (currentRoute != AdminScreen.AddProduct.route && currentRoute != AdminScreen.QrGenerator.route) {
-                AdminBottomBar(currentRoute = currentRoute, onScreenSelected = { route ->
-                    navController.navigate(route) {
-                        popUpTo(AdminScreen.Dashboard.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                })
-            }
-        },
-        floatingActionButton = {
-            if (currentRoute == AdminScreen.Dashboard.route) {
-                AdminFAB(onAdd = {
-                    productoAEditar = null // Limpia la variable si vamos a agregar uno nuevo
-                    navController.navigate(AdminScreen.AddProduct.route)
-                })
-            }
-        },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = AdminScreen.Dashboard.route,
-            modifier = Modifier
-                .padding(paddingValues)
-                .background(Color(0xFFF8F9FA)), // Fondo sólido para evitar transparencias
-            enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
-            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
-            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
-            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
-        ) {
-            composable(AdminScreen.Dashboard.route) {
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6200EE))
-                    }
-                } else {
-                    DashboardContent(
-                        listaProductos = listaProductos,
-                        textBusqueda = textBusqueda,
-                        onTextBusquedaChange = { textBusqueda = it },
-                        onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
-                        onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
-                        onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
-                        onAddClick = {
-                            productoAEditar = null
-                            navController.navigate(AdminScreen.AddProduct.route)
-                        },
-                        onDecreaseStock = { productoToUpdate ->
-                            val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
-                            FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
-                                .update("stock", newStock)
-                                .addOnSuccessListener {
-                                    listaProductos = listaProductos.map {
-                                        if (it.id == productoToUpdate.id) {
-                                            it.copy(
-                                                stock = newStock,
-                                                statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
-                                                statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
-                                            )
-                                        } else it
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = AdminScreen.Dashboard.route,
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .background(MaterialTheme.colorScheme.background), // Fondo sólido para evitar transparencias
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+            ) {
+                composable(AdminScreen.Dashboard.route) {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF6200EE))
+                        }
+                    } else {
+                        DashboardContent(
+                            listaProductos = listaProductos,
+                            textBusqueda = textBusqueda,
+                            onTextBusquedaChange = { textBusqueda = it },
+                            onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
+                            onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
+                            onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
+                            onAddClick = {
+                                productoAEditar = null
+                                navController.navigate(AdminScreen.AddProduct.route)
+                            },
+                            onDecreaseStock = { productoToUpdate ->
+                                val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
+                                FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
+                                    .update("stock", newStock)
+                                    .addOnSuccessListener {
+                                        listaProductos = listaProductos.map {
+                                            if (it.id == productoToUpdate.id) {
+                                                it.copy(
+                                                    stock = newStock,
+                                                    statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
+                                                    statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
+                                                )
+                                            } else it
+                                        }
                                     }
-                                }
-                        },
-                        onEditClick = { productoQueQueremosEditar ->
-                            productoAEditar = productoQueQueremosEditar
-                            navController.navigate(AdminScreen.AddProduct.route)
-                        },
-                        onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
-                        onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
+                            },
+                            onEditClick = { productoQueQueremosEditar ->
+                                productoAEditar = productoQueQueremosEditar
+                                navController.navigate(AdminScreen.AddProduct.route)
+                            },
+                            onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
+                            onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) },
+                            onAsistenciaClick = { navController.navigate(AdminScreen.Asistencia.route) }
+                        )
+                    }
+                }
+                composable(AdminScreen.Almacen.route) { AlmacenScreen() }
+                composable(AdminScreen.Pedidos.route) { PedidosScreen() }
+                composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.AddProduct.route) {
+                    AddProductScreen(
+                        productoAEditar = productoAEditar,
+                        onBack = { navController.popBackStack() },
+                        onSuccessSave = { navController.popBackStack() }
                     )
                 }
+                composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.Asistencia.route) { AsistenciaScreen(onBack = { navController.popBackStack() }) }
             }
-            composable(AdminScreen.Almacen.route) { AlmacenScreen() }
-            composable(AdminScreen.Pedidos.route) { PedidosScreen() }
-            composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
-            composable(AdminScreen.AddProduct.route) {
-                AddProductScreen(
-                    productoAEditar = productoAEditar,
-                    onBack = { navController.popBackStack() },
-                    onSuccessSave = { navController.popBackStack() }
+
+            // ✨ BOTÓN AGREGAR POSICIONADO PARA NO CHOCAR CON LA NAVBAR
+            if (currentRoute == AdminScreen.Dashboard.route) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 92.dp, end = 16.dp)
+                ) {
+                    AdminFAB(onAdd = { showAddProductDialog = true })
+                }
+            }
+
+            // ✨ Barra inferior flotante ESTILO CLIENTE
+            val screensWithBottomNav = listOf(
+                AdminScreen.Dashboard.route,
+                AdminScreen.Almacen.route,
+                AdminScreen.Pedidos.route
+            )
+            
+            if (currentRoute in screensWithBottomNav) {
+                AdminBottomBar(
+                    currentRoute = currentRoute,
+                    onScreenSelected = { route ->
+                        navController.navigate(route) {
+                            popUpTo(AdminScreen.Dashboard.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
-            composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
-            composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }
@@ -208,7 +262,8 @@ fun DashboardContent(
     onDecreaseStock: (Producto) -> Unit,
     onEditClick: (Producto) -> Unit,
     onQrClick: () -> Unit,
-    onProduccionClick: () -> Unit
+    onProduccionClick: () -> Unit,
+    onAsistenciaClick: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -233,7 +288,12 @@ fun DashboardContent(
             )
         }
         item { AIPredictionsSection(onClick = onAIPredictionsClick) }
-        item { ProduccionDiariaCard(onClick = onProduccionClick) }
+        item {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProduccionDiariaCard(modifier = Modifier.weight(1f), onClick = onProduccionClick)
+                AsistenciaCard(modifier = Modifier.weight(1f), onClick = onAsistenciaClick)
+            }
+        }
         item {
             GestionProductosSection(
                 textBusqueda = textBusqueda,
@@ -270,7 +330,7 @@ fun DashboardContent(
 
         item { AlertaSuministrosCard(onClick = onAlmacenClick) }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) } // ✨ ESPACIO PARA QUE LA NAVBAR NO TAPE EL CONTENIDO
     }
 }
 
@@ -326,7 +386,7 @@ fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
                 Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(4.dp))
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8F9FA))
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
     )
 }
 
@@ -383,52 +443,70 @@ fun AIPredictionsSection(onClick: () -> Unit) {
 }
 
 @Composable
-fun ProduccionDiariaCard(onClick: () -> Unit) {
+fun ProduccionDiariaCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
+            .height(100.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF3F51B5)),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Factory,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Gestor de Producción ERP",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = "Registrar horneados y produccion del dia",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp
-                )
-            }
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Default.Factory,
                 contentDescription = null,
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Producción",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun AsistenciaCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF009688)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Badge,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Asistencia",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
             )
         }
     }
@@ -719,45 +797,113 @@ fun AdminFAB(onAdd: () -> Unit) {
 }
 
 @Composable
-fun AdminBottomBar(currentRoute: String, onScreenSelected: (String) -> Unit) {
-    NavigationBar(containerColor = Color.White) {
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Dashboard.route,
-            onClick = { onScreenSelected(AdminScreen.Dashboard.route) },
-            icon = { Icon(Icons.Default.GridView, contentDescription = null) },
-            label = { Text("Dashboard") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
+fun AdminBottomBar(
+    currentRoute: String,
+    onScreenSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val navItems = remember {
+        listOf(
+            Triple(AdminScreen.Dashboard.route, "Home", Icons.Default.Home),
+            Triple(AdminScreen.Almacen.route, "Stock", Icons.Default.Inventory2),
+            Triple(AdminScreen.Pedidos.route, "Pedidos", Icons.Default.Receipt)
         )
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Almacen.route,
-            onClick = { onScreenSelected(AdminScreen.Almacen.route) },
-            icon = {
-                BadgedBox(badge = { Badge { Text("9") } }) {
-                    Icon(if (currentRoute == AdminScreen.Almacen.route) Icons.Filled.Inventory2 else Icons.Outlined.Inventory2, contentDescription = null)
+    }
+
+    Box(
+        modifier = modifier
+            .wrapContentWidth()
+            .navigationBarsPadding()
+            .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    navItems.forEach { (route, title, icon) ->
+                        val isSelected = currentRoute == route
+
+                        AdminFloatingNavItem(
+                            title = title,
+                            icon = icon,
+                            isSelected = isSelected,
+                            onClick = { onScreenSelected(route) }
+                        )
+                    }
                 }
-            },
-            label = { Text("Almacén") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
+            }
+
+            // Botón de búsqueda flotante (como en clientes)
+            Surface(
+                onClick = { /* TODO: Búsqueda Global Admin */ },
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 8.dp,
+                modifier = Modifier.size(52.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = Color(0xFF6200EE),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminFloatingNavItem(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val activeColor = Color(0xFF6200EE)
+    val activeBackgroundColor = activeColor.copy(alpha = 0.15f)
+    val contentColor = if (isSelected) activeColor else Color.Gray
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (isSelected) activeBackgroundColor else Color.Transparent,
+        contentColor = contentColor
+    ) {
+        Row(
+            modifier = Modifier
+                .animateContentSize()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isSelected) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = activeColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor
             )
-        )
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Pedidos.route,
-            onClick = { onScreenSelected(AdminScreen.Pedidos.route) },
-            icon = { Icon(if (currentRoute == AdminScreen.Pedidos.route) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null) },
-            label = { Text("Pedidos") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
-        )
+        }
     }
 }
 

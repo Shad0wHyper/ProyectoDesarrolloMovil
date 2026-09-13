@@ -30,7 +30,7 @@ fun DetallePedidoBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         dragHandle = { BottomSheetDefaults.DragHandle(color = Color.LightGray) },
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         DetallePedidoContent(
@@ -52,7 +52,7 @@ fun DetallePedidoContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 20.dp)
             .padding(bottom = 32.dp)
     ) {
@@ -97,7 +97,7 @@ fun DetallePedidoContent(
         // Tarjeta del Proveedor
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(12.dp)
         ) {
             Row(
@@ -231,7 +231,7 @@ fun ArticuloItem(articulo: ArticuloPedido) {
                 Text(text = articulo.nombre, fontWeight = FontWeight.Medium)
             }
             Surface(
-                color = Color(0xFFF5F5F5),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text(
