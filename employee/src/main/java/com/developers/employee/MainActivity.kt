@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppNavigation(viewModel: EmployeeViewModel) {
-    var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+    val isDarkTheme = isSystemInDarkTheme()
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -60,7 +61,7 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
                 // ✨ PASAMOS EL VIEWMODEL A PEDIDOS SCREEN
                 AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
                 AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
-                AppScreen.PERFIL -> PerfilScreen(viewModel, isDark = isDarkTheme, onToggleDark = { isDarkTheme = !isDarkTheme }, onNavigate = { currentScreen = it })
+                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
                 AppScreen.LAUNCHING_WS -> {
                     // ✨ BUSCAMOS EL PEDIDO EN LA LISTA REAL DE FIREBASE
