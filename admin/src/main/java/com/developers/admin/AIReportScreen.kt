@@ -149,6 +149,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                     }
                 }
             }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 }

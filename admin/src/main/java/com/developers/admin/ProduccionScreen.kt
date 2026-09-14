@@ -316,6 +316,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 

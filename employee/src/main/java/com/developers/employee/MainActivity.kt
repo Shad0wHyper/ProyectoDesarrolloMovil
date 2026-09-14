@@ -5,13 +5,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.developers.core.components.FloatingBottomBar
+import com.developers.core.theme.PanAppPrimary
 
 val PrimaryBlue = Color(0xFF6B72E2)
 val CardPink = Color(0xFFED5A85)
@@ -54,20 +63,42 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
     }
 
     MaterialTheme(colorScheme = if (isDarkTheme) darkColors else lightColors) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            when (currentScreen) {
-                AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
-                AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
-                // ✨ PASAMOS EL VIEWMODEL A PEDIDOS SCREEN
-                AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
-                AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
-                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it })
-                AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
-                AppScreen.LAUNCHING_WS -> {
-                    // ✨ BUSCAMOS EL PEDIDO EN LA LISTA REAL DE FIREBASE
-                    val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
-                    if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
+        Box(modifier = Modifier.fillMaxSize()) {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                when (currentScreen) {
+                    AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
+                    AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
+                    AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
+                    AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
+                    AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it })
+                    AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
+                    AppScreen.LAUNCHING_WS -> {
+                        val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
+                        if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
+                    }
                 }
+            }
+
+            // Barra flotante estilo Google Photos
+            val showBottomBar = when (currentScreen) {
+                AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.PROVEEDORES, AppScreen.PERFIL -> true
+                else -> false
+            }
+
+            if (showBottomBar) {
+                FloatingBottomBar(
+                    selectedItem = currentScreen,
+                    items = listOf(
+                        Triple(AppScreen.INICIO, "Inicio", Icons.Default.Home),
+                        Triple(AppScreen.ASISTENCIA, "Asistencia", Icons.Default.AccessTime),
+                        Triple(AppScreen.PEDIDOS, "Pedidos", Icons.Default.Receipt),
+                        Triple(AppScreen.PROVEEDORES, "Proveedores", Icons.Default.LocalShipping),
+                        Triple(AppScreen.PERFIL, "Perfil", Icons.Default.Person)
+                    ),
+                    onItemClick = { currentScreen = it },
+                    isDarkMode = isDarkTheme,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
     }

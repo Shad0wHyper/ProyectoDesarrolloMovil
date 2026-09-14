@@ -34,6 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
+import com.developers.core.components.FloatingBottomBar
 import com.google.firebase.firestore.FirebaseFirestore
 
 data class Producto(
@@ -104,18 +105,6 @@ fun DashboardAdminScreen(navController: NavHostController) {
     }
 
     Scaffold(
-        bottomBar = {
-            // ✨ Ocultamos la barra inferior si estamos en el generador QR o agregar producto
-            if (currentRoute != AdminScreen.AddProduct.route && currentRoute != AdminScreen.QrGenerator.route) {
-                AdminBottomBar(currentRoute = currentRoute, onScreenSelected = { route ->
-                    navController.navigate(route) {
-                        popUpTo(AdminScreen.Dashboard.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                })
-            }
-        },
         floatingActionButton = {
             if (currentRoute == AdminScreen.Dashboard.route) {
                 AdminFAB(onAdd = {
@@ -126,71 +115,96 @@ fun DashboardAdminScreen(navController: NavHostController) {
         },
         containerColor = Color(0xFFF8F9FA)
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = AdminScreen.Dashboard.route,
-            modifier = Modifier
-                .padding(paddingValues)
-                .background(Color(0xFFF8F9FA)), // Fondo sólido para evitar transparencias
-            enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
-            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
-            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
-            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
-        ) {
-            composable(AdminScreen.Dashboard.route) {
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6200EE))
-                    }
-                } else {
-                    DashboardContent(
-                        listaProductos = listaProductos,
-                        textBusqueda = textBusqueda,
-                        onTextBusquedaChange = { textBusqueda = it },
-                        onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
-                        onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
-                        onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
-                        onAddClick = {
-                            productoAEditar = null
-                            navController.navigate(AdminScreen.AddProduct.route)
-                        },
-                        onDecreaseStock = { productoToUpdate ->
-                            val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
-                            FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
-                                .update("stock", newStock)
-                                .addOnSuccessListener {
-                                    listaProductos = listaProductos.map {
-                                        if (it.id == productoToUpdate.id) {
-                                            it.copy(
-                                                stock = newStock,
-                                                statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
-                                                statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
-                                            )
-                                        } else it
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = AdminScreen.Dashboard.route,
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .background(Color(0xFFF8F9FA)), // Fondo sólido para evitar transparencias
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+            ) {
+                composable(AdminScreen.Dashboard.route) {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF6200EE))
+                        }
+                    } else {
+                        DashboardContent(
+                            listaProductos = listaProductos,
+                            textBusqueda = textBusqueda,
+                            onTextBusquedaChange = { textBusqueda = it },
+                            onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
+                            onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
+                            onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
+                            onAddClick = {
+                                productoAEditar = null
+                                navController.navigate(AdminScreen.AddProduct.route)
+                            },
+                            onDecreaseStock = { productoToUpdate ->
+                                val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
+                                FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
+                                    .update("stock", newStock)
+                                    .addOnSuccessListener {
+                                        listaProductos = listaProductos.map {
+                                            if (it.id == productoToUpdate.id) {
+                                                it.copy(
+                                                    stock = newStock,
+                                                    statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
+                                                    statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
+                                                )
+                                            } else it
+                                        }
                                     }
-                                }
-                        },
-                        onEditClick = { productoQueQueremosEditar ->
-                            productoAEditar = productoQueQueremosEditar
-                            navController.navigate(AdminScreen.AddProduct.route)
-                        },
-                        onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
-                        onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
+                            },
+                            onEditClick = { productoQueQueremosEditar ->
+                                productoAEditar = productoQueQueremosEditar
+                                navController.navigate(AdminScreen.AddProduct.route)
+                            },
+                            onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
+                            onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
+                        )
+                    }
+                }
+                composable(AdminScreen.Almacen.route) { AlmacenScreen() }
+                composable(AdminScreen.Pedidos.route) { PedidosScreen() }
+                composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.AddProduct.route) {
+                    AddProductScreen(
+                        productoAEditar = productoAEditar,
+                        onBack = { navController.popBackStack() },
+                        onSuccessSave = { navController.popBackStack() }
                     )
                 }
+                composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
             }
-            composable(AdminScreen.Almacen.route) { AlmacenScreen() }
-            composable(AdminScreen.Pedidos.route) { PedidosScreen() }
-            composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
-            composable(AdminScreen.AddProduct.route) {
-                AddProductScreen(
-                    productoAEditar = productoAEditar,
-                    onBack = { navController.popBackStack() },
-                    onSuccessSave = { navController.popBackStack() }
+
+            // Barra flotante estilo Google Photos
+            val showBottomBar = currentRoute != AdminScreen.AddProduct.route && currentRoute != AdminScreen.QrGenerator.route
+
+            if (showBottomBar) {
+                FloatingBottomBar(
+                    selectedItem = currentRoute,
+                    items = listOf(
+                        Triple(AdminScreen.Dashboard.route, "Dashboard", Icons.Default.GridView),
+                        Triple(AdminScreen.Almacen.route, "Almacén", Icons.Default.Inventory2),
+                        Triple(AdminScreen.Pedidos.route, "Pedidos", Icons.Default.ChatBubble)
+                    ),
+                    onItemClick = { route ->
+                        navController.navigate(route) {
+                            popUpTo(AdminScreen.Dashboard.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    isDarkMode = false, // TODO: Implement dark mode logic if needed
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
-            composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
-            composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }
@@ -270,7 +284,7 @@ fun DashboardContent(
 
         item { AlertaSuministrosCard(onClick = onAlmacenClick) }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
     }
 }
 
@@ -715,49 +729,6 @@ fun AdminFAB(onAdd: () -> Unit) {
         shape = CircleShape
     ) {
         Icon(Icons.Default.Add, contentDescription = "Nuevo")
-    }
-}
-
-@Composable
-fun AdminBottomBar(currentRoute: String, onScreenSelected: (String) -> Unit) {
-    NavigationBar(containerColor = Color.White) {
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Dashboard.route,
-            onClick = { onScreenSelected(AdminScreen.Dashboard.route) },
-            icon = { Icon(Icons.Default.GridView, contentDescription = null) },
-            label = { Text("Dashboard") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Almacen.route,
-            onClick = { onScreenSelected(AdminScreen.Almacen.route) },
-            icon = {
-                BadgedBox(badge = { Badge { Text("9") } }) {
-                    Icon(if (currentRoute == AdminScreen.Almacen.route) Icons.Filled.Inventory2 else Icons.Outlined.Inventory2, contentDescription = null)
-                }
-            },
-            label = { Text("Almacén") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Pedidos.route,
-            onClick = { onScreenSelected(AdminScreen.Pedidos.route) },
-            icon = { Icon(if (currentRoute == AdminScreen.Pedidos.route) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null) },
-            label = { Text("Pedidos") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
-        )
     }
 }
 

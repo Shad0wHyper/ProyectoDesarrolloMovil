@@ -243,6 +243,7 @@ fun AlmacenScreen() {
                     items(insumosList, key = { it.id }) { insumo ->
                         InsumoCard(insumo)
                     }
+                    item { Spacer(modifier = Modifier.height(100.dp)) }
                 }
             }
         }

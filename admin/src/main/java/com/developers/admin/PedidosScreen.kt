@@ -127,6 +127,7 @@ fun PedidosScreen() {
                     }
                 )
             }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 }
