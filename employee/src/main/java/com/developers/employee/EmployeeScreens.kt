@@ -78,7 +78,7 @@ fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit,
     ) { paddingValues ->
         if (viewModel.pedidosActivos.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("No hay pedidos activos.", color = Color.Gray)
+                Text("No hay pedidos activos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -386,7 +386,7 @@ fun EmployeeFloatingNavItem(
     onClick: () -> Unit
 ) {
     val activeBackgroundColor = PrimaryBlue.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) PrimaryBlue else Color.Gray
+    val contentColor = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         onClick = onClick,

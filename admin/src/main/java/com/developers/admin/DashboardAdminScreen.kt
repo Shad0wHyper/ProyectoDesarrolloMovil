@@ -306,7 +306,7 @@ fun DashboardContent(
             Text(
                 text = "CATÁLOGO DE PRODUCTOS ACTIVOS",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
@@ -314,7 +314,7 @@ fun DashboardContent(
         if (productosFiltrados.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("No hay productos en inventario.", color = Color.Gray)
+                    Text("No hay productos en inventario.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -369,7 +369,7 @@ fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
                         .align(Alignment.TopEnd),
                     color = Color.Red,
                     shape = CircleShape,
-                    border = BorderStroke(1.dp, Color.White)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.surface)
                 ) {}
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -381,7 +381,7 @@ fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
                         Toast.makeText(context, "Perfil de Administrador", Toast.LENGTH_SHORT).show()
                     },
                 shape = CircleShape,
-                color = Color.LightGray
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(4.dp))
             }
@@ -519,7 +519,7 @@ fun ResumenHoySection(onGestionarPedidosClick: () -> Unit) {
         Text(
             text = "Actualizado 10:30 AM",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.End)
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -572,18 +572,18 @@ fun ResumenCard(
     label: String,
     value: String,
     trendText: String? = null,
-    trendColor: Color = Color.Black,
+    trendColor: Color = MaterialTheme.colorScheme.onSurface,
     isAlert: Boolean = false
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Icon(icon, contentDescription = null, tint = iconColor)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
             if (trendText != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -637,8 +637,8 @@ fun GestionProductosSection(
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             shape = RoundedCornerShape(24.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
             )
         )
     }
@@ -653,7 +653,7 @@ fun ProductoCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -671,17 +671,17 @@ fun ProductoCard(
                         modifier = Modifier
                             .size(50.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF0F0F0))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     )
                 } else {
                     Box(
                         modifier = Modifier
                             .size(50.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF0F0F0)),
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.Default.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -696,7 +696,7 @@ fun ProductoCard(
                             }
                         }
                     }
-                    Text(producto.categoria, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text(producto.categoria, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall)
@@ -723,12 +723,12 @@ fun ProductoCard(
                         Text("$ ${producto.precio}", fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray)
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
             Row(
                 modifier = Modifier
                     .padding(8.dp)
@@ -741,13 +741,13 @@ fun ProductoCard(
                     Text("Inventario", color = Color(0xFF2196F3))
                 }
                 TextButton(onClick = onDarDeBajaClick) {
-                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reducir Stock", color = Color.Gray)
+                    Text("Reducir Stock", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = { /* TODO */ }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -822,7 +822,7 @@ fun AdminBottomBar(
         ) {
             Surface(
                 shape = CircleShape,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp
             ) {
                 Row(
@@ -847,7 +847,7 @@ fun AdminBottomBar(
             Surface(
                 onClick = { /* TODO: Búsqueda Global Admin */ },
                 shape = CircleShape,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp,
                 modifier = Modifier.size(52.dp)
             ) {
@@ -855,7 +855,7 @@ fun AdminBottomBar(
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Buscar",
-                        tint = Color(0xFF6200EE),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -871,9 +871,9 @@ fun AdminFloatingNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeColor = Color(0xFF6200EE)
+    val activeColor = MaterialTheme.colorScheme.primary
     val activeBackgroundColor = activeColor.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) activeColor else Color.Gray
+    val contentColor = if (isSelected) activeColor else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         onClick = onClick,

@@ -76,11 +76,11 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 text = "Hola, ${viewModel.userName}",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = "Registra tu asistencia escaneando el código QR de la sucursal.",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
 
@@ -127,7 +127,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 }
             } else if (viewModel.logs.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("Aún no tienes registros de asistencia.", color = Color.Gray)
+                    Text("Aún no tienes registros de asistencia.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -175,7 +175,7 @@ fun LogCard(log: LogData) {
     val isEntrada = log.type == "ENTRADA"
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -198,7 +198,7 @@ fun LogCard(log: LogData) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(log.type, fontWeight = FontWeight.Bold)
-                Text(log.dateFormatted, color = Color.Gray, fontSize = 12.sp)
+                Text(log.dateFormatted, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
             Text(log.timeFormatted, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
         }

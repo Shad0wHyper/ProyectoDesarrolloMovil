@@ -211,7 +211,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
             // Encabezado Ilustrativo
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8EAF6)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -221,15 +221,15 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .background(Color(0xFF3F51B5), RoundedCornerShape(12.dp)),
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Factory, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.Factory, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A237E))
-                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = Color.DarkGray)
+                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -260,11 +260,11 @@ fun ProduccionScreen(onBack: () -> Unit) {
                         onDismissRequest = { expandedDropdown = false },
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
                     ) {
                         if (productosList.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No hay productos en catálogo", color = Color.Gray) },
+                                text = { Text("No hay productos en catálogo", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 onClick = { expandedDropdown = false }
                             )
                         } else {
@@ -333,13 +333,13 @@ fun ProduccionScreen(onBack: () -> Unit) {
             title = { Text(tituloDinamico, fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 16.sp) },
             text = {
                 Column {
-                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = Color.DarkGray)
+                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = faltantesList.joinToString("\n\n"),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },
@@ -351,7 +351,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     Text("Entendido", color = Color.White)
                 }
             },
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }

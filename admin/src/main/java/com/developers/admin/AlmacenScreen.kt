@@ -235,7 +235,7 @@ fun AlmacenScreen() {
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No hay materias primas registradas en Firestore.", color = Color.Gray)
+                    Text("No hay materias primas registradas en Firestore.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -300,7 +300,7 @@ fun AlmacenScreen() {
 
                     if (modoAprendizajeOpcion == "A") {
                         // OPCIÓN A: VINCULAR A INSUMO EXISTENTE
-                        Text("Selecciona el insumo existente:", fontSize = 12.sp, color = Color.Gray)
+                        Text("Selecciona el insumo existente:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -315,7 +315,7 @@ fun AlmacenScreen() {
                             DropdownMenu(
                                 expanded = expandedDropdownInsumo,
                                 onDismissRequest = { expandedDropdownInsumo = false },
-                                modifier = Modifier.fillMaxWidth(0.8f).background(Color.White)
+                                modifier = Modifier.fillMaxWidth(0.8f).background(MaterialTheme.colorScheme.surface)
                             ) {
                                 insumosList.forEach { item ->
                                     DropdownMenuItem(
@@ -363,7 +363,7 @@ fun AlmacenScreen() {
                                     shape = RoundedCornerShape(8.dp),
                                     singleLine = true
                                 )
-                                DropdownMenu(expanded = expandedDropdownUnidad, onDismissRequest = { expandedDropdownUnidad = false }, modifier = Modifier.background(Color.White)) {
+                                DropdownMenu(expanded = expandedDropdownUnidad, onDismissRequest = { expandedDropdownUnidad = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                                     unidadesDisponibles.forEach { und ->
                                         DropdownMenuItem(text = { Text(und) }, onClick = { nuevaUnidad = und; expandedDropdownUnidad = false })
                                     }
@@ -446,7 +446,7 @@ fun AlmacenScreen() {
             title = { Text("Escanear / Probar Código") },
             text = {
                 Column {
-                    Text("Ingresa o pega un código de barras para probar la lógica WMS:", fontSize = 12.sp, color = Color.Gray)
+                    Text("Ingresa o pega un código de barras para probar la lógica WMS:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = testCodeInputText,
@@ -510,7 +510,7 @@ fun InsumoCard(insumo: MateriaPrima) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -529,13 +529,13 @@ fun InsumoCard(insumo: MateriaPrima) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(insumo.nombre, fontWeight = FontWeight.Bold)
-                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = Color.Gray, fontSize = 14.sp)
+                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 
                 // Mostrar resumen de códigos asociados
                 if (insumo.codigosBarras.isNotEmpty()) {
-                    Text("Códigos: ${insumo.codigosBarras.joinToString(", ")}", color = Color.LightGray, fontSize = 11.sp, maxLines = 1)
+                    Text("Códigos: ${insumo.codigosBarras.joinToString(", ")}", color = MaterialTheme.colorScheme.outline, fontSize = 11.sp, maxLines = 1)
                 } else if (insumo.codigoBarras.isNotEmpty()) {
-                    Text("Cód: ${insumo.codigoBarras}", color = Color.LightGray, fontSize = 11.sp)
+                    Text("Cód: ${insumo.codigoBarras}", color = MaterialTheme.colorScheme.outline, fontSize = 11.sp)
                 }
             }
             CircularProgressIndicator(
@@ -543,7 +543,7 @@ fun InsumoCard(insumo: MateriaPrima) {
                 modifier = Modifier.size(32.dp),
                 color = parsedColor,
                 strokeWidth = 4.dp,
-                trackColor = Color.LightGray.copy(alpha = 0.3f)
+                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
             )
         }
     }

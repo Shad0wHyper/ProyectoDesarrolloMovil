@@ -93,16 +93,16 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar") }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF8F8F8)).padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = Color.Gray)
+            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, onClick = { qrAmpliadoContenido = Pair(qrEntrada, ColorEntrada); mostrarQrGrande = true })
@@ -125,7 +125,7 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
             title = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("QR de Asistencia", fontWeight = FontWeight.Bold)
-                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Gray) }
+                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             },
             text = {
@@ -133,7 +133,7 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
                     if (qrBitmapGrande != null) {
                         Image(bitmap = qrBitmapGrande.asImageBitmap(), contentDescription = "QR Grande", modifier = Modifier.size(300.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).padding(16.dp))
                     } else {
-                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(200.dp), tint = Color.LightGray)
+                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(200.dp), tint = MaterialTheme.colorScheme.outline)
                     }
                     Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                         Text(contenido, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = color, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
@@ -164,14 +164,14 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
 fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, onClick: () -> Unit) {
     val context = LocalContext.current
     val qrBitmap = generarQrConLogo(context, qrContent, color)
-    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
+    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontWeight = FontWeight.Bold, color = color, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(16.dp))
             if (qrBitmap != null) {
                 Image(bitmap = qrBitmap.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(8.dp))
             } else {
-                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(100.dp), tint = Color.LightGray)
+                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(100.dp), tint = MaterialTheme.colorScheme.outline)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
