@@ -267,7 +267,7 @@ fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerfilScreen(viewModel: EmployeeViewModel, isDark: Boolean, onToggleDark: () -> Unit, onNavigate: (AppScreen) -> Unit) {
+fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
     val context = LocalContext.current
     Scaffold(
         topBar = { TopAppBar(title = { Text("Mi Perfil", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
@@ -289,10 +289,6 @@ fun PerfilScreen(viewModel: EmployeeViewModel, isDark: Boolean, onToggleDark: ()
                     Row(modifier = Modifier.fillMaxWidth().clickable { context.startActivity(Intent(android.provider.Settings.ACTION_LOCALE_SETTINGS)) }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text("Idioma", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp)) }
                         Text(Locale.getDefault().displayLanguage.replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.background)
-                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.DarkMode, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text("Modo Oscuro", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp)) }; Switch(checked = isDark, onCheckedChange = { onToggleDark() })
                     }
                 }
             }
