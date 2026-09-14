@@ -140,11 +140,14 @@ fun AddCardScreen(
 
             Button(
                 onClick = { 
-                    // Aquí se guardaría la tarjeta (tokenización con Stripe)
-                    onNavigateBack()
+                    if (cardNumber.length == 16 && expiryDate.isNotEmpty() && cvc.length == 3) {
+                        appViewModel.savePaymentCard(cardNumber.takeLast(4), expiryDate)
+                        onNavigateBack()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                enabled = cardNumber.length == 16 && expiryDate.length >= 4 && cvc.length == 3,
                 colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
             ) {
                 Text("Guardar Tarjeta", modifier = Modifier.padding(vertical = 8.dp))
