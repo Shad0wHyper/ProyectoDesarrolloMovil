@@ -292,7 +292,14 @@ fun DashboardContent(
             }
         }
 
-        item { AlertaSuministrosCard(onClick = onAlmacenClick) }
+        if (insumosCriticosNombres.isNotEmpty()) {
+            item { 
+                AlertaSuministrosCard(
+                    insumosCriticosNombres = insumosCriticosNombres,
+                    onClick = onAlmacenClick
+                ) 
+            }
+        }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
     }
@@ -708,7 +715,15 @@ fun ProductoCard(
 }
 
 @Composable
-fun AlertaSuministrosCard(onClick: () -> Unit) {
+fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> Unit) {
+    val nombresTexto = if (insumosCriticosNombres.size == 1) {
+        insumosCriticosNombres.first()
+    } else {
+        "${insumosCriticosNombres.dropLast(1).joinToString(", ")} y ${insumosCriticosNombres.last()}"
+    }
+    
+    val verbo = if (insumosCriticosNombres.size == 1) "está" else "están"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
@@ -721,7 +736,7 @@ fun AlertaSuministrosCard(onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "La Harina Integral y el Azúcar glass están por debajo del 10% de su capacidad. Considere reabastecer hoy.",
+                "$nombresTexto $verbo en nivel crítico. Considere reabastecer hoy.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.DarkGray
             )
