@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="chromium_payment_method_names">
+        <item>https://panapp.com/pay</item>
+        <item>https://bobbucks.dev/pay</item>
+    </string-array>
+</resources>
