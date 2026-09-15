@@ -38,6 +38,12 @@ import androidx.compose.ui.unit.sp
 import com.developers.panapp.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
@@ -56,6 +62,73 @@ fun LoginScreen(
     val db = remember { FirebaseFirestore.getInstance() }
 
     val errorTemplate = stringResource(id = R.string.common_error_prefix)
+
+    // Configuración de Google Sign-In
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account?.idToken?.let { idToken ->
+                isLoading = true
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                auth.signInWithCredential(credential)
+                    .addOnSuccessListener { authResult ->
+                        val uid = authResult.user?.uid
+                        if (uid != null) {
+                            db.collection("usuarios").document(uid).get()
+                                .addOnSuccessListener { documento ->
+                                    isLoading = false
+                                    if (documento.exists()) {
+                                        val rol = documento.getString("rol") ?: "sin_rol"
+                                        val targetPackage = when (rol) {
+                                            "admin" -> "com.developers.admin"
+                                            "cliente" -> "com.developers.client"
+                                            "empleado" -> "com.developers.employee"
+                                            else -> ""
+                                        }
+
+                                        if (targetPackage.isNotEmpty()) {
+                                            val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
+                                            if (intent != null) {
+                                                intent.putExtra("USER_ID", auth.currentUser?.uid)
+                                                intent.putExtra("USER_EMAIL", auth.currentUser?.email)
+                                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                context.startActivity(intent)
+                                            } else {
+                                                Toast.makeText(context, "La app de $rol no está instalada en este dispositivo", Toast.LENGTH_LONG).show()
+                                            }
+                                        } else {
+                                            Toast.makeText(context, "Rol no reconocido", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        // Si no existe el usuario en firestore, podemos crearlo o dar error
+                                        // Aquí asumo que no tiene rol, o puedes guardarlo como cliente por defecto.
+                                        Toast.makeText(context, "No tienes rol asignado. Contacta a soporte.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    isLoading = false
+                                    Toast.makeText(context, "Error al obtener datos de Firestore", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    }
+                    .addOnFailureListener { error ->
+                        isLoading = false
+                        Toast.makeText(context, "Autenticación fallida: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+            }
+        } catch (e: ApiException) {
+            Toast.makeText(context, "Google Sign-In falló", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -280,7 +353,37 @@ fun LoginScreen(
                 HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Botón Google Sign-In
+            OutlinedButton(
+                onClick = {
+                    val signInIntent = googleSignInClient.signInIntent
+                    launcher.launch(signInIntent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(15.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google),
+                        contentDescription = "Google Icon",
+                        tint = Color.Unspecified
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(id = R.string.login_google_button),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Botón Crear Cuenta
             OutlinedButton(

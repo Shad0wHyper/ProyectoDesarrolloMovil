@@ -19,6 +19,7 @@
     <string name="login_sign_in_button">Iniciar sesión</string>
     <string name="login_loading">Cargando...</string>
     <string name="login_divider_text"> O TAMBIÉN PUEDES </string>
+    <string name="login_google_button">Continuar con Google</string>
     <string name="login_create_account_button">Crear una cuenta nueva</string>
     <string name="login_terms_prefix">Al continuar, aceptas nuestros</string>
     <string name="login_terms_link">Términos de Servicio</string>

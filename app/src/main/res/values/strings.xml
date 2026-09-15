@@ -17,6 +17,7 @@
     <string name="login_sign_in_button">Sign in</string>
     <string name="login_loading">Loading...</string>
     <string name="login_divider_text"> OR YOU CAN ALSO </string>
+    <string name="login_google_button">Continue with Google</string>
     <string name="login_create_account_button">Create a new account</string>
     <string name="login_terms_prefix">By continuing, you accept our</string>
     <string name="login_terms_link">Terms of Service</string>
@@ -95,4 +96,5 @@
     <string name="forgot_toast_error_network">Network error while sending email</string>
     <string name="forgot_toast_error_db">Error verifying data</string>
     <string name="forgot_toast_error_empty">Please enter your email</string>
+    <string name="default_web_client_id">dummy_client_id_para_compilar</string>
 </resources>
