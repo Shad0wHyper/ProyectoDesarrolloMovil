@@ -1,6 +1,7 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun PedidosScreen() {
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
     
     // 1. Estado para Pedido Seleccionado y Visibilidad
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -67,6 +69,7 @@ fun PedidosScreen() {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            .padding(bottom = 80.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -75,7 +78,8 @@ fun PedidosScreen() {
         ) {
             Text(
                 text = "Pedidos Activos",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = if (isDarkMode) Color.White else Color.Black
             )
             Surface(
                 color = Color(0xFF2196F3).copy(alpha = 0.1f),
@@ -99,17 +103,29 @@ fun PedidosScreen() {
             FilterChip(
                 selected = filtroSeleccionado == "Pendientes", 
                 onClick = { filtroSeleccionado = "Pendientes" }, 
-                label = { Text("Pendientes") }
+                label = { Text("Pendientes") },
+                colors = FilterChipDefaults.filterChipColors(
+                    labelColor = if (isDarkMode) Color.White else Color.Black,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary
+                )
             )
             FilterChip(
                 selected = filtroSeleccionado == "En Proceso", 
                 onClick = { filtroSeleccionado = "En Proceso" }, 
-                label = { Text("En Proceso") }
+                label = { Text("En Proceso") },
+                colors = FilterChipDefaults.filterChipColors(
+                    labelColor = if (isDarkMode) Color.White else Color.Black,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary
+                )
             )
             FilterChip(
                 selected = filtroSeleccionado == "Completados", 
                 onClick = { filtroSeleccionado = "Completados" }, 
-                label = { Text("Completados") }
+                label = { Text("Completados") },
+                colors = FilterChipDefaults.filterChipColors(
+                    labelColor = if (isDarkMode) Color.White else Color.Black,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary
+                )
             )
         }
         
@@ -134,10 +150,11 @@ fun PedidosScreen() {
 
 @Composable
 fun PedidoCard(pedido: Pedido, onClick: () -> Unit) {
+    val isDarkMode = isSystemInDarkTheme()
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -145,12 +162,12 @@ fun PedidoCard(pedido: Pedido, onClick: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("#${pedido.id}", fontWeight = FontWeight.Bold, color = Color.Gray)
-                Text(pedido.hora, fontSize = 14.sp, color = Color.Gray)
+                Text("#${pedido.id}", fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.LightGray else Color.Gray)
+                Text(pedido.hora, fontSize = 14.sp, color = if (isDarkMode) Color.LightGray else Color.Gray)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(pedido.cliente, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(pedido.cliente, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
                 Spacer(modifier = Modifier.weight(1f))
                 Surface(
                     color = pedido.estadoColor.copy(alpha = 0.1f),
@@ -165,7 +182,7 @@ fun PedidoCard(pedido: Pedido, onClick: () -> Unit) {
                     )
                 }
             }
-            Text(pedido.detalles, color = Color.Gray, fontSize = 14.sp)
+            Text(pedido.detalles, color = if (isDarkMode) Color.LightGray else Color.Gray, fontSize = 14.sp)
             
             Spacer(modifier = Modifier.height(12.dp))
             

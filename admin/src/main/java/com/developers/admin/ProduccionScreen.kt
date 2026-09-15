@@ -3,6 +3,7 @@ package com.developers.admin
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun ProduccionScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val isDarkMode = isSystemInDarkTheme()
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
 
     var productosList by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
@@ -189,21 +193,22 @@ fun ProduccionScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro de Producción", fontWeight = FontWeight.Bold) },
+                title = { Text("Registro de Producción", fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -211,7 +216,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
             // Encabezado Ilustrativo
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8EAF6)),
+                colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1A237E).copy(alpha = 0.3f) else Color(0xFFE8EAF6)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -228,8 +233,8 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A237E))
-                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = Color.DarkGray)
+                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (isDarkMode) Color(0xFFC5CAE9) else Color(0xFF1A237E))
+                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = secondaryTextColor)
                     }
                 }
             }
@@ -260,17 +265,17 @@ fun ProduccionScreen(onBack: () -> Unit) {
                         onDismissRequest = { expandedDropdown = false },
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
                     ) {
                         if (productosList.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No hay productos en catálogo", color = Color.Gray) },
+                                text = { Text("No hay productos en catálogo", color = secondaryTextColor) },
                                 onClick = { expandedDropdown = false }
                             )
                         } else {
                             productosList.forEach { producto ->
                                 DropdownMenuItem(
-                                    text = { Text("${producto.nombre} (Stock actual: ${producto.stock})", fontWeight = FontWeight.Medium) },
+                                    text = { Text("${producto.nombre} (Stock actual: ${producto.stock})", fontWeight = FontWeight.Medium, color = textColor) },
                                     onClick = {
                                         productoSeleccionado = producto
                                         expandedDropdown = false
@@ -334,13 +339,13 @@ fun ProduccionScreen(onBack: () -> Unit) {
             title = { Text(tituloDinamico, fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 16.sp) },
             text = {
                 Column {
-                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = Color.DarkGray)
+                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = faltantesList.joinToString("\n\n"),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
-                        color = Color.Black
+                        color = textColor
                     )
                 }
             },
@@ -352,7 +357,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     Text("Entendido", color = Color.White)
                 }
             },
-            containerColor = Color.White
+            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
         )
     }
 }

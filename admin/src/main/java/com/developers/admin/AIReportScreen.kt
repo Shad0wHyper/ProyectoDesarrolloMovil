@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -29,19 +30,22 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AIReportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
+    val textColor = if (isDarkMode) Color.White else Color.Black
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Reporte de Predicciones IA", fontWeight = FontWeight.Bold) },
+                title = { Text("Reporte de Predicciones IA", fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -54,7 +58,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                 Text(
                     "Análisis Basado en Red Neuronal",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF673AB7),
+                    color = if (isDarkMode) Color(0xFFD1C4E9) else Color(0xFF673AB7),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -163,9 +167,10 @@ fun PredictionCard(
     color: Color,
     action: @Composable (() -> Unit)? = null
 ) {
+    val isDarkMode = isSystemInDarkTheme()
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -181,9 +186,9 @@ fun PredictionCard(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+                    Text(text = title, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.Gray)
+                    Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
+                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                 }
             }
             action?.invoke()
