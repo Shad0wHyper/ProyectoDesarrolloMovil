@@ -2,12 +2,14 @@ package com.developers.admin
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -19,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,7 +30,10 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AlmacenStockScreen() {
     val context = LocalContext.current
-    
+    val isDarkMode = isSystemInDarkTheme()
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
+
     // 1. Base de Datos Reactiva (Estado de la Lista)
     val listaMateriales = remember { 
         mutableStateListOf<MaterialStock>().apply { addAll(getMaterialesStockInicial()) } 
@@ -61,7 +67,8 @@ fun AlmacenStockScreen() {
     if (showAddMaterialDialog) {
         AlertDialog(
             onDismissRequest = { showAddMaterialDialog = false },
-            title = { Text("Nuevo Material") },
+            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+            title = { Text("Nuevo Material", color = textColor) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = nuevoNombreMat, onValueChange = { nuevoNombreMat = it }, label = { Text("Nombre") })
@@ -89,16 +96,17 @@ fun AlmacenStockScreen() {
     if (materialParaAjustar != null) {
         AlertDialog(
             onDismissRequest = { materialParaAjustar = null },
-            title = { Text("Ajustar Stock: ${materialParaAjustar?.nombre}") },
+            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+            title = { Text("Ajustar Stock: ${materialParaAjustar?.nombre}", color = textColor) },
             text = {
                 Column {
-                    Text("Ingrese la nueva cantidad en ${materialParaAjustar?.unidad}:")
+                    Text("Ingrese la nueva cantidad en ${materialParaAjustar?.unidad}:", color = textColor)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = nuevoStockValue,
                         onValueChange = { nuevoStockValue = it },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -131,36 +139,36 @@ fun AlmacenStockScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Top Bar
         CenterAlignedTopAppBar(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        color = Color.Black,
+                        color = if (isDarkMode) Color.White else Color.Black,
                         shape = RoundedCornerShape(4.dp),
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             Icons.Default.Bolt,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = if (isDarkMode) Color.Black else Color.White,
                             modifier = Modifier.padding(4.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Panaderia Stock", fontWeight = FontWeight.Bold)
+                    Text("Panaderia Stock", fontWeight = FontWeight.Bold, color = textColor)
                 }
             },
             actions = {
                 IconButton(onClick = { showAddMaterialDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Nuevo Material")
+                    Icon(Icons.Default.Add, contentDescription = "Nuevo Material", tint = textColor)
                 }
                 IconButton(onClick = { 
                     Toast.makeText(context, "Sincronizando con base de datos...", Toast.LENGTH_SHORT).show()
                 }) {
-                    Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones")
+                    Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones", tint = textColor)
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
@@ -178,13 +186,15 @@ fun AlmacenStockScreen() {
                     value = textBusqueda,
                     onValueChange = { textBusqueda = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Buscar por nombre o SKU...", color = Color.Gray) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                    placeholder = { Text("Buscar por nombre o SKU...", color = secondaryTextColor) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = secondaryTextColor) },
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White,
-                        unfocusedBorderColor = Color.LightGray
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedBorderColor = if (isDarkMode) Color.DarkGray else Color.LightGray,
+                        focusedTextColor = textColor,
+                        unfocusedTextColor = textColor
                     )
                 )
             }
@@ -200,10 +210,10 @@ fun AlmacenStockScreen() {
                             label = { Text(category) },
                             shape = RoundedCornerShape(16.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF6200EE),
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
                                 selectedLabelColor = Color.White,
-                                containerColor = Color(0xFFE0E0E0),
-                                labelColor = Color.DarkGray
+                                containerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE0E0E0),
+                                labelColor = secondaryTextColor
                             )
                         )
                     }
@@ -217,7 +227,7 @@ fun AlmacenStockScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Mostrando ${materialesFiltrados.size} materiales", color = Color.Gray, fontSize = 14.sp)
+                    Text("Mostrando ${materialesFiltrados.size} materiales", color = secondaryTextColor, fontSize = 14.sp)
                     if (alertasCount > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(modifier = Modifier.size(8.dp), color = Color.Red, shape = CircleShape) {}
@@ -242,7 +252,7 @@ fun AlmacenStockScreen() {
                 )
             }
             
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 }
@@ -253,6 +263,10 @@ fun MaterialStockCard(
     onAjustarClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
+    val isDarkMode = isSystemInDarkTheme()
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
+
     // 2. Lógica Dinámica de Estado y Color
     val (estado, color) = when {
         material.existencia <= 0 -> "AGOTADO" to Color(0xFFF44336)
@@ -262,7 +276,7 @@ fun MaterialStockCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -270,13 +284,13 @@ fun MaterialStockCard(
             // Fila superior
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(material.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Surface(color = Color(0xFFF5F5F5), shape = RoundedCornerShape(4.dp)) {
+                    Text(material.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
+                    Surface(color = if (isDarkMode) Color(0xFF333333) else Color(0xFFF5F5F5), shape = RoundedCornerShape(4.dp)) {
                         Text(
                             "SKU: ${material.sku}",
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = secondaryTextColor
                         )
                     }
                 }
@@ -299,12 +313,12 @@ fun MaterialStockCard(
             // Existencias
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("EXISTENCIA ACTUAL", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text("${material.existencia} ${material.unidad}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("EXISTENCIA ACTUAL", fontSize = 10.sp, color = secondaryTextColor, fontWeight = FontWeight.Bold)
+                    Text("${material.existencia} ${material.unidad}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textColor)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("MÍNIMO REQUERIDO", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text("${material.minimo} ${material.unidad}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                    Text("MÍNIMO REQUERIDO", fontSize = 10.sp, color = secondaryTextColor, fontWeight = FontWeight.Bold)
+                    Text("${material.minimo} ${material.unidad}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = secondaryTextColor)
                 }
             }
 
@@ -319,11 +333,11 @@ fun MaterialStockCard(
                     .height(8.dp)
                     .clip(CircleShape),
                 color = color,
-                trackColor = Color(0xFFEEEEEE)
+                trackColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Color(0xFFEEEEEE))
+            HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE))
             Spacer(modifier = Modifier.height(8.dp))
 
             // Acciones
@@ -332,7 +346,7 @@ fun MaterialStockCard(
                     TextButton(
                         onClick = onAjustarClick,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color.DarkGray)
+                        colors = ButtonDefaults.textButtonColors(contentColor = if (isDarkMode) Color.White else Color.DarkGray)
                     ) {
                         Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -341,7 +355,7 @@ fun MaterialStockCard(
                     TextButton(
                         onClick = onEditClick,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color.DarkGray)
+                        colors = ButtonDefaults.textButtonColors(contentColor = if (isDarkMode) Color.White else Color.DarkGray)
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -349,7 +363,7 @@ fun MaterialStockCard(
                     }
                 }
                 IconButton(onClick = { /* TODO */ }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = secondaryTextColor)
                 }
             }
         }
