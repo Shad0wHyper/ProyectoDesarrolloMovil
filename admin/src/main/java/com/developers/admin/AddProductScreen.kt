@@ -7,7 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,10 +48,6 @@ fun AddProductScreen(
     onBack: () -> Unit,
     onSuccessSave: () -> Unit
 ) {
-    val isDarkMode = isSystemInDarkTheme()
-    val textColor = if (isDarkMode) Color.White else Color.Black
-    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
-
     // Relleno de campos iniciales
     var nombre by remember { mutableStateOf(productoAEditar?.nombre ?: "") }
     var precio by remember { mutableStateOf(productoAEditar?.precio ?: "") }
@@ -114,22 +109,21 @@ fun AddProductScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (productoAEditar != null) "Editar Producto" else "Alta de Producto", fontWeight = FontWeight.Bold, color = textColor) },
+                title = { Text(if (productoAEditar != null) "Editar Producto" else "Alta de Producto", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
+                .background(Color(0xFFF8F8F8))
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -141,8 +135,8 @@ fun AddProductScreen(
                     .fillMaxWidth()
                     .height(180.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
-                    .border(1.dp, if (isDarkMode) Color.DarkGray else Color.LightGray, RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
                     .clickable {
                         if (!isSaving) {
                             photoPickerLauncher.launch(
@@ -162,7 +156,7 @@ fun AddProductScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(48.dp), tint = AdminPrimary)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Toca para añadir foto del pan", color = secondaryTextColor, fontSize = 14.sp)
+                        Text("Toca para añadir foto del pan", color = Color.Gray, fontSize = 14.sp)
                     }
                 }
             }
@@ -196,9 +190,9 @@ fun AddProductScreen(
                     modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true },
                     shape = RoundedCornerShape(12.dp)
                 )
-                DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f).background(MaterialTheme.colorScheme.surface)) {
+                DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f).background(Color.White)) {
                     categoriasDisponibles.forEach { cat ->
-                        DropdownMenuItem(text = { Text(cat, fontWeight = FontWeight.Medium, color = textColor) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
+                        DropdownMenuItem(text = { Text(cat, fontWeight = FontWeight.Medium) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
                     }
                 }
             }
@@ -227,11 +221,11 @@ fun AddProductScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Receta (Insumos por unidad)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
-                    Text("Seleccione la materia prima y la cantidad necesaria para elaborar 1 pan.", fontSize = 12.sp, color = secondaryTextColor)
+                    Text("Receta (Insumos por unidad)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Seleccione la materia prima y la cantidad necesaria para elaborar 1 pan.", fontSize = 12.sp, color = Color.Gray)
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -254,17 +248,17 @@ fun AddProductScreen(
                         DropdownMenu(
                             expanded = expandedInsumoDropdown,
                             onDismissRequest = { expandedInsumoDropdown = false },
-                            modifier = Modifier.fillMaxWidth(0.85f).background(MaterialTheme.colorScheme.surface)
+                            modifier = Modifier.fillMaxWidth(0.85f).background(Color.White)
                         ) {
                             if (insumosDisponibles.isEmpty()) {
                                 DropdownMenuItem(
-                                    text = { Text("No hay insumos en almacén", color = secondaryTextColor) },
+                                    text = { Text("No hay insumos en almacén", color = Color.Gray) },
                                     onClick = { expandedInsumoDropdown = false }
                                 )
                             } else {
                                 insumosDisponibles.forEach { insumo ->
                                     DropdownMenuItem(
-                                        text = { Text("${insumo.nombre} (${insumo.unidadMedida})", fontWeight = FontWeight.Medium, color = textColor) },
+                                        text = { Text("${insumo.nombre} (${insumo.unidadMedida})", fontWeight = FontWeight.Medium) },
                                         onClick = {
                                             insumoSeleccionado = insumo
                                             expandedInsumoDropdown = false

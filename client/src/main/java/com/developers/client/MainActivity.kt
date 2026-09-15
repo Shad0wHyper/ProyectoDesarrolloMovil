@@ -38,8 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.ui.theme.PanAppClientTheme
-import com.developers.core.components.FloatingBottomBar
-import com.developers.core.theme.PanAppPrimary
+import com.developers.client.ui.theme.PanAppPrimary
 import com.stripe.android.PaymentConfiguration
 
 class MainActivity : ComponentActivity() {
@@ -226,13 +225,9 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
 
         // BARRA FLOTANTE EN CAPA SUPERIOR
         if (showBottomBar) {
-            FloatingBottomBar(
-                selectedItem = currentRoute,
-                items = listOf(
-                    Triple("home", "Inicio", Icons.Default.Home),
-                    Triple("orders", "Pedidos", Icons.Default.Receipt)
-                ),
-                onItemClick = { route ->
+            GooglePhotosFloatingBottomBar(
+                currentRoute = currentRoute,
+                onNavigate = { route ->
                     navController.navigate(route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
@@ -241,7 +236,6 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                         restoreState = true
                     }
                 },
-                onSearchClick = { /* TODO: Búsqueda */ },
                 isDarkMode = appViewModel.isDarkMode,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
@@ -249,3 +243,123 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
     }
 }
 
+// ✨ BARRA DE NAVEGACIÓN FLOTANTE REFACTORIZADA ESTILO GOOGLE PHOTOS & PANAPP
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GooglePhotosFloatingBottomBar(
+    currentRoute: String,
+    onNavigate: (String) -> Unit,
+    isDarkMode: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val bottomNavItems = remember {
+        listOf(
+            Triple("home", "Inicio", Icons.Default.Home),
+            Triple("orders", "Pedidos", Icons.Default.Receipt)
+        )
+    }
+
+    // ✨ 4. PALETA DE COLORES: Blanco en Modo Claro, Gris Oscuro (0xFF2C2C2C) en Modo Oscuro
+    val containerBackgroundColor = if (isDarkMode) Color(0xFF2C2C2C) else Color.White
+    val searchIconColor = if (isDarkMode) Color.White else Color(0xFF2C2C2C)
+
+    // ✨ 2. CENTRADO Y 3. ALTURA/ESPACIADO (12.dp)
+    Box(
+        modifier = modifier
+            .wrapContentWidth()
+            .navigationBarsPadding()
+            .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 1. Píldora Principal de Navegación (Centrada)
+            Surface(
+                shape = CircleShape,
+                color = containerBackgroundColor,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    bottomNavItems.forEach { (route, title, icon) ->
+                        val isSelected = currentRoute == route
+
+                        FloatingNavItem(
+                            title = title,
+                            icon = icon,
+                            isSelected = isSelected,
+                            isDarkMode = isDarkMode,
+                            onClick = { onNavigate(route) }
+                        )
+                    }
+                }
+            }
+
+            // 2. Botón Circular Independiente de Búsqueda
+            Surface(
+                onClick = { /* TODO: Búsqueda */ },
+                shape = CircleShape,
+                color = containerBackgroundColor,
+                shadowElevation = 8.dp,
+                modifier = Modifier.size(52.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = searchIconColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FloatingNavItem(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    isDarkMode: Boolean,
+    onClick: () -> Unit
+) {
+    // ✨ 4. PALETA DE COLORES Y ESTADOS
+    val activeBackgroundColor = PanAppPrimary.copy(alpha = 0.15f)
+    val contentColor = if (isSelected) PanAppPrimary else Color.Gray
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (isSelected) activeBackgroundColor else Color.Transparent,
+        contentColor = contentColor
+    ) {
+        Row(
+            modifier = Modifier
+                .animateContentSize()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isSelected) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = PanAppPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor
+            )
+        }
+    }
+}

@@ -1,15 +1,24 @@
 package com.developers.admin
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,223 +26,456 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLEncoder
 
+// 1. Data Class Proveedor
+data class Proveedor(
+    val id: String = "",
+    val nombre: String = "",
+    val telefono: String = "",
+    val materiaPrimaId: String = "",
+    val materiaPrimaNombre: String = ""
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PedidosScreen() {
-    val context = LocalContext.current
-    val isDarkMode = isSystemInDarkTheme()
-    
-    // 1. Estado para Pedido Seleccionado y Visibilidad
-    var showBottomSheet by remember { mutableStateOf(false) }
-    var pedidoSeleccionado by remember { mutableStateOf<Pedido?>(null) }
-    
-    // Lista mutable para simular actualización de estado
-    val listaPedidos = remember { 
-        mutableStateListOf<Pedido>().apply { addAll(getPedidosEjemplo()) } 
-    }
+    var tabIndex by remember { mutableIntStateOf(0) }
+    var showProveedorDialog by remember { mutableStateOf(false) }
+    var proveedorAEditar by remember { mutableStateOf<Proveedor?>(null) }
 
-    // 2. Estado para Filtros
-    var filtroSeleccionado by remember { mutableStateOf("Pendientes") }
-    
-    val pedidosFiltrados = remember(filtroSeleccionado, listaPedidos.size, listaPedidos.map { it.estado }) {
-        when (filtroSeleccionado) {
-            "Pendientes" -> listaPedidos.filter { it.estado == "Pendiente" || it.estado == "En Camino" }
-            "En Proceso" -> listaPedidos.filter { it.estado == "En Proceso" }
-            "Completados" -> listaPedidos.filter { it.estado == "Entregado" }
-            else -> listaPedidos
+    var materiasPrimas by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
+    var proveedores by remember { mutableStateOf<List<Proveedor>>(emptyList()) }
+
+    // Escucha en tiempo real de materia_prima y proveedores
+    LaunchedEffect(Unit) {
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("materia_prima").addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null) return@addSnapshotListener
+            val lista = snapshot.documents.mapNotNull { doc ->
+                val insumo = doc.toObject(MateriaPrima::class.java)?.copy(id = doc.id)
+                if (insumo != null) {
+                    // Reset Automático: Si ya hay stock pero quedó con alertas registradas, lo limpiamos
+                    if (insumo.cantidadActual > insumo.nivelCritico && insumo.alertasEnviadas > 0) {
+                        db.collection("materia_prima").document(insumo.id).update("alertasEnviadas", 0)
+                    }
+                }
+                insumo
+            }
+            materiasPrimas = lista
+        }
+
+        db.collection("proveedores").addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null) return@addSnapshotListener
+            proveedores = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Proveedor::class.java)?.copy(id = doc.id)
+            }
         }
     }
 
-    if (showBottomSheet && pedidoSeleccionado != null) {
-        DetallePedidoBottomSheet(
-            pedido = pedidoSeleccionado!!,
-            onDismissRequest = { showBottomSheet = false },
-            onConfirmarRecepcion = { pedido ->
-                // 3. Lógica de Confirmar Recepción
-                val index = listaPedidos.indexOfFirst { it.id == pedido.id }
-                if (index != -1) {
-                    listaPedidos[index] = pedido.copy(
-                        estado = "Entregado",
-                        estadoColor = Color(0xFF4CAF50)
-                    )
-                }
-                Toast.makeText(context, "Pedido ${pedido.id} marcado como recibido", Toast.LENGTH_SHORT).show()
-                showBottomSheet = false
-            }
-        )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .padding(bottom = 80.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Pedidos Activos",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = if (isDarkMode) Color.White else Color.Black
-            )
-            Surface(
-                color = Color(0xFF2196F3).copy(alpha = 0.1f),
+    // 2. Estructura de Pantalla y Pestañas
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    proveedorAEditar = null
+                    showProveedorDialog = true
+                },
+                containerColor = Color(0xFF6200EE),
+                contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Text(
-                    "${listaPedidos.size} hoy",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    color = Color(0xFF2196F3),
-                    fontWeight = FontWeight.Bold
-                )
+                Icon(Icons.Default.Add, contentDescription = "Añadir Proveedor")
             }
-        }
-        
-        Spacer(modifier = Modifier.height(20.dp))
-        
-        // Filter Tabs
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        },
+        containerColor = Color(0xFFF8F9FA)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
         ) {
-            FilterChip(
-                selected = filtroSeleccionado == "Pendientes", 
-                onClick = { filtroSeleccionado = "Pendientes" }, 
-                label = { Text("Pendientes") },
-                colors = FilterChipDefaults.filterChipColors(
-                    labelColor = if (isDarkMode) Color.White else Color.Black,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary
-                )
-            )
-            FilterChip(
-                selected = filtroSeleccionado == "En Proceso", 
-                onClick = { filtroSeleccionado = "En Proceso" }, 
-                label = { Text("En Proceso") },
-                colors = FilterChipDefaults.filterChipColors(
-                    labelColor = if (isDarkMode) Color.White else Color.Black,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary
-                )
-            )
-            FilterChip(
-                selected = filtroSeleccionado == "Completados", 
-                onClick = { filtroSeleccionado = "Completados" }, 
-                label = { Text("Completados") },
-                colors = FilterChipDefaults.filterChipColors(
-                    labelColor = if (isDarkMode) Color.White else Color.Black,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(pedidosFiltrados) { pedido ->
-                PedidoCard(
-                    pedido = pedido, 
-                    onClick = { 
-                        pedidoSeleccionado = pedido
-                        showBottomSheet = true 
-                    }
-                )
-            }
-            item { Spacer(modifier = Modifier.height(100.dp)) }
-        }
-    }
-}
+            // ✨ 1. Cabecera Personalizada y Contador (Adiós al TabRow genérico)
+            val insumosCriticos = materiasPrimas.filter { it.cantidadActual <= it.nivelCritico }
+            val sugerenciasCount = insumosCriticos.size
 
-@Composable
-fun PedidoCard(pedido: Pedido, onClick: () -> Unit) {
-    val isDarkMode = isSystemInDarkTheme()
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("#${pedido.id}", fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.LightGray else Color.Gray)
-                Text(pedido.hora, fontSize = 14.sp, color = if (isDarkMode) Color.LightGray else Color.Gray)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(pedido.cliente, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
+                Text(
+                    text = "Pedidos",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
                 Spacer(modifier = Modifier.weight(1f))
                 Surface(
-                    color = pedido.estadoColor.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFE3F2FD)
                 ) {
                     Text(
-                        pedido.estado,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        color = pedido.estadoColor,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
+                        text = "$sugerenciasCount sugerencias hoy",
+                        color = Color(0xFF1976D2),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp
                     )
                 }
             }
-            Text(pedido.detalles, color = if (isDarkMode) Color.LightGray else Color.Gray, fontSize = 14.sp)
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
+
+            // ✨ 2. Pestañas Estilo 'Pill' Personalizadas
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("$ ${pedido.total}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF2196F3))
-                Button(
-                    onClick = onClick,
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                // Pill 1: Sugerencias
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (tabIndex == 0) Color(0xFFF3E5F5) else Color.Transparent,
+                    border = if (tabIndex == 0) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
+                    modifier = Modifier.clickable { tabIndex = 0 }
                 ) {
-                    Text("Detalles")
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = "Sugerencias",
+                        color = if (tabIndex == 0) Color(0xFF6200EE) else Color.Gray,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
+                // Pill 2: Proveedores
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (tabIndex == 1) Color(0xFFF3E5F5) else Color.Transparent,
+                    border = if (tabIndex == 1) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
+                    modifier = Modifier.clickable { tabIndex = 1 }
+                ) {
+                    Text(
+                        text = "Proveedores",
+                        color = if (tabIndex == 1) Color(0xFF6200EE) else Color.Gray,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            if (tabIndex == 0) {
+                TabPedidosSugerencias(insumosCriticos, proveedores)
+            } else {
+                TabProveedoresDirectorio(proveedores) { prov ->
+                    proveedorAEditar = prov
+                    showProveedorDialog = true
+                }
+            }
+        }
+    }
+
+    if (showProveedorDialog) {
+        AddEditProveedorDialog(
+            proveedor = proveedorAEditar,
+            materiasPrimas = materiasPrimas,
+            onDismiss = { showProveedorDialog = false }
+        )
+    }
+}
+
+// 4. Pestaña 1: 'Pedidos' (Sugerencias Automáticas WMS)
+@Composable
+fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List<Proveedor>) {
+    val context = LocalContext.current
+    
+    if (insumosCriticos.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "No hay pedidos pendientes.\nStock óptimo.",
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(insumosCriticos, key = { it.id }) { insumo ->
+                val proveedor = proveedores.find { it.materiaPrimaId == insumo.id }
+                
+                if (proveedor != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Surface(
+                                color = Color(0xFFFFF3E0), // Naranja suave
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                // ✨ 3. Iconografía en la Tarjeta de Pedido (Etiqueta SUGERENCIA)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lightbulb,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFF9800),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "SUGERENCIA",
+                                        color = Color(0xFFE65100),
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(proveedor.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Se recomienda pedir más unidades de ${insumo.nombre}",
+                                color = Color.DarkGray,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            val limiteAlcanzado = insumo.alertasEnviadas >= 3
+                            
+                            Button(
+                                onClick = {
+                                    // Incrementa alertas enviadas en Firestore
+                                    FirebaseFirestore.getInstance().collection("materia_prima")
+                                        .document(insumo.id)
+                                        .update("alertasEnviadas", FieldValue.increment(1))
+
+                                    // Lanza el Intent de WhatsApp
+                                    try {
+                                        val mensaje = "Buen día. Nos comunicamos de PanApp para solicitar un resurtido. Reportamos niveles bajos de ${insumo.nombre}. El pedido será de X ${insumo.unidadMedida}. Quedamos a la espera de su confirmación."
+                                        val encodedMessage = URLEncoder.encode(mensaje, "UTF-8")
+                                        val uri = Uri.parse("https://api.whatsapp.com/send?phone=${proveedor.telefono}&text=$encodedMessage")
+                                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "No se pudo abrir WhatsApp", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !limiteAlcanzado,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF4CAF50),
+                                    disabledContainerColor = Color(0xFFE0E0E0)
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                // ✨ 3. Iconografía en el botón de WhatsApp
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (!limiteAlcanzado) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Send,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text(
+                                        if (limiteAlcanzado) "Límite de avisos alcanzado" else "Enviar WhatsApp",
+                                        color = if (limiteAlcanzado) Color.Gray else Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-data class ArticuloPedido(val nombre: String, val cantidad: String)
+// 5. Pestaña 2: 'Proveedores' (Directorio)
+@Composable
+fun TabProveedoresDirectorio(proveedores: List<Proveedor>, onEditClick: (Proveedor) -> Unit) {
+    if (proveedores.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "No hay proveedores registrados.",
+                color = Color.Gray,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(proveedores, key = { it.id }) { prov ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(prov.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Tel: ${prov.telefono}", color = Color.Gray, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(color = Color(0xFFF3E5F5), shape = RoundedCornerShape(4.dp)) {
+                                Text(
+                                    text = prov.materiaPrimaNombre,
+                                    color = Color(0xFF6200EE),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        IconButton(onClick = { onEditClick(prov) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Gray)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
-data class Pedido(
-    val id: String, 
-    val cliente: String, 
-    val detalles: String, 
-    val total: String, 
-    val hora: String,
-    val proveedor: String,
-    val estado: String,
-    val estadoColor: Color,
-    val articulos: List<ArticuloPedido>
-)
+// 3. Diálogo de Alta/Edición de Proveedor
+@Composable
+fun AddEditProveedorDialog(
+    proveedor: Proveedor?,
+    materiasPrimas: List<MateriaPrima>,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var nombre by remember { mutableStateOf(proveedor?.nombre ?: "") }
+    var telefono by remember { mutableStateOf(proveedor?.telefono ?: "") }
+    
+    var selectedInsumo by remember { 
+        mutableStateOf(materiasPrimas.find { it.id == proveedor?.materiaPrimaId }) 
+    }
+    var expandedDropdown by remember { mutableStateOf(false) }
 
-fun getPedidosEjemplo() = listOf(
-    Pedido(
-        "1001", "Harinas del Sol", "60 kg", "10,000", "10:15 AM",
-        "Harinas del Sol", "En Camino", Color(0xFF0D47A1),
-        listOf(ArticuloPedido("Croissant", "2 und"), ArticuloPedido("Baguette", "1 und"))
-    ),
-    Pedido(
-        "1002", "Cremeria la santa", "Leche 100Lts", "12,000", "10:20 AM",
-        "Distribuidora Láctea", "Pendiente", Color(0xFFFFA000),
-        listOf(ArticuloPedido("Muffin Chocolate", "4 und"))
-    ),
-    Pedido(
-        "1003", "Carlos Ruiz", "1x Pan Integral, 2x Donas", "5.50", "10:30 AM",
-        "Panadería Central", "En Proceso", Color(0xFF2196F3),
-        listOf(ArticuloPedido("Pan Integral", "1 und"), ArticuloPedido("Donas", "2 und"))
+    var isSaving by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (proveedor == null) "Nuevo Proveedor" else "Editar Proveedor", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre del Proveedor") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = telefono,
+                    onValueChange = { telefono = it },
+                    label = { Text("Teléfono (WhatsApp)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = selectedInsumo?.nombre ?: "Seleccionar Materia Prima",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Materia Prima que surte") },
+                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdown = true }) },
+                        modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true }
+                    )
+                    DropdownMenu(
+                        expanded = expandedDropdown,
+                        onDismissRequest = { expandedDropdown = false },
+                        modifier = Modifier.fillMaxWidth(0.8f).background(Color.White)
+                    ) {
+                        materiasPrimas.forEach { insumo ->
+                            DropdownMenuItem(
+                                text = { Text(insumo.nombre) },
+                                onClick = {
+                                    selectedInsumo = insumo
+                                    expandedDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (nombre.isNotBlank() && telefono.isNotBlank() && selectedInsumo != null) {
+                        isSaving = true
+                        val db = FirebaseFirestore.getInstance()
+                        val dataMap = hashMapOf(
+                            "nombre" to nombre.trim(),
+                            "telefono" to telefono.trim(),
+                            "materiaPrimaId" to selectedInsumo!!.id,
+                            "materiaPrimaNombre" to selectedInsumo!!.nombre
+                        )
+
+                        if (proveedor == null) {
+                            db.collection("proveedores").add(dataMap)
+                                .addOnSuccessListener { 
+                                    Toast.makeText(context, "Proveedor creado", Toast.LENGTH_SHORT).show()
+                                    onDismiss() 
+                                }
+                        } else {
+                            db.collection("proveedores").document(proveedor.id).update(dataMap as Map<String, Any>)
+                                .addOnSuccessListener { 
+                                    Toast.makeText(context, "Proveedor actualizado", Toast.LENGTH_SHORT).show()
+                                    onDismiss() 
+                                }
+                        }
+                    } else {
+                        Toast.makeText(context, "Llene todos los campos", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                enabled = !isSaving,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+            ) {
+                Text(if (isSaving) "Guardando..." else "Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
+                Text("Cancelar")
+            }
+        }
     )
-)
+}
