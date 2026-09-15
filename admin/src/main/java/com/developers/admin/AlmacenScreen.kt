@@ -3,6 +3,7 @@ package com.developers.admin
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -49,6 +50,7 @@ data class MateriaPrima(
 @Composable
 fun AlmacenScreen() {
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
     var insumosList by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -154,19 +156,20 @@ fun AlmacenScreen() {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { ejecutarEscaneo() },
-                containerColor = Color(0xFF6200EE),
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
             }
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
             Row(
@@ -176,7 +179,8 @@ fun AlmacenScreen() {
             ) {
                 Text(
                     text = "Control de Almacén",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = if (isDarkMode) Color.White else Color.Black
                 )
 
                 OutlinedButton(
@@ -494,6 +498,7 @@ fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color
 
 @Composable
 fun InsumoCard(insumo: MateriaPrima) {
+    val isDarkMode = isSystemInDarkTheme()
     val parsedColor = remember(insumo.colorHex) {
         try {
             Color(android.graphics.Color.parseColor(insumo.colorHex))
@@ -509,7 +514,7 @@ fun InsumoCard(insumo: MateriaPrima) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -527,8 +532,8 @@ fun InsumoCard(insumo: MateriaPrima) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(insumo.nombre, fontWeight = FontWeight.Bold)
-                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = Color.Gray, fontSize = 14.sp)
+                Text(insumo.nombre, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
+                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = if (isDarkMode) Color.LightGray else Color.Gray, fontSize = 14.sp)
                 
                 // Mostrar resumen de códigos asociados
                 if (insumo.codigosBarras.isNotEmpty()) {
