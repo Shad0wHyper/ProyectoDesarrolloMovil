@@ -40,7 +40,8 @@ fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Un
                 title = { Text("Control de Asistencia", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
-        }
+        },
+        bottomBar = { BottomNav(AppScreen.ASISTENCIA, onNavigate) }
     ) { paddingValues ->
         Column(
             modifier = Modifier.fillMaxSize().padding(paddingValues).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -49,7 +50,6 @@ fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Un
             DigitalIdCard(viewModel.userName)
             AttendanceScannerControl(viewModel)
             RecentLogs(viewModel.logs, onViewHistoryClick = { onNavigate(AppScreen.HISTORIAL) })
-            Spacer(modifier = Modifier.height(100.dp)) // Espacio para la barra flotante
         }
     }
 }

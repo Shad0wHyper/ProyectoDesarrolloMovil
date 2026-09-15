@@ -48,6 +48,7 @@ val globalSupplierOrders = listOf(SupplierOrder("ORD-2023", "Harinas del Sol", "
 fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Dashboard", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        bottomBar = { BottomNav(AppScreen.INICIO, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -62,7 +63,6 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
                 DashboardButton(modifier = Modifier.weight(1f), icon = Icons.Outlined.CheckCircle, text = "Asistencia", onClick = { onNavigate(AppScreen.ASISTENCIA) })
                 DashboardButton(modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Outlined.List, text = "Despachar", onClick = { onNavigate(AppScreen.PEDIDOS) })
             }
-            Spacer(modifier = Modifier.height(80.dp)) // Espacio para la barra flotante
         }
     }
 }
@@ -73,6 +73,7 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
 fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Cola de Despacho", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        bottomBar = { BottomNav(AppScreen.PEDIDOS, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (viewModel.pedidosActivos.isEmpty()) {
@@ -84,7 +85,7 @@ fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit,
                 items(viewModel.pedidosActivos, key = { it.id }) { order ->
                     OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
                 }
-                item { Spacer(modifier = Modifier.height(100.dp)) } // Espacio para la barra flotante
+                item { Spacer(modifier = Modifier.height(60.dp)) }
             }
         }
     }
@@ -235,6 +236,7 @@ fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Proveedores", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        bottomBar = { BottomNav(AppScreen.PROVEEDORES, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -244,10 +246,8 @@ fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
                     Column(modifier = Modifier.padding(16.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFFDF3F0)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.LocalShipping, null, tint = OrangePrep) }; Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) { Text(order.supplierName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface); Text(order.id, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp) }; Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0xFFEBEBFC)).padding(horizontal = 10.dp, vertical = 4.dp)) { Text(order.statusBadgeRes, color = DarkPurpleText, fontWeight = FontWeight.Bold, fontSize = 10.sp) } } }
                 }
             }
-            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
-    // ... (ModalBottomSheet omitted for brevity but should be kept)
 
     if (showBottomSheet && selectedSupplierOrderId != null) {
         val order = globalSupplierOrders.find { it.id == selectedSupplierOrderId }
@@ -271,6 +271,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) 
     val context = LocalContext.current
     Scaffold(
         topBar = { TopAppBar(title = { Text("Mi Perfil", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        bottomBar = { BottomNav(AppScreen.PERFIL, onNavigate) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -291,7 +292,6 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) 
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
@@ -303,5 +303,16 @@ fun DashboardButton(modifier: Modifier, icon: ImageVector, text: String, onClick
             Icon(icon, null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
             Text(text, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp), textAlign = TextAlign.Center)
         }
+    }
+}
+
+@Composable
+fun BottomNav(currentScreen: AppScreen, onNavigate: (AppScreen) -> Unit) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+        NavigationBarItem(icon = { Icon(Icons.Outlined.Home, null) }, label = { Text("Inicio") }, selected = currentScreen == AppScreen.INICIO, onClick = { onNavigate(AppScreen.INICIO) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
+        NavigationBarItem(icon = { Icon(Icons.Outlined.AccessTime, null) }, label = { Text("Asistencia") }, selected = currentScreen == AppScreen.ASISTENCIA || currentScreen == AppScreen.HISTORIAL, onClick = { onNavigate(AppScreen.ASISTENCIA) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
+        NavigationBarItem(icon = { Icon(Icons.AutoMirrored.Outlined.List, null) }, label = { Text("Pedidos") }, selected = currentScreen == AppScreen.PEDIDOS || currentScreen == AppScreen.LAUNCHING_WS, onClick = { onNavigate(AppScreen.PEDIDOS) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
+        NavigationBarItem(icon = { Icon(Icons.Outlined.LocalShipping, null) }, label = { Text("Proveedores") }, selected = currentScreen == AppScreen.PROVEEDORES, onClick = { onNavigate(AppScreen.PROVEEDORES) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
+        NavigationBarItem(icon = { Icon(Icons.Outlined.Person, null) }, label = { Text("Perfil") }, selected = currentScreen == AppScreen.PERFIL, onClick = { onNavigate(AppScreen.PERFIL) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = PrimaryBlue, selectedTextColor = PrimaryBlue))
     }
 }

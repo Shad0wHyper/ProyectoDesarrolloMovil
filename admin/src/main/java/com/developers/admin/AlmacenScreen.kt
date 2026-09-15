@@ -3,7 +3,6 @@ package com.developers.admin
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,14 +42,14 @@ data class MateriaPrima(
     val codigosBarras: List<String> = emptyList(), // Array para usar whereArrayContains / contains
     val cantidadesPorCodigo: Map<String, Double> = emptyMap(), // Diccionario codigo -> cantidad que aporta
     val nivelCritico: Double = 0.0,
-    val colorHex: String = "#4CAF50"
+    val colorHex: String = "#4CAF50",
+    val alertasEnviadas: Int = 0
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlmacenScreen() {
     val context = LocalContext.current
-    val isDarkMode = isSystemInDarkTheme()
     var insumosList by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -60,6 +59,7 @@ fun AlmacenScreen() {
 
     var unregisteredCode by remember { mutableStateOf<String?>(null) }
     var modoAprendizajeOpcion by remember { mutableStateOf("A") } // "A" = Vincular, "B" = Alta Nueva
+    var isSavingInsumo by remember { mutableStateOf(false) }
 
     // Campos Opción A (Vincular)
     var insumoASeleccionar by remember { mutableStateOf<MateriaPrima?>(null) }
@@ -156,20 +156,19 @@ fun AlmacenScreen() {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { ejecutarEscaneo() },
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = Color(0xFF6200EE),
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color(0xFFF8F9FA)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
             Row(
@@ -179,8 +178,7 @@ fun AlmacenScreen() {
             ) {
                 Text(
                     text = "Control de Almacén",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = if (isDarkMode) Color.White else Color.Black
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
                 )
 
                 OutlinedButton(
@@ -247,7 +245,6 @@ fun AlmacenScreen() {
                     items(insumosList, key = { it.id }) { insumo ->
                         InsumoCard(insumo)
                     }
-                    item { Spacer(modifier = Modifier.height(100.dp)) }
                 }
             }
         }
@@ -354,6 +351,26 @@ fun AlmacenScreen() {
                             singleLine = true
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = nuevoNivelCriticoText,
+                            onValueChange = { nuevoNivelCriticoText = it },
+                            label = { Text("Se considera stock bajo cuando queda...", fontSize = 12.sp) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            trailingIcon = {
+                                Text(
+                                    text = nuevaUnidad,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Gray
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(modifier = Modifier.weight(1f)) {
                                 OutlinedTextField(
@@ -389,10 +406,13 @@ fun AlmacenScreen() {
             confirmButton = {
                 Button(
                     onClick = {
+                        if (isSavingInsumo) return@Button
+                        
                         val db = FirebaseFirestore.getInstance()
                         if (modoAprendizajeOpcion == "A") {
                             val cantAporta = cantidadAportaTextA.toDoubleOrNull() ?: 0.0
                             if (insumoASeleccionar != null && cantAporta > 0) {
+                                isSavingInsumo = true
                                 val targetDoc = db.collection("materia_prima").document(insumoASeleccionar!!.id)
                                 val updates = hashMapOf<String, Any>(
                                     "cantidadActual" to FieldValue.increment(cantAporta),
@@ -400,8 +420,12 @@ fun AlmacenScreen() {
                                     "cantidadesPorCodigo.$code" to cantAporta
                                 )
                                 targetDoc.update(updates).addOnSuccessListener {
+                                    isSavingInsumo = false
                                     Toast.makeText(context, "Código $code vinculado a ${insumoASeleccionar!!.nombre}", Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
+                                }.addOnFailureListener { e ->
+                                    isSavingInsumo = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
                                 Toast.makeText(context, "Seleccione un insumo e ingrese la cantidad que aporta", Toast.LENGTH_SHORT).show()
@@ -410,6 +434,7 @@ fun AlmacenScreen() {
                             val cantAporta = cantidadAportaTextB.toDoubleOrNull() ?: 0.0
                             val critico = nuevoNivelCriticoText.toDoubleOrNull() ?: 10.0
                             if (nuevoNombre.isNotBlank() && cantAporta > 0) {
+                                isSavingInsumo = true
                                 val nuevoMap = hashMapOf<String, Any>(
                                     "nombre" to nuevoNombre.trim(),
                                     "unidadMedida" to nuevaUnidad.trim(),
@@ -421,17 +446,26 @@ fun AlmacenScreen() {
                                     "colorHex" to "#4CAF50"
                                 )
                                 db.collection("materia_prima").add(nuevoMap).addOnSuccessListener {
+                                    isSavingInsumo = false
                                     Toast.makeText(context, "Nuevo insumo registrado y vinculado", Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
+                                }.addOnFailureListener { e ->
+                                    isSavingInsumo = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
                                 Toast.makeText(context, "Ingrese el nombre y la cantidad aportada", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
+                    enabled = !isSavingInsumo,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
                 ) {
-                    Text("Confirmar y Guardar")
+                    if (isSavingInsumo) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Confirmar y Guardar")
+                    }
                 }
             },
             dismissButton = {
@@ -498,23 +532,27 @@ fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color
 
 @Composable
 fun InsumoCard(insumo: MateriaPrima) {
-    val isDarkMode = isSystemInDarkTheme()
-    val parsedColor = remember(insumo.colorHex) {
-        try {
-            Color(android.graphics.Color.parseColor(insumo.colorHex))
-        } catch (e: Exception) {
-            Color(0xFF4CAF50)
+    val isCritico = insumo.cantidadActual <= insumo.nivelCritico
+    val parsedColor = remember(insumo.colorHex, isCritico) {
+        if (isCritico) {
+            Color(0xFFF44336) // Rojo de alerta
+        } else {
+            try {
+                Color(android.graphics.Color.parseColor(insumo.colorHex))
+            } catch (e: Exception) {
+                Color(0xFF4CAF50) // Verde por defecto
+            }
         }
     }
 
     val progress = remember(insumo.cantidadActual, insumo.nivelCritico) {
-        val maxEstimado = if (insumo.nivelCritico > 0) insumo.nivelCritico * 2.0 else maxOf(insumo.cantidadActual, 1.0)
+        val maxEstimado = if (insumo.nivelCritico > 0) insumo.nivelCritico * 5.0 else maxOf(insumo.cantidadActual, 1.0)
         (insumo.cantidadActual / maxEstimado).coerceIn(0.0, 1.0).toFloat()
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -532,8 +570,8 @@ fun InsumoCard(insumo: MateriaPrima) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(insumo.nombre, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
-                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = if (isDarkMode) Color.LightGray else Color.Gray, fontSize = 14.sp)
+                Text(insumo.nombre, fontWeight = FontWeight.Bold)
+                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = Color.Gray, fontSize = 14.sp)
                 
                 // Mostrar resumen de códigos asociados
                 if (insumo.codigosBarras.isNotEmpty()) {

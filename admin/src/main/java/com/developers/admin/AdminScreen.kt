@@ -8,6 +8,5 @@ sealed class AdminScreen(val route: String) {
     object AddProduct : AdminScreen("add_product")
     object QrGenerator : AdminScreen("qr_generator")
     object Produccion : AdminScreen("produccion")
-    object AttendanceHistory : AdminScreen("attendance_history")
 }
 

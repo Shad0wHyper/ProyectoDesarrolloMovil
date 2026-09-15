@@ -1,18 +1,13 @@
 package com.developers.admin
 
-import android.content.ContentValues
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.os.Build
 import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.developers.core.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -50,18 +44,10 @@ val ColorSalida = Color(0xFFF44336) // Rojo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrGeneratorScreen(onBack: () -> Unit) {
-    val isDarkMode = isSystemInDarkTheme()
     var qrEntrada by remember { mutableStateOf("Cargando...") }
     var qrSalida by remember { mutableStateOf("Cargando...") }
     var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
-
-    // Colores Adaptativos
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
-    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Estado para el popup de QR ampliado
     var mostrarQrGrande by remember { mutableStateOf(false) }
@@ -103,25 +89,24 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor) },
+                title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor) }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar") }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
-        },
-        containerColor = bgColor
+        }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).background(bgColor).padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF8F8F8)).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = secondaryTextColor)
+            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = Color.Gray)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { qrAmpliadoContenido = Pair(qrEntrada, ColorEntrada); mostrarQrGrande = true })
-                QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, isDarkMode = isDarkMode, onClick = { qrAmpliadoContenido = Pair(qrSalida, ColorSalida); mostrarQrGrande = true })
+                QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, onClick = { qrAmpliadoContenido = Pair(qrEntrada, ColorEntrada); mostrarQrGrande = true })
+                QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, onClick = { qrAmpliadoContenido = Pair(qrSalida, ColorSalida); mostrarQrGrande = true })
             }
 
             Button(onClick = { generarNuevasClaves() }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(12.dp), enabled = !isSaving, colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)) {
@@ -137,11 +122,10 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
 
         AlertDialog(
             onDismissRequest = { mostrarQrGrande = false },
-            containerColor = cardColor,
             title = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor)
-                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = secondaryTextColor) }
+                    Text("QR de Asistencia", fontWeight = FontWeight.Bold)
+                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Gray) }
                 }
             },
             text = {
@@ -177,11 +161,10 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, isDarkMode: Boolean, onClick: () -> Unit) {
+fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, onClick: () -> Unit) {
     val context = LocalContext.current
     val qrBitmap = generarQrConLogo(context, qrContent, color)
-    val cardBg = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = cardBg), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
+    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontWeight = FontWeight.Bold, color = color, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(16.dp))
@@ -199,7 +182,7 @@ fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: Strin
 }
 
 // --- ✨ FUNCIÓN OPTIMIZADA: GENERADOR DE QR INCRUSTANDO LOGO PNG DIRECTAMENTE ---
-private fun generarQrConLogo(context: Context, content: String, color: Color): Bitmap? {
+private fun generarQrConLogo(context: android.content.Context, content: String, color: Color): Bitmap? {
     return try {
         val size = 512
         val hints = hashMapOf<EncodeHintType, Any>(EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.H)
@@ -222,19 +205,19 @@ private fun generarQrConLogo(context: Context, content: String, color: Color): B
     } catch (e: Exception) { null }
 }
 
-private fun guardarQrEnGaleria(context: Context, bitmap: Bitmap, filename: String) {
+private fun guardarQrEnGaleria(context: android.content.Context, bitmap: Bitmap, filename: String) {
     val contextResolver = context.contentResolver
-    val imageCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    val imageCollection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        android.provider.MediaStore.Images.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
     } else {
-        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     }
-    val imageDetails = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, "$filename.jpg")
-        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "PanappQRs")
-            put(MediaStore.Images.Media.IS_PENDING, 1)
+    val imageDetails = android.content.ContentValues().apply {
+        put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "$filename.jpg")
+        put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "PanappQRs")
+            put(android.provider.MediaStore.Images.Media.IS_PENDING, 1)
         }
     }
     val imageUri = contextResolver.insert(imageCollection, imageDetails)
@@ -243,9 +226,9 @@ private fun guardarQrEnGaleria(context: Context, bitmap: Bitmap, filename: Strin
             contextResolver.openOutputStream(imageUri)?.use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 imageDetails.clear()
-                imageDetails.put(MediaStore.Images.Media.IS_PENDING, 0)
+                imageDetails.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
                 contextResolver.update(imageUri, imageDetails, null, null)
             }
             Toast.makeText(context, "QR Guardado en Galería -> Imágenes/PanappQRs", Toast.LENGTH_LONG).show()
