@@ -80,6 +80,7 @@ fun CartScreen(
             }
 
             // Mostramos la pasarela manual para todos los métodos para asegurar funcionalidad
+            appViewModel.addAddress(editableAddress) // ✨ Guardamos en la lista global del usuario
             showPaymentSheetManual = true
         }
     }
@@ -191,6 +192,47 @@ fun CartScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // ✨ Selector de Direcciones Guardadas
+                if (appViewModel.userAddressesList.isNotEmpty()) {
+                    var showAddressDialog by remember { mutableStateOf(false) }
+                    
+                    OutlinedButton(
+                        onClick = { showAddressDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, PanAppPrimary.copy(alpha = 0.5f))
+                    ) {
+                        Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Seleccionar de mis direcciones", fontSize = 13.sp)
+                    }
+
+                    if (showAddressDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showAddressDialog = false },
+                            title = { Text("Mis Direcciones") },
+                            text = {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    appViewModel.userAddressesList.forEach { addr ->
+                                        ListItem(
+                                            headlineContent = { Text(addr, fontSize = 14.sp) },
+                                            modifier = Modifier.clickable {
+                                                editableAddress = addr
+                                                showAddressDialog = false
+                                            }
+                                        )
+                                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                                    }
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showAddressDialog = false }) { Text("Cerrar") }
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 OutlinedTextField(
                     value = editableAddress,
                     onValueChange = { editableAddress = it },
@@ -298,7 +340,7 @@ fun CartScreen(
                             }
                         )
                     } else {
-                        // ✨ PROCESAR COBRO BANCARIO REAL (Saldo interno App)
+                        //  PROCESAR COBRO BANCARIO REAL (Saldo interno App)
                         appViewModel.procesarCobroBancario(finalTotal) { success, message ->
                             if (!success) {
                                 isProcessingPayment = false
@@ -354,14 +396,14 @@ fun registrarPedidoEnFirebase(
         "direccion" to appViewModel.userAddress,
         "direccionEnvio" to appViewModel.userAddress,
         "total" to total,
-        "estado" to "PENDIENTE",
-        "status" to "PENDIENTE",
+        "estado" to if (metodo == "OXXO Pay") "ESPERANDO PAGO" else "PENDIENTE",
+        "status" to if (metodo == "OXXO Pay") "ESPERANDO PAGO" else "PENDIENTE",
         "timestamp" to System.currentTimeMillis(),
         "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
         "itemCount" to appViewModel.cartTotalQuantity,
         "items" to itemsListFirebase,
         "metodoPago" to metodo,
-        "pagado" to true,
+        "pagado" to (metodo != "OXXO Pay"),
         "cuentaDestino" to "7229 6901 3635 3659 79",
         "cardUsed" to cardInfo
     )
@@ -374,6 +416,7 @@ fun registrarPedidoEnFirebase(
 
     batch.commit().addOnSuccessListener {
         appViewModel.clearCart()
+        appViewModel.resetTempPaymentData() //  Limpiamos el controlador al tener éxito
         onSuccess()
         onComplete()
     }.addOnFailureListener { onComplete() }
@@ -416,10 +459,11 @@ fun PaymentGatewayContent(
     onConfirm: (String, String) -> Unit, // (last4, barcode)
     onCancel: () -> Unit
 ) {
-    var cardNumber by remember { mutableStateOf("") }
-    var expiryDate by remember { mutableStateOf(appViewModel.userCardExp) }
-    var cvc by remember { mutableStateOf("") }
-    var saveCard by remember { mutableStateOf(false) }
+    // ✨ Usamos el Controlador del ViewModel para persistir datos entre pantallas
+    val cardNumber = appViewModel.tempCardNumber
+    val expiryDate = appViewModel.tempExpiryDate
+    val cvc = appViewModel.tempCVC
+    val saveCard = appViewModel.tempSaveCard
 
     // Generar un código de barras único cada vez que se abre la pasarela
     val oxxoReference = remember(method) { 
@@ -495,7 +539,7 @@ fun PaymentGatewayContent(
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(
                             value = displayCardValue, 
-                            onValueChange = { if (it.length <= 16 && it.all { c -> c.isDigit() }) { cardNumber = it } }, 
+                            onValueChange = { if (it.length <= 16 && it.all { c -> c.isDigit() }) { appViewModel.tempCardNumber = it } }, 
                             modifier = Modifier.fillMaxWidth(), 
                             label = { Text("Número de Tarjeta") }, 
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
@@ -503,7 +547,7 @@ fun PaymentGatewayContent(
                             leadingIcon = { Icon(Icons.Outlined.CreditCard, contentDescription = null) }, 
                             trailingIcon = { 
                                 if (isUsingSavedCard) { 
-                                    TextButton(onClick = { cardNumber = ""; expiryDate = ""; cvc = ""; saveCard = false }) { 
+                                    TextButton(onClick = { appViewModel.resetTempPaymentData(); appViewModel.hasSavedCard = false }) { 
                                         Text("Cambiar", fontSize = 12.sp) 
                                     } 
                                 } 
@@ -516,7 +560,7 @@ fun PaymentGatewayContent(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = expiryDate, 
-                                onValueChange = { if (it.length <= 5) expiryDate = it }, 
+                                onValueChange = { if (it.length <= 5) appViewModel.tempExpiryDate = it }, 
                                 modifier = Modifier.weight(1f), 
                                 label = { Text("MM/YY") }, 
                                 placeholder = { Text("12/28") }, 
@@ -527,7 +571,7 @@ fun PaymentGatewayContent(
                             )
                             OutlinedTextField(
                                 value = cvc, 
-                                onValueChange = { if (it.length <= 3 && it.all { c -> c.isDigit() }) cvc = it }, 
+                                onValueChange = { if (it.length <= 3 && it.all { c -> c.isDigit() }) appViewModel.tempCVC = it }, 
                                 modifier = Modifier.weight(1f), 
                                 label = { Text("CVC") }, 
                                 placeholder = { Text("123") }, 
@@ -540,8 +584,8 @@ fun PaymentGatewayContent(
                         }
                         
                         if (!appViewModel.hasSavedCard || !isUsingSavedCard) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !isProcessing) { saveCard = !saveCard }) { 
-                                Checkbox(checked = saveCard, onCheckedChange = { saveCard = it }, enabled = !isProcessing)
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !isProcessing) { appViewModel.tempSaveCard = !saveCard }) { 
+                                Checkbox(checked = saveCard, onCheckedChange = { appViewModel.tempSaveCard = it }, enabled = !isProcessing)
                                 Text("Guardar tarjeta para futuras compras", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray) 
                             }
                         }

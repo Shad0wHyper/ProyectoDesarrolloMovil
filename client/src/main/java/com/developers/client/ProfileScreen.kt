@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
@@ -43,7 +45,8 @@ import com.google.firebase.storage.FirebaseStorage
 fun ProfileScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToPayments: () -> Unit
+    onNavigateToPayments: () -> Unit,
+    onNavigateToAddresses: () -> Unit
 ) {
     var name by remember { mutableStateOf(appViewModel.userName) }
     var phone by remember { mutableStateOf(appViewModel.userPhone) }
@@ -245,7 +248,58 @@ fun ProfileScreen(
                 )
             )
 
+            // ✨ NUEVO: Gestión de Direcciones Guardadas
+            if (appViewModel.userAddressesList.isNotEmpty()) {
+                Text(
+                    "Mis Direcciones Guardadas",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                appViewModel.userAddressesList.forEach { addr ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White),
+                        border = BorderStroke(1.dp, if (addr == address) PanAppPrimary else Color.Transparent)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp).clickable { address = addr },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Home, contentDescription = null, tint = if (addr == address) PanAppPrimary else Color.Gray)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(addr, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = if (isDarkMode) Color.White else Color.Black)
+                            if (addr == address) {
+                                Icon(Icons.Default.Check, contentDescription = "Seleccionada", tint = PanAppPrimary, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedButton(
+                onClick = onNavigateToAddresses,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (isDarkMode) Color.DarkGray else Color.LightGray)
+            ) {
+                Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Gestionar Direcciones",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = if (isDarkMode) Color.White else Color.Black
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
                 onClick = onNavigateToPayments,
