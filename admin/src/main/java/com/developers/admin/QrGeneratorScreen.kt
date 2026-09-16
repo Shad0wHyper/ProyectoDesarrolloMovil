@@ -206,7 +206,7 @@ private fun generarQrConLogo(context: android.content.Context, content: String, 
         }
 
         // Pega directamente tu imagen .png con transparencias o bordes redondos nativos
-        val logoOriginal = BitmapFactory.decodeResource(context.resources, R.drawable.log)
+        val logoOriginal = null // BitmapFactory.decodeResource(context.resources, com.developers.admin.R.drawable.log)
         if (logoOriginal != null) {
             val logoSize = (size * 0.25).toInt()
             val scaledLogo = Bitmap.createScaledBitmap(logoOriginal, logoSize, logoSize, false)
