@@ -3,6 +3,7 @@ package com.developers.admin
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun ProduccionScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val isDarkMode = isSystemInDarkTheme()
+
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     var productosList by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
@@ -189,16 +196,16 @@ fun ProduccionScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro de Producción", fontWeight = FontWeight.Bold) },
+                title = { Text("Registro de Producción", fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
             )
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = bgColor
     ) { padding ->
         Column(
             modifier = Modifier
@@ -211,7 +218,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
             // Encabezado Ilustrativo
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8EAF6)),
+                colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1A237E).copy(alpha = 0.3f) else Color(0xFFE8EAF6)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -221,15 +228,15 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .background(Color(0xFF3F51B5), RoundedCornerShape(12.dp)),
+                            .background(if (isDarkMode) Color(0xFF3F51B5) else Color(0xFF3F51B5), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Factory, contentDescription = null, tint = Color.White)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A237E))
-                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = Color.DarkGray)
+                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF1A237E))
+                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     }
                 }
             }
@@ -237,7 +244,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             if (isLoading) {
-                CircularProgressIndicator(color = Color(0xFF3F51B5), modifier = Modifier.padding(32.dp))
+                CircularProgressIndicator(color = AdminPrimary, modifier = Modifier.padding(32.dp))
             } else {
                 // Selector de Producto
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -253,14 +260,18 @@ fun ProduccionScreen(onBack: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { expandedDropdown = true },
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedTextColor = textColor,
+                            focusedTextColor = textColor
+                        )
                     )
                     DropdownMenu(
                         expanded = expandedDropdown,
                         onDismissRequest = { expandedDropdown = false },
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
-                            .background(Color.White)
+                            .background(cardColor)
                     ) {
                         if (productosList.isEmpty()) {
                             DropdownMenuItem(
@@ -270,7 +281,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                         } else {
                             productosList.forEach { producto ->
                                 DropdownMenuItem(
-                                    text = { Text("${producto.nombre} (Stock actual: ${producto.stock})", fontWeight = FontWeight.Medium) },
+                                    text = { Text("${producto.nombre} (Stock actual: ${producto.stock})", fontWeight = FontWeight.Medium, color = textColor) },
                                     onClick = {
                                         productoSeleccionado = producto
                                         expandedDropdown = false
@@ -292,7 +303,11 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = textColor,
+                        focusedTextColor = textColor
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -305,7 +320,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                         .height(52.dp),
                     shape = RoundedCornerShape(12.dp),
                     enabled = !isProcessing,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5))
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDarkMode) AdminPrimary else Color(0xFF3F51B5))
                 ) {
                     if (isProcessing) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -329,17 +344,18 @@ fun ProduccionScreen(onBack: () -> Unit) {
 
         AlertDialog(
             onDismissRequest = { showFaltaStockDialog = false },
+            containerColor = cardColor,
             icon = { Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color.Red, modifier = Modifier.size(40.dp)) },
             title = { Text(tituloDinamico, fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 16.sp) },
             text = {
                 Column {
-                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = Color.DarkGray)
+                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = faltantesList.joinToString("\n\n"),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
-                        color = Color.Black
+                        color = textColor
                     )
                 }
             },
@@ -350,8 +366,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                 ) {
                     Text("Entendido", color = Color.White)
                 }
-            },
-            containerColor = Color.White
+            }
         )
     }
 }

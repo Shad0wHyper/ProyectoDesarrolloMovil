@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,8 +33,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.util.UUID
 
-val AdminPrimary = Color(0xFF6200EE)
-
 // 1. Data Class IngredienteReceta
 data class IngredienteReceta(
     val materiaPrimaId: String = "",
@@ -48,6 +47,12 @@ fun AddProductScreen(
     onBack: () -> Unit,
     onSuccessSave: () -> Unit
 ) {
+    val isDarkMode = isSystemInDarkTheme()
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+
     // Relleno de campos iniciales
     var nombre by remember { mutableStateOf(productoAEditar?.nombre ?: "") }
     var precio by remember { mutableStateOf(productoAEditar?.precio ?: "") }
@@ -109,21 +114,22 @@ fun AddProductScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (productoAEditar != null) "Editar Producto" else "Alta de Producto", fontWeight = FontWeight.Bold) },
+                title = { Text(if (productoAEditar != null) "Editar Producto" else "Alta de Producto", fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
             )
-        }
+        },
+        containerColor = bgColor
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F8F8))
+                .background(bgColor)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -135,8 +141,8 @@ fun AddProductScreen(
                     .fillMaxWidth()
                     .height(180.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
+                    .background(cardColor)
+                    .border(1.dp, if (isDarkMode) Color.DarkGray else Color.LightGray, RoundedCornerShape(16.dp))
                     .clickable {
                         if (!isSaving) {
                             photoPickerLauncher.launch(
@@ -171,7 +177,11 @@ fun AddProductScreen(
                 leadingIcon = { Icon(Icons.Default.BakeryDining, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedTextColor = textColor,
+                    focusedTextColor = textColor
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -188,11 +198,15 @@ fun AddProductScreen(
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.clickable { expandedDropdown = true })
                     },
                     modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true },
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = textColor,
+                        focusedTextColor = textColor
+                    )
                 )
-                DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f).background(Color.White)) {
+                DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f).background(cardColor)) {
                     categoriasDisponibles.forEach { cat ->
-                        DropdownMenuItem(text = { Text(cat, fontWeight = FontWeight.Medium) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
+                        DropdownMenuItem(text = { Text(cat, fontWeight = FontWeight.Medium, color = textColor) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
                     }
                 }
             }
@@ -205,13 +219,21 @@ fun AddProductScreen(
                     value = precio, onValueChange = { precio = it }, label = { Text("Precio ($)") },
                     leadingIcon = { Icon(Icons.Default.CurrencyExchange, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true
+                    modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = textColor,
+                        focusedTextColor = textColor
+                    )
                 )
                 OutlinedTextField(
                     value = calificacion, onValueChange = { calificacion = it }, label = { Text("Estrellas (1.0 - 5.0)") },
                     leadingIcon = { Icon(Icons.Default.StarBorder, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true
+                    modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = textColor,
+                        focusedTextColor = textColor
+                    )
                 )
             }
 
@@ -221,10 +243,10 @@ fun AddProductScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = cardColor)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Receta (Insumos por unidad)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Receta (Insumos por unidad)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
                     Text("Seleccione la materia prima y la cantidad necesaria para elaborar 1 pan.", fontSize = 12.sp, color = Color.Gray)
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -243,12 +265,16 @@ fun AddProductScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { expandedInsumoDropdown = true },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedTextColor = textColor,
+                                focusedTextColor = textColor
+                            )
                         )
                         DropdownMenu(
                             expanded = expandedInsumoDropdown,
                             onDismissRequest = { expandedInsumoDropdown = false },
-                            modifier = Modifier.fillMaxWidth(0.85f).background(Color.White)
+                            modifier = Modifier.fillMaxWidth(0.85f).background(cardColor)
                         ) {
                             if (insumosDisponibles.isEmpty()) {
                                 DropdownMenuItem(
@@ -258,7 +284,7 @@ fun AddProductScreen(
                             } else {
                                 insumosDisponibles.forEach { insumo ->
                                     DropdownMenuItem(
-                                        text = { Text("${insumo.nombre} (${insumo.unidadMedida})", fontWeight = FontWeight.Medium) },
+                                        text = { Text("${insumo.nombre} (${insumo.unidadMedida})", fontWeight = FontWeight.Medium, color = textColor) },
                                         onClick = {
                                             insumoSeleccionado = insumo
                                             expandedInsumoDropdown = false
@@ -284,7 +310,11 @@ fun AddProductScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            singleLine = true
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedTextColor = textColor,
+                                focusedTextColor = textColor
+                            )
                         )
 
                         Button(
@@ -317,7 +347,7 @@ fun AddProductScreen(
                     // Lista de ingredientes agregados
                     if (ingredientesAgregados.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Ingredientes de la Receta:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Ingredientes de la Receta:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = textColor)
                         Spacer(modifier = Modifier.height(8.dp))
 
                         ingredientesAgregados.forEach { ing ->
@@ -325,7 +355,7 @@ fun AddProductScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
-                                color = Color(0xFFF3E5F5),
+                                color = if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Row(
@@ -338,7 +368,7 @@ fun AddProductScreen(
                                     Text(
                                         text = "${ing.nombre}: ${ing.cantidad}",
                                         fontWeight = FontWeight.SemiBold,
-                                        color = AdminPrimary
+                                        color = if (isDarkMode) Color(0xFFBB86FC) else AdminPrimary
                                     )
                                     IconButton(
                                         onClick = {
@@ -358,10 +388,10 @@ fun AddProductScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // MARCAR COMO NUEVO
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = cardColor)) {
                 Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("Marcar como Nuevo", fontWeight = FontWeight.Bold)
+                        Text("Marcar como Nuevo", fontWeight = FontWeight.Bold, color = textColor)
                         Text("Aparecerá con etiqueta en la app cliente", fontSize = 12.sp, color = Color.Gray)
                     }
                     Switch(checked = isNuevo, onCheckedChange = { isNuevo = it }, colors = SwitchDefaults.colors(checkedThumbColor = AdminPrimary))

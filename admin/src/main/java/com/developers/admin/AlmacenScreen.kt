@@ -3,6 +3,7 @@ package com.developers.admin
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,8 +51,13 @@ data class MateriaPrima(
 @Composable
 fun AlmacenScreen() {
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
     var insumosList by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
 
     // Estados para diálogos
     var showSuccessDialog by remember { mutableStateOf(false) }
@@ -163,7 +169,7 @@ fun AlmacenScreen() {
                 Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
             }
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = bgColor
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -178,13 +184,15 @@ fun AlmacenScreen() {
             ) {
                 Text(
                     text = "Control de Almacén",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = textColor
                 )
 
                 OutlinedButton(
                     onClick = { showTestInputCodeDialog = true },
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.Gray)
                 ) {
                     Text("Probar Código", fontSize = 12.sp)
                 }
@@ -201,13 +209,15 @@ fun AlmacenScreen() {
                     modifier = Modifier.weight(1f),
                     label = "Insumos Críticos",
                     value = insumosCriticosCount.toString(),
-                    color = Color(0xFFF44336)
+                    color = Color(0xFFF44336),
+                    isDarkMode = isDarkMode
                 )
                 StockStatCard(
                     modifier = Modifier.weight(1f),
                     label = "Total Insumos",
                     value = insumosList.size.toString(),
-                    color = Color(0xFF2196F3)
+                    color = Color(0xFF2196F3),
+                    isDarkMode = isDarkMode
                 )
             }
 
@@ -215,7 +225,8 @@ fun AlmacenScreen() {
 
             Text(
                 text = "Materias Primas",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = textColor
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -226,7 +237,7 @@ fun AlmacenScreen() {
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF6200EE))
+                    CircularProgressIndicator(color = AdminPrimary)
                 }
             } else if (insumosList.isEmpty()) {
                 Box(
@@ -243,7 +254,7 @@ fun AlmacenScreen() {
                     modifier = Modifier.weight(1f)
                 ) {
                     items(insumosList, key = { it.id }) { insumo ->
-                        InsumoCard(insumo)
+                        InsumoCard(insumo, isDarkMode)
                     }
                 }
             }
@@ -274,10 +285,11 @@ fun AlmacenScreen() {
 
         AlertDialog(
             onDismissRequest = { unregisteredCode = null },
-            title = { Text("Código No Registrado", fontWeight = FontWeight.Bold) },
+            containerColor = cardColor,
+            title = { Text("Código No Registrado", fontWeight = FontWeight.Bold, color = textColor) },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Código leído: $code", fontWeight = FontWeight.Bold, color = Color(0xFF6200EE), fontSize = 13.sp)
+                    Text("Código leído: $code", fontWeight = FontWeight.Bold, color = AdminPrimary, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Selector de opción
@@ -286,13 +298,23 @@ fun AlmacenScreen() {
                             selected = modoAprendizajeOpcion == "A",
                             onClick = { modoAprendizajeOpcion = "A" },
                             label = { Text("A) Vincular a Insumo", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                labelColor = textColor,
+                                selectedLabelColor = Color.White,
+                                selectedContainerColor = AdminPrimary
+                            )
                         )
                         FilterChip(
                             selected = modoAprendizajeOpcion == "B",
                             onClick = { modoAprendizajeOpcion = "B" },
                             label = { Text("B) Dar de Alta Nuevo", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                labelColor = textColor,
+                                selectedLabelColor = Color.White,
+                                selectedContainerColor = AdminPrimary
+                            )
                         )
                     }
 
@@ -310,16 +332,21 @@ fun AlmacenScreen() {
                                 readOnly = true,
                                 trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdownInsumo = true }) },
                                 modifier = Modifier.fillMaxWidth().clickable { expandedDropdownInsumo = true },
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedTextColor = textColor,
+                                    focusedTextColor = textColor,
+                                    unfocusedBorderColor = Color.Gray
+                                )
                             )
                             DropdownMenu(
                                 expanded = expandedDropdownInsumo,
                                 onDismissRequest = { expandedDropdownInsumo = false },
-                                modifier = Modifier.fillMaxWidth(0.8f).background(Color.White)
+                                modifier = Modifier.fillMaxWidth(0.8f).background(cardColor)
                             ) {
                                 insumosList.forEach { item ->
                                     DropdownMenuItem(
-                                        text = { Text("${item.nombre} (${item.unidadMedida})") },
+                                        text = { Text("${item.nombre} (${item.unidadMedida})", color = textColor) },
                                         onClick = {
                                             insumoASeleccionar = item
                                             expandedDropdownInsumo = false
@@ -338,7 +365,12 @@ fun AlmacenScreen() {
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
-                            singleLine = true
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedTextColor = textColor,
+                                focusedTextColor = textColor,
+                                unfocusedBorderColor = Color.Gray
+                            )
                         )
                     } else {
                         // OPCIÓN B: DAR DE ALTA NUEVO INSUMO
@@ -348,7 +380,12 @@ fun AlmacenScreen() {
                             label = { Text("Nombre de Insumo") },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
-                            singleLine = true
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedTextColor = textColor,
+                                focusedTextColor = textColor,
+                                unfocusedBorderColor = Color.Gray
+                            )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -367,7 +404,12 @@ fun AlmacenScreen() {
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
-                            singleLine = true
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedTextColor = textColor,
+                                focusedTextColor = textColor,
+                                unfocusedBorderColor = Color.Gray
+                            )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -381,11 +423,16 @@ fun AlmacenScreen() {
                                     trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdownUnidad = true }) },
                                     modifier = Modifier.fillMaxWidth().clickable { expandedDropdownUnidad = true },
                                     shape = RoundedCornerShape(8.dp),
-                                    singleLine = true
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedTextColor = textColor,
+                                        focusedTextColor = textColor,
+                                        unfocusedBorderColor = Color.Gray
+                                    )
                                 )
-                                DropdownMenu(expanded = expandedDropdownUnidad, onDismissRequest = { expandedDropdownUnidad = false }, modifier = Modifier.background(Color.White)) {
+                                DropdownMenu(expanded = expandedDropdownUnidad, onDismissRequest = { expandedDropdownUnidad = false }, modifier = Modifier.background(cardColor)) {
                                     unidadesDisponibles.forEach { und ->
-                                        DropdownMenuItem(text = { Text(und) }, onClick = { nuevaUnidad = und; expandedDropdownUnidad = false })
+                                        DropdownMenuItem(text = { Text(und, color = textColor) }, onClick = { nuevaUnidad = und; expandedDropdownUnidad = false })
                                     }
                                 }
                             }
@@ -396,7 +443,12 @@ fun AlmacenScreen() {
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
-                                singleLine = true
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedTextColor = textColor,
+                                    focusedTextColor = textColor,
+                                    unfocusedBorderColor = Color.Gray
+                                )
                             )
                         }
 
@@ -459,7 +511,7 @@ fun AlmacenScreen() {
                         }
                     },
                     enabled = !isSavingInsumo,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
                     if (isSavingInsumo) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
@@ -470,7 +522,7 @@ fun AlmacenScreen() {
             },
             dismissButton = {
                 TextButton(onClick = { unregisteredCode = null }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = textColor)
                 }
             }
         )
@@ -480,7 +532,8 @@ fun AlmacenScreen() {
     if (showTestInputCodeDialog) {
         AlertDialog(
             onDismissRequest = { showTestInputCodeDialog = false },
-            title = { Text("Escanear / Probar Código") },
+            containerColor = cardColor,
+            title = { Text("Escanear / Probar Código", color = textColor) },
             text = {
                 Column {
                     Text("Ingresa o pega un código de barras para probar la lógica WMS:", fontSize = 12.sp, color = Color.Gray)
@@ -490,7 +543,12 @@ fun AlmacenScreen() {
                         onValueChange = { testCodeInputText = it },
                         label = { Text("Código de Barras") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedTextColor = textColor,
+                            focusedTextColor = textColor,
+                            unfocusedBorderColor = Color.Gray
+                        )
                     )
                 }
             },
@@ -503,14 +561,15 @@ fun AlmacenScreen() {
                         if (code.isNotEmpty()) {
                             procesarCodigoEscaneado(code)
                         }
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
                     Text("Procesar Código")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTestInputCodeDialog = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = textColor)
                 }
             }
         )
@@ -518,7 +577,7 @@ fun AlmacenScreen() {
 }
 
 @Composable
-fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color) {
+fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color, isDarkMode: Boolean) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
@@ -531,8 +590,11 @@ fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color
 }
 
 @Composable
-fun InsumoCard(insumo: MateriaPrima) {
+fun InsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
     val isCritico = insumo.cantidadActual <= insumo.nivelCritico
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+
     val parsedColor = remember(insumo.colorHex, isCritico) {
         if (isCritico) {
             Color(0xFFF44336) // Rojo de alerta
@@ -552,7 +614,7 @@ fun InsumoCard(insumo: MateriaPrima) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -570,7 +632,7 @@ fun InsumoCard(insumo: MateriaPrima) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(insumo.nombre, fontWeight = FontWeight.Bold)
+                Text(insumo.nombre, fontWeight = FontWeight.Bold, color = textColor)
                 Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = Color.Gray, fontSize = 14.sp)
                 
                 // Mostrar resumen de códigos asociados

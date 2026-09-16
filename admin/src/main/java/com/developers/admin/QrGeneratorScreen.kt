@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,10 +45,17 @@ val ColorSalida = Color(0xFFF44336) // Rojo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrGeneratorScreen(onBack: () -> Unit) {
+    val isDarkMode = isSystemInDarkTheme()
     var qrEntrada by remember { mutableStateOf("Cargando...") }
     var qrSalida by remember { mutableStateOf("Cargando...") }
     var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
+    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Estado para el popup de QR ampliado
     var mostrarQrGrande by remember { mutableStateOf(false) }
@@ -89,24 +97,25 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold) },
+                title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor) }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
             )
-        }
+        },
+        containerColor = bgColor
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF8F8F8)).padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).background(bgColor).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = Color.Gray)
+            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = secondaryTextColor)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, onClick = { qrAmpliadoContenido = Pair(qrEntrada, ColorEntrada); mostrarQrGrande = true })
-                QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, onClick = { qrAmpliadoContenido = Pair(qrSalida, ColorSalida); mostrarQrGrande = true })
+                QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { qrAmpliadoContenido = Pair(qrEntrada, ColorEntrada); mostrarQrGrande = true })
+                QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, isDarkMode = isDarkMode, onClick = { qrAmpliadoContenido = Pair(qrSalida, ColorSalida); mostrarQrGrande = true })
             }
 
             Button(onClick = { generarNuevasClaves() }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(12.dp), enabled = !isSaving, colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)) {
@@ -122,10 +131,11 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
 
         AlertDialog(
             onDismissRequest = { mostrarQrGrande = false },
+            containerColor = cardColor,
             title = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("QR de Asistencia", fontWeight = FontWeight.Bold)
-                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Gray) }
+                    Text("QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor)
+                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = secondaryTextColor) }
                 }
             },
             text = {
@@ -161,10 +171,11 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, onClick: () -> Unit) {
+fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, isDarkMode: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val qrBitmap = generarQrConLogo(context, qrContent, color)
-    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
+    val cardBg = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = cardBg), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontWeight = FontWeight.Bold, color = color, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(16.dp))
