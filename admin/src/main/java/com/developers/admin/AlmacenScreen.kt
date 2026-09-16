@@ -164,7 +164,8 @@ fun AlmacenScreen() {
                 onClick = { ejecutarEscaneo() },
                 containerColor = Color(0xFF6200EE),
                 contentColor = Color.White,
-                shape = CircleShape
+                shape = CircleShape,
+                modifier = Modifier.padding(bottom = 80.dp) // ✨ Subimos el FAB para que no tape la barra
             ) {
                 Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
             }
@@ -175,6 +176,7 @@ fun AlmacenScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .statusBarsPadding() // ✨ Evita empalme con barra de estado
                 .padding(16.dp)
         ) {
             Row(
@@ -256,6 +258,7 @@ fun AlmacenScreen() {
                     items(insumosList, key = { it.id }) { insumo ->
                         InsumoCard(insumo, isDarkMode)
                     }
+                    item { Spacer(modifier = Modifier.height(100.dp)) } // ✨ Espacio para la barra flotante
                 }
             }
         }

@@ -37,7 +37,7 @@ data class AttendanceRecord(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AttendanceHistoryScreen(onBack: () -> Unit) {
+fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     val isDarkMode = isSystemInDarkTheme()
     var records by remember { mutableStateOf<List<AttendanceRecord>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -46,9 +46,8 @@ fun AttendanceHistoryScreen(onBack: () -> Unit) {
     var textBusqueda by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf("TODOS") } // "TODOS", "ENTRADA", "SALIDA"
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
     val textColor = if (isDarkMode) Color.White else Color.Black
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     LaunchedEffect(Unit) {
@@ -89,89 +88,129 @@ fun AttendanceHistoryScreen(onBack: () -> Unit) {
         coincideNombre && coincideFiltro
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Historial de Asistencias", fontWeight = FontWeight.Bold, color = textColor) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
-            )
-        },
-        containerColor = bgColor
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            
-            // ✨ BUSCADOR
-            OutlinedTextField(
-                value = textBusqueda,
-                onValueChange = { textBusqueda = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Buscar empleado...", color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = cardColor,
-                    focusedContainerColor = cardColor,
-                    unfocusedTextColor = textColor,
-                    focusedTextColor = textColor
+    if (isInsideTab) {
+        AttendanceContent(
+            textBusqueda = textBusqueda,
+            onTextBusquedaChange = { textBusqueda = it },
+            filtroSeleccionado = filtroSeleccionado,
+            onFiltroChange = { filtroSeleccionado = it },
+            isLoading = isLoading,
+            registrosFiltrados = registrosFiltrados,
+            isDarkMode = isDarkMode,
+            cardColor = cardColor,
+            textColor = textColor
+        )
+    } else {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Historial de Asistencias", fontWeight = FontWeight.Bold, color = textColor) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
                 )
-            )
-
-            // ✨ FILTROS (PILLS)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AttendanceFilterPill(
-                    text = "Todos",
-                    isSelected = filtroSeleccionado == "TODOS",
-                    onClick = { filtroSeleccionado = "TODOS" },
-                    isDarkMode = isDarkMode
-                )
-                AttendanceFilterPill(
-                    text = "Entradas",
-                    isSelected = filtroSeleccionado == "ENTRADA",
-                    onClick = { filtroSeleccionado = "ENTRADA" },
-                    isDarkMode = isDarkMode
-                )
-                AttendanceFilterPill(
-                    text = "Salidas",
-                    isSelected = filtroSeleccionado == "SALIDA",
-                    onClick = { filtroSeleccionado = "SALIDA" },
-                    isDarkMode = isDarkMode
+            },
+            containerColor = bgColor
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                AttendanceContent(
+                    textBusqueda = textBusqueda,
+                    onTextBusquedaChange = { textBusqueda = it },
+                    filtroSeleccionado = filtroSeleccionado,
+                    onFiltroChange = { filtroSeleccionado = it },
+                    isLoading = isLoading,
+                    registrosFiltrados = registrosFiltrados,
+                    isDarkMode = isDarkMode,
+                    cardColor = cardColor,
+                    textColor = textColor
                 )
             }
+        }
+    }
+}
 
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AdminPrimary)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().weight(1f).padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (registrosFiltrados.isEmpty()) {
-                        item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("No se encontraron registros.", color = Color.Gray)
-                            }
-                        }
-                    } else {
-                        items(registrosFiltrados, key = { it.id }) { record ->
-                            AttendanceItem(record, isDarkMode)
+@Composable
+fun AttendanceContent(
+    textBusqueda: String,
+    onTextBusquedaChange: (String) -> Unit,
+    filtroSeleccionado: String,
+    onFiltroChange: (String) -> Unit,
+    isLoading: Boolean,
+    registrosFiltrados: List<AttendanceRecord>,
+    isDarkMode: Boolean,
+    cardColor: Color,
+    textColor: Color
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // ✨ BUSCADOR
+        OutlinedTextField(
+            value = textBusqueda,
+            onValueChange = onTextBusquedaChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            placeholder = { Text("Buscar empleado...", color = Color.Gray) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+            shape = RoundedCornerShape(24.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = cardColor,
+                focusedContainerColor = cardColor,
+                unfocusedTextColor = textColor,
+                focusedTextColor = textColor
+            )
+        )
+
+        // ✨ FILTROS (PILLS)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AttendanceFilterPill(
+                text = "Todos",
+                isSelected = filtroSeleccionado == "TODOS",
+                onClick = { onFiltroChange("TODOS") },
+                isDarkMode = isDarkMode
+            )
+            AttendanceFilterPill(
+                text = "Entradas",
+                isSelected = filtroSeleccionado == "ENTRADA",
+                onClick = { onFiltroChange("ENTRADA") },
+                isDarkMode = isDarkMode
+            )
+            AttendanceFilterPill(
+                text = "Salidas",
+                isSelected = filtroSeleccionado == "SALIDA",
+                onClick = { onFiltroChange("SALIDA") },
+                isDarkMode = isDarkMode
+            )
+        }
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AdminPrimary)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().weight(1f).padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (registrosFiltrados.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text("No se encontraron registros.", color = Color.Gray)
                         }
                     }
-                    item { Spacer(modifier = Modifier.height(24.dp)) }
+                } else {
+                    items(registrosFiltrados, key = { it.id }) { record ->
+                        AttendanceItem(record, isDarkMode)
+                    }
                 }
+                item { Spacer(modifier = Modifier.height(80.dp)) } // Margen para la navbar flotante
             }
         }
     }

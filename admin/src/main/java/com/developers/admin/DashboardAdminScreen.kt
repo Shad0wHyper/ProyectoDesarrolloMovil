@@ -62,7 +62,12 @@ fun DashboardAdminScreen(navController: NavHostController) {
 
     // ✨ Rutas que muestran la barra inferior
     val bottomNavRoutes = remember { 
-        listOf(AdminScreen.Dashboard.route, AdminScreen.Almacen.route, AdminScreen.Pedidos.route) 
+        listOf(
+            AdminScreen.Dashboard.route, 
+            AdminScreen.Almacen.route, 
+            AdminScreen.Pedidos.route,
+            AdminScreen.Asistencia.route
+        ) 
     }
     val showBottomBar = bottomNavRoutes.contains(currentRoute)
 
@@ -138,10 +143,13 @@ fun DashboardAdminScreen(navController: NavHostController) {
         Scaffold(
             floatingActionButton = {
                 if (currentRoute == AdminScreen.Dashboard.route) {
-                    AdminFAB(onAdd = {
-                        productoAEditar = null
-                        navController.navigate(AdminScreen.AddProduct.route)
-                    })
+                    AdminFAB(
+                        modifier = Modifier.padding(bottom = 80.dp), // ✨ Subimos el FAB para que no tape la barra
+                        onAdd = {
+                            productoAEditar = null
+                            navController.navigate(AdminScreen.AddProduct.route)
+                        }
+                    )
                 }
             },
             containerColor = bgColor,
@@ -216,6 +224,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
                 composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.AttendanceHistory.route) { AttendanceHistoryScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.Asistencia.route) { AsistenciaMainScreen() }
             }
         }
 
@@ -225,12 +234,14 @@ fun DashboardAdminScreen(navController: NavHostController) {
                 currentRoute = currentRoute,
                 globalCriticosCount = globalCriticosCount,
                 onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (currentRoute != route) { // ✨ Solo navegamos si no estamos ya en esa ruta
+                        navController.navigate(route) {
+                            popUpTo(AdminScreen.Dashboard.route) { // ✨ Forzamos popUpTo al Dashboard
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 isDarkMode = isDarkMode,
@@ -326,7 +337,7 @@ fun DashboardContent(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) } // ✨ Espacio extra para que la barra flotante no tape nada
     }
 }
 
@@ -341,6 +352,7 @@ fun AdminTopBar(onQrClick: () -> Unit, onHistoryClick: () -> Unit) { // ✨ Reci
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F9FA)
 
     TopAppBar(
+        modifier = Modifier.statusBarsPadding(), // ✨ Añadido para evitar empalme en el Dashboard
         title = {
             Text(
                 text = "Administración",
@@ -349,24 +361,6 @@ fun AdminTopBar(onQrClick: () -> Unit, onHistoryClick: () -> Unit) { // ✨ Reci
             )
         },
         actions = {
-            // ✨ NUEVO BOTÓN HISTORIAL ASISTENCIA
-            IconButton(onClick = onHistoryClick) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = "Historial Asistencia",
-                    tint = iconColor
-                )
-            }
-
-            // ✨ NUEVO BOTÓN GENERADOR DE QR
-            IconButton(onClick = onQrClick) {
-                Icon(
-                    imageVector = Icons.Default.QrCode,
-                    contentDescription = "Generar QR Asistencia",
-                    tint = iconColor
-                )
-            }
-
             Box(modifier = Modifier.padding(8.dp).clickable {
                 Toast.makeText(context, "No hay notificaciones nuevas", Toast.LENGTH_SHORT).show()
             }) {
@@ -820,12 +814,13 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
 }
 
 @Composable
-fun AdminFAB(onAdd: () -> Unit) {
+fun AdminFAB(modifier: Modifier = Modifier, onAdd: () -> Unit) {
     FloatingActionButton(
         onClick = onAdd,
         containerColor = Color(0xFFE91E63),
         contentColor = Color.White,
-        shape = CircleShape
+        shape = CircleShape,
+        modifier = modifier
     ) {
         Icon(Icons.Default.Add, contentDescription = "Nuevo")
     }
@@ -843,7 +838,8 @@ fun AdminFloatingBottomBar(
         listOf(
             Triple(AdminScreen.Dashboard.route, "Dashboard", Icons.Default.GridView),
             Triple(AdminScreen.Almacen.route, "Almacén", Icons.Default.Inventory2),
-            Triple(AdminScreen.Pedidos.route, "Pedidos", Icons.Default.ChatBubble)
+            Triple(AdminScreen.Pedidos.route, "Pedidos", Icons.Default.ChatBubble),
+            Triple(AdminScreen.Asistencia.route, "Asistencia", Icons.Default.HowToReg)
         )
     }
 
