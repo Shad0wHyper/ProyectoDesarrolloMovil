@@ -1,6 +1,7 @@
 package com.developers.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,10 +41,15 @@ fun AttendanceHistoryScreen(onBack: () -> Unit) {
     val isDarkMode = isSystemInDarkTheme()
     var records by remember { mutableStateOf<List<AttendanceRecord>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    
+    // ✨ Estados de Filtrado
+    var textBusqueda by remember { mutableStateOf("") }
+    var filtroSeleccionado by remember { mutableStateOf("TODOS") } // "TODOS", "ENTRADA", "SALIDA"
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
     val textColor = if (isDarkMode) Color.White else Color.Black
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     LaunchedEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
@@ -75,6 +82,13 @@ fun AttendanceHistoryScreen(onBack: () -> Unit) {
         }
     }
 
+    // ✨ Lógica de Filtrado en Tiempo Real
+    val registrosFiltrados = records.filter { record ->
+        val coincideNombre = record.employeeName.contains(textBusqueda, ignoreCase = true)
+        val coincideFiltro = if (filtroSeleccionado == "TODOS") true else record.type == filtroSeleccionado
+        coincideNombre && coincideFiltro
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -89,27 +103,104 @@ fun AttendanceHistoryScreen(onBack: () -> Unit) {
         },
         containerColor = bgColor
     ) { padding ->
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFF6200EE))
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            
+            // ✨ BUSCADOR
+            OutlinedTextField(
+                value = textBusqueda,
+                onValueChange = { textBusqueda = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Buscar empleado...", color = Color.Gray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                shape = RoundedCornerShape(24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = cardColor,
+                    focusedContainerColor = cardColor,
+                    unfocusedTextColor = textColor,
+                    focusedTextColor = textColor
+                )
+            )
+
+            // ✨ FILTROS (PILLS)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (records.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("No hay registros de asistencia.", color = Color.Gray)
+                AttendanceFilterPill(
+                    text = "Todos",
+                    isSelected = filtroSeleccionado == "TODOS",
+                    onClick = { filtroSeleccionado = "TODOS" },
+                    isDarkMode = isDarkMode
+                )
+                AttendanceFilterPill(
+                    text = "Entradas",
+                    isSelected = filtroSeleccionado == "ENTRADA",
+                    onClick = { filtroSeleccionado = "ENTRADA" },
+                    isDarkMode = isDarkMode
+                )
+                AttendanceFilterPill(
+                    text = "Salidas",
+                    isSelected = filtroSeleccionado == "SALIDA",
+                    onClick = { filtroSeleccionado = "SALIDA" },
+                    isDarkMode = isDarkMode
+                )
+            }
+
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AdminPrimary)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().weight(1f).padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (registrosFiltrados.isEmpty()) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Text("No se encontraron registros.", color = Color.Gray)
+                            }
+                        }
+                    } else {
+                        items(registrosFiltrados, key = { it.id }) { record ->
+                            AttendanceItem(record, isDarkMode)
                         }
                     }
-                } else {
-                    items(records) { record ->
-                        AttendanceItem(record, isDarkMode)
-                    }
+                    item { Spacer(modifier = Modifier.height(24.dp)) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun AttendanceFilterPill(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    isDarkMode: Boolean
+) {
+    val selectedColor = AdminPrimary
+    val unselectedColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE)
+    val contentColor = if (isSelected) Color.White else (if (isDarkMode) Color.LightGray else Color.Gray)
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) selectedColor else unselectedColor,
+        modifier = Modifier.height(36.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = text,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
         }
     }
 }
