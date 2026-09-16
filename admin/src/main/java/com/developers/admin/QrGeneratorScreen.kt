@@ -1,9 +1,13 @@
 package com.developers.admin
 
+import android.content.ContentValues
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.developers.core.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -44,7 +49,7 @@ val ColorSalida = Color(0xFFF44336) // Rojo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QrGeneratorScreen(onBack: () -> Unit) {
+fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     val isDarkMode = isSystemInDarkTheme()
     var qrEntrada by remember { mutableStateOf("Cargando...") }
     var qrSalida by remember { mutableStateOf("Cargando...") }
@@ -94,32 +99,47 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
             }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor) }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
-            )
-        },
-        containerColor = bgColor
-    ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).background(bgColor).padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = secondaryTextColor)
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { qrAmpliadoContenido = Pair(qrEntrada, ColorEntrada); mostrarQrGrande = true })
-                QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, isDarkMode = isDarkMode, onClick = { qrAmpliadoContenido = Pair(qrSalida, ColorSalida); mostrarQrGrande = true })
+    if (isInsideTab) {
+        QrGeneratorContent(
+            qrEntrada = qrEntrada,
+            qrSalida = qrSalida,
+            isSaving = isSaving,
+            isDarkMode = isDarkMode,
+            bgColor = bgColor,
+            secondaryTextColor = secondaryTextColor,
+            onGenerarClick = { generarNuevasClaves() },
+            onQrClick = { contenido, color ->
+                qrAmpliadoContenido = Pair(contenido, color)
+                mostrarQrGrande = true
             }
-
-            Button(onClick = { generarNuevasClaves() }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(12.dp), enabled = !isSaving, colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)) {
-                if (isSaving) { CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp)) } else { Icon(Icons.Default.Refresh, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text("Generar Nuevos Códigos QR Hoy", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+        )
+    } else {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor) }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                )
+            },
+            containerColor = bgColor
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                QrGeneratorContent(
+                    qrEntrada = qrEntrada,
+                    qrSalida = qrSalida,
+                    isSaving = isSaving,
+                    isDarkMode = isDarkMode,
+                    bgColor = bgColor,
+                    secondaryTextColor = secondaryTextColor,
+                    onGenerarClick = { generarNuevasClaves() },
+                    onQrClick = { contenido, color ->
+                        qrAmpliadoContenido = Pair(contenido, color)
+                        mostrarQrGrande = true
+                    }
+                )
             }
         }
     }
@@ -127,7 +147,7 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
     // --- POPUP DE QR GRANDE ---
     if (mostrarQrGrande && qrAmpliadoContenido != null) {
         val (contenido, color) = qrAmpliadoContenido!!
-        val qrBitmapGrande = generarQrConLogo(LocalContext.current, contenido, color)
+        val qrBitmapGrande = generarQrConLogo(context, contenido, color)
 
         AlertDialog(
             onDismissRequest = { mostrarQrGrande = false },
@@ -171,6 +191,35 @@ fun QrGeneratorScreen(onBack: () -> Unit) {
 }
 
 @Composable
+fun QrGeneratorContent(
+    qrEntrada: String,
+    qrSalida: String,
+    isSaving: Boolean,
+    isDarkMode: Boolean,
+    bgColor: Color,
+    secondaryTextColor: Color,
+    onGenerarClick: () -> Unit,
+    onQrClick: (String, Color) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().background(bgColor).padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = secondaryTextColor)
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { onQrClick(qrEntrada, ColorEntrada) })
+            QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, isDarkMode = isDarkMode, onClick = { onQrClick(qrSalida, ColorSalida) })
+        }
+
+        Button(onClick = onGenerarClick, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(12.dp), enabled = !isSaving, colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)) {
+            if (isSaving) { CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp)) } else { Icon(Icons.Default.Refresh, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text("Generar Nuevos Códigos QR Hoy", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+        }
+    }
+}
+
+@Composable
 fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, isDarkMode: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val qrBitmap = generarQrConLogo(context, qrContent, color)
@@ -193,7 +242,7 @@ fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: Strin
 }
 
 // --- ✨ FUNCIÓN OPTIMIZADA: GENERADOR DE QR INCRUSTANDO LOGO PNG DIRECTAMENTE ---
-private fun generarQrConLogo(context: android.content.Context, content: String, color: Color): Bitmap? {
+private fun generarQrConLogo(context: Context, content: String, color: Color): Bitmap? {
     return try {
         val size = 512
         val hints = hashMapOf<EncodeHintType, Any>(EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.H)
@@ -216,19 +265,19 @@ private fun generarQrConLogo(context: android.content.Context, content: String, 
     } catch (e: Exception) { null }
 }
 
-private fun guardarQrEnGaleria(context: android.content.Context, bitmap: Bitmap, filename: String) {
+private fun guardarQrEnGaleria(context: Context, bitmap: Bitmap, filename: String) {
     val contextResolver = context.contentResolver
-    val imageCollection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-        android.provider.MediaStore.Images.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    val imageCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
     } else {
-        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     }
-    val imageDetails = android.content.ContentValues().apply {
-        put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "$filename.jpg")
-        put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "PanappQRs")
-            put(android.provider.MediaStore.Images.Media.IS_PENDING, 1)
+    val imageDetails = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, "$filename.jpg")
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "PanappQRs")
+            put(MediaStore.Images.Media.IS_PENDING, 1)
         }
     }
     val imageUri = contextResolver.insert(imageCollection, imageDetails)
@@ -237,9 +286,9 @@ private fun guardarQrEnGaleria(context: android.content.Context, bitmap: Bitmap,
             contextResolver.openOutputStream(imageUri)?.use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 imageDetails.clear()
-                imageDetails.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
+                imageDetails.put(MediaStore.Images.Media.IS_PENDING, 0)
                 contextResolver.update(imageUri, imageDetails, null, null)
             }
             Toast.makeText(context, "QR Guardado en Galería -> Imágenes/PanappQRs", Toast.LENGTH_LONG).show()

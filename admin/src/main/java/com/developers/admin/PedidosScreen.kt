@@ -96,7 +96,8 @@ fun PedidosScreen() {
                 },
                 containerColor = AdminPrimary,
                 contentColor = Color.White,
-                shape = CircleShape
+                shape = CircleShape,
+                modifier = Modifier.padding(bottom = 80.dp) // ✨ Subimos el FAB para que no tape la barra
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Proveedor")
             }
@@ -107,6 +108,7 @@ fun PedidosScreen() {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .statusBarsPadding() // ✨ Evita empalme con barra de estado
         ) {
             // ✨ 1. Cabecera Personalizada y Contador (Adiós al TabRow genérico)
             val insumosCriticos = materiasPrimas.filter { it.cantidadActual <= it.nivelCritico }
@@ -317,6 +319,7 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                     }
                 }
             }
+            item { Spacer(modifier = Modifier.height(100.dp)) } // ✨ Espacio para la barra flotante
         }
     }
 }
@@ -381,6 +384,7 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, 
                     }
                 }
             }
+            item { Spacer(modifier = Modifier.height(100.dp)) } // ✨ Espacio para la barra flotante
         }
     }
 }
