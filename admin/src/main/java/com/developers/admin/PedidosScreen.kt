@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,12 +47,17 @@ data class Proveedor(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PedidosScreen() {
+    val isDarkMode = isSystemInDarkTheme()
     var tabIndex by remember { mutableIntStateOf(0) }
     var showProveedorDialog by remember { mutableStateOf(false) }
     var proveedorAEditar by remember { mutableStateOf<Proveedor?>(null) }
 
     var materiasPrimas by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var proveedores by remember { mutableStateOf<List<Proveedor>>(emptyList()) }
+
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Escucha en tiempo real de materia_prima y proveedores
     LaunchedEffect(Unit) {
@@ -88,14 +94,14 @@ fun PedidosScreen() {
                     proveedorAEditar = null
                     showProveedorDialog = true
                 },
-                containerColor = Color(0xFF6200EE),
+                containerColor = AdminPrimary,
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Proveedor")
             }
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = bgColor
     ) { padding ->
         Column(
             modifier = Modifier
@@ -116,16 +122,16 @@ fun PedidosScreen() {
                     text = "Pedidos",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = textColor
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFE3F2FD)
+                    color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE3F2FD)
                 ) {
                     Text(
                         text = "$sugerenciasCount sugerencias hoy",
-                        color = Color(0xFF1976D2),
+                        color = if (isDarkMode) Color(0xFFBBDEFB) else Color(0xFF1976D2),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         fontWeight = FontWeight.Medium,
                         fontSize = 13.sp
@@ -143,13 +149,13 @@ fun PedidosScreen() {
                 // Pill 1: Sugerencias
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = if (tabIndex == 0) Color(0xFFF3E5F5) else Color.Transparent,
+                    color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5)) else Color.Transparent,
                     border = if (tabIndex == 0) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
                     modifier = Modifier.clickable { tabIndex = 0 }
                 ) {
                     Text(
                         text = "Sugerencias",
-                        color = if (tabIndex == 0) Color(0xFF6200EE) else Color.Gray,
+                        color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -158,13 +164,13 @@ fun PedidosScreen() {
                 // Pill 2: Proveedores
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = if (tabIndex == 1) Color(0xFFF3E5F5) else Color.Transparent,
+                    color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5)) else Color.Transparent,
                     border = if (tabIndex == 1) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
                     modifier = Modifier.clickable { tabIndex = 1 }
                 ) {
                     Text(
                         text = "Proveedores",
-                        color = if (tabIndex == 1) Color(0xFF6200EE) else Color.Gray,
+                        color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -172,9 +178,9 @@ fun PedidosScreen() {
             }
 
             if (tabIndex == 0) {
-                TabPedidosSugerencias(insumosCriticos, proveedores)
+                TabPedidosSugerencias(insumosCriticos, proveedores, isDarkMode)
             } else {
-                TabProveedoresDirectorio(proveedores) { prov ->
+                TabProveedoresDirectorio(proveedores, isDarkMode) { prov ->
                     proveedorAEditar = prov
                     showProveedorDialog = true
                 }
@@ -186,15 +192,18 @@ fun PedidosScreen() {
         AddEditProveedorDialog(
             proveedor = proveedorAEditar,
             materiasPrimas = materiasPrimas,
-            onDismiss = { showProveedorDialog = false }
+            onDismiss = { showProveedorDialog = false },
+            isDarkMode = isDarkMode
         )
     }
 }
 
 // 4. Pestaña 1: 'Pedidos' (Sugerencias Automáticas WMS)
 @Composable
-fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List<Proveedor>) {
+fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List<Proveedor>, isDarkMode: Boolean) {
     val context = LocalContext.current
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
     
     if (insumosCriticos.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -219,13 +228,13 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                 if (proveedor != null) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = cardColor),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Surface(
-                                color = Color(0xFFFFF3E0), // Naranja suave
+                                color = if (isDarkMode) Color(0xFF3E2723) else Color(0xFFFFF3E0), // Naranja suave adaptive
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 // ✨ 3. Iconografía en la Tarjeta de Pedido (Etiqueta SUGERENCIA)
@@ -236,24 +245,24 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                                     Icon(
                                         imageVector = Icons.Default.Lightbulb,
                                         contentDescription = null,
-                                        tint = Color(0xFFFF9800),
+                                        tint = if (isDarkMode) Color(0xFFFFB74D) else Color(0xFFFF9800),
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "SUGERENCIA",
-                                        color = Color(0xFFE65100),
+                                        color = if (isDarkMode) Color(0xFFFFB74D) else Color(0xFFE65100),
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 10.sp
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text(proveedor.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text(proveedor.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 "Se recomienda pedir más unidades de ${insumo.nombre}",
-                                color = Color.DarkGray,
+                                color = if (isDarkMode) Color.LightGray else Color.DarkGray,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -282,7 +291,7 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                                 enabled = !limiteAlcanzado,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFF4CAF50),
-                                    disabledContainerColor = Color(0xFFE0E0E0)
+                                    disabledContainerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE0E0E0)
                                 ),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
@@ -314,7 +323,10 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
 
 // 5. Pestaña 2: 'Proveedores' (Directorio)
 @Composable
-fun TabProveedoresDirectorio(proveedores: List<Proveedor>, onEditClick: (Proveedor) -> Unit) {
+fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, onEditClick: (Proveedor) -> Unit) {
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+
     if (proveedores.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
@@ -334,7 +346,7 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, onEditClick: (Proveed
             items(proveedores, key = { it.id }) { prov ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -346,14 +358,17 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, onEditClick: (Proveed
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(prov.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(prov.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("Tel: ${prov.telefono}", color = Color.Gray, fontSize = 14.sp)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Surface(color = Color(0xFFF3E5F5), shape = RoundedCornerShape(4.dp)) {
+                            Surface(
+                                color = if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
                                 Text(
                                     text = prov.materiaPrimaNombre,
-                                    color = Color(0xFF6200EE),
+                                    color = if (isDarkMode) AdminPrimary else Color(0xFF6200EE),
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     fontWeight = FontWeight.Bold
@@ -375,7 +390,8 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, onEditClick: (Proveed
 fun AddEditProveedorDialog(
     proveedor: Proveedor?,
     materiasPrimas: List<MateriaPrima>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isDarkMode: Boolean
 ) {
     val context = LocalContext.current
     var nombre by remember { mutableStateOf(proveedor?.nombre ?: "") }
@@ -388,9 +404,13 @@ fun AddEditProveedorDialog(
 
     var isSaving by remember { mutableStateOf(false) }
 
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (proveedor == null) "Nuevo Proveedor" else "Editar Proveedor", fontWeight = FontWeight.Bold) },
+        containerColor = cardColor,
+        title = { Text(if (proveedor == null) "Nuevo Proveedor" else "Editar Proveedor", fontWeight = FontWeight.Bold, color = textColor) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -398,7 +418,11 @@ fun AddEditProveedorDialog(
                     onValueChange = { nombre = it },
                     label = { Text("Nombre del Proveedor") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = textColor,
+                        focusedTextColor = textColor
+                    )
                 )
                 OutlinedTextField(
                     value = telefono,
@@ -406,7 +430,11 @@ fun AddEditProveedorDialog(
                     label = { Text("Teléfono (WhatsApp)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = textColor,
+                        focusedTextColor = textColor
+                    )
                 )
 
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -416,16 +444,20 @@ fun AddEditProveedorDialog(
                         readOnly = true,
                         label = { Text("Materia Prima que surte") },
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdown = true }) },
-                        modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true }
+                        modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedTextColor = textColor,
+                            focusedTextColor = textColor
+                        )
                     )
                     DropdownMenu(
                         expanded = expandedDropdown,
                         onDismissRequest = { expandedDropdown = false },
-                        modifier = Modifier.fillMaxWidth(0.8f).background(Color.White)
+                        modifier = Modifier.fillMaxWidth(0.8f).background(cardColor)
                     ) {
                         materiasPrimas.forEach { insumo ->
                             DropdownMenuItem(
-                                text = { Text(insumo.nombre) },
+                                text = { Text(insumo.nombre, color = textColor) },
                                 onClick = {
                                     selectedInsumo = insumo
                                     expandedDropdown = false
@@ -467,14 +499,14 @@ fun AddEditProveedorDialog(
                     }
                 },
                 enabled = !isSaving,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+                colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
             ) {
                 Text(if (isSaving) "Guardando..." else "Guardar")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isSaving) {
-                Text("Cancelar")
+                Text("Cancelar", color = textColor)
             }
         }
     )

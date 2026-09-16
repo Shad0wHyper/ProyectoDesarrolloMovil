@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -29,19 +30,25 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AIReportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Reporte de Predicciones IA", fontWeight = FontWeight.Bold) },
+                title = { Text("Reporte de Predicciones IA", fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
             )
         },
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = bgColor
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -54,7 +61,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                 Text(
                     "Análisis Basado en Red Neuronal",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF673AB7),
+                    color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -66,6 +73,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                     description = "Se espera un incremento del 15% debido a festividad local.",
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
                     color = Color(0xFF4CAF50),
+                    isDarkMode = isDarkMode,
                     action = {
                         TextButton(onClick = { Toast.makeText(context, "Ver desglose de ventas", Toast.LENGTH_SHORT).show() }) {
                             Text("Ver detalles", color = Color(0xFF4CAF50))
@@ -81,6 +89,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                     description = "Basado en el ritmo de venta de los últimos 7 días.",
                     icon = Icons.Default.ShoppingCart,
                     color = Color(0xFF2196F3),
+                    isDarkMode = isDarkMode,
                     action = {
                         Button(
                             onClick = {
@@ -121,6 +130,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                     description = "Optimización para reducir desperdicios al mínimo (0.5%).",
                     icon = Icons.Default.PrecisionManufacturing,
                     color = Color(0xFFFFA000),
+                    isDarkMode = isDarkMode,
                     action = {
                         TextButton(onClick = { Toast.makeText(context, "Enviando plan a producción...", Toast.LENGTH_SHORT).show() }) {
                             Text("Enviar a Producción", color = Color(0xFFFFA000))
@@ -132,14 +142,14 @@ fun AIReportScreen(onBack: () -> Unit) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)),
+                    colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF311B92).copy(alpha = 0.3f) else Color(0xFFEDE7F6)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF673AB7))
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Confianza del Modelo: 94.2%", fontWeight = FontWeight.Bold, color = Color(0xFF673AB7))
+                            Text("Confianza del Modelo: 94.2%", fontWeight = FontWeight.Bold, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7))
                         }
                         Text(
                             "Último entrenamiento: Hace 2 horas",
@@ -160,11 +170,15 @@ fun PredictionCard(
     description: String,
     icon: ImageVector,
     color: Color,
+    isDarkMode: Boolean,
     action: @Composable (() -> Unit)? = null
 ) {
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -181,8 +195,8 @@ fun PredictionCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+                    Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = textColor)
+                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                 }
             }
             action?.invoke()

@@ -1,15 +1,20 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
@@ -26,9 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -54,6 +58,16 @@ data class Producto(
 fun DashboardAdminScreen(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: AdminScreen.Dashboard.route
+    val isDarkMode = isSystemInDarkTheme()
+
+    // ✨ Rutas que muestran la barra inferior
+    val bottomNavRoutes = remember { 
+        listOf(AdminScreen.Dashboard.route, AdminScreen.Almacen.route, AdminScreen.Pedidos.route) 
+    }
+    val showBottomBar = bottomNavRoutes.contains(currentRoute)
+
+    // ✨ Colores adaptativos para el fondo
+    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
 
     // ✨ Variable para guardar el pan que queremos editar
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
@@ -120,99 +134,108 @@ fun DashboardAdminScreen(navController: NavHostController) {
         }
     }
 
-    Scaffold(
-        bottomBar = {
-            // ✨ Ocultamos la barra inferior si estamos en el generador QR o agregar producto
-            if (currentRoute != AdminScreen.AddProduct.route && currentRoute != AdminScreen.QrGenerator.route) {
-                AdminBottomBar(
-                    currentRoute = currentRoute,
-                    globalCriticosCount = globalCriticosCount,
-                    onScreenSelected = { route ->
-                        navController.navigate(route) {
-                            popUpTo(AdminScreen.Dashboard.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            floatingActionButton = {
+                if (currentRoute == AdminScreen.Dashboard.route) {
+                    AdminFAB(onAdd = {
+                        productoAEditar = null
+                        navController.navigate(AdminScreen.AddProduct.route)
+                    })
+                }
+            },
+            containerColor = bgColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { paddingValues ->
+            NavHost(
+                navController = navController,
+                startDestination = AdminScreen.Dashboard.route,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(bgColor),
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+            ) {
+                composable(AdminScreen.Dashboard.route) {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = AdminPrimary)
                         }
-                    }
-                )
-            }
-        },
-        floatingActionButton = {
-            if (currentRoute == AdminScreen.Dashboard.route) {
-                AdminFAB(onAdd = {
-                    productoAEditar = null // Limpia la variable si vamos a agregar uno nuevo
-                    navController.navigate(AdminScreen.AddProduct.route)
-                })
-            }
-        },
-        containerColor = Color(0xFFF8F9FA)
-    ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = AdminScreen.Dashboard.route,
-            modifier = Modifier
-                .padding(paddingValues)
-                .background(Color(0xFFF8F9FA)), // Fondo sólido para evitar transparencias
-            enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
-            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
-            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
-            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
-        ) {
-            composable(AdminScreen.Dashboard.route) {
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF6200EE))
-                    }
-                } else {
-                    DashboardContent(
-                        listaProductos = listaProductos,
-                        insumosCriticosNombres = insumosCriticosNombres,
-                        textBusqueda = textBusqueda,
-                        onTextBusquedaChange = { textBusqueda = it },
-                        onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
-                        onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
-                        onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
-                        onAddClick = {
-                            productoAEditar = null
-                            navController.navigate(AdminScreen.AddProduct.route)
-                        },
-                        onDecreaseStock = { productoToUpdate ->
-                            val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
-                            FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
-                                .update("stock", newStock)
-                                .addOnSuccessListener {
-                                    listaProductos = listaProductos.map {
-                                        if (it.id == productoToUpdate.id) {
-                                            it.copy(
-                                                stock = newStock,
-                                                statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
-                                                statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
-                                            )
-                                        } else it
+                    } else {
+                        DashboardContent(
+                            listaProductos = listaProductos,
+                            insumosCriticosNombres = insumosCriticosNombres,
+                            textBusqueda = textBusqueda,
+                            onTextBusquedaChange = { textBusqueda = it },
+                            onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
+                            onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
+                            onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
+                            onAddClick = {
+                                productoAEditar = null
+                                navController.navigate(AdminScreen.AddProduct.route)
+                            },
+                            onDecreaseStock = { productoToUpdate ->
+                                val newStock = (productoToUpdate.stock - 1).coerceAtLeast(0)
+                                FirebaseFirestore.getInstance().collection("productos").document(productoToUpdate.id)
+                                    .update("stock", newStock)
+                                    .addOnSuccessListener {
+                                        listaProductos = listaProductos.map {
+                                            if (it.id == productoToUpdate.id) {
+                                                it.copy(
+                                                    stock = newStock,
+                                                    statusLabel = if (newStock == 0) "AGOTADO" else if (newStock < 5) "Crítico" else "Óptimo",
+                                                    statusColor = if (newStock == 0) Color.Red else if (newStock < 5) Color(0xFFF44336) else Color(0xFF4CAF50)
+                                                )
+                                            } else it
+                                        }
                                     }
-                                }
-                        },
-                        onEditClick = { productoQueQueremosEditar ->
-                            productoAEditar = productoQueQueremosEditar
-                            navController.navigate(AdminScreen.AddProduct.route)
-                        },
-                        onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
-                        onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
+                            },
+                            onEditClick = { productoQueQueremosEditar ->
+                                productoAEditar = productoQueQueremosEditar
+                                navController.navigate(AdminScreen.AddProduct.route)
+                            },
+                            onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
+                            onHistoryClick = { navController.navigate(AdminScreen.AttendanceHistory.route) },
+                            onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
+                        )
+                    }
+                }
+                composable(AdminScreen.Almacen.route) { AlmacenScreen() }
+                composable(AdminScreen.Pedidos.route) { PedidosScreen() }
+                composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.AddProduct.route) {
+                    AddProductScreen(
+                        productoAEditar = productoAEditar,
+                        onBack = { navController.popBackStack() },
+                        onSuccessSave = { navController.popBackStack() }
                     )
                 }
+                composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.AttendanceHistory.route) { AttendanceHistoryScreen(onBack = { navController.popBackStack() }) }
             }
-            composable(AdminScreen.Almacen.route) { AlmacenScreen() }
-            composable(AdminScreen.Pedidos.route) { PedidosScreen() }
-            composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
-            composable(AdminScreen.AddProduct.route) {
-                AddProductScreen(
-                    productoAEditar = productoAEditar,
-                    onBack = { navController.popBackStack() },
-                    onSuccessSave = { navController.popBackStack() }
-                )
-            }
-            composable(AdminScreen.QrGenerator.route) { QrGeneratorScreen(onBack = { navController.popBackStack() }) }
-            composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
+        }
+
+        // ✨ BARRA FLOTANTE ESTILO CLIENTE
+        if (showBottomBar) {
+            AdminFloatingBottomBar(
+                currentRoute = currentRoute,
+                globalCriticosCount = globalCriticosCount,
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                isDarkMode = isDarkMode,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
@@ -231,9 +254,11 @@ fun DashboardContent(
     onDecreaseStock: (Producto) -> Unit,
     onEditClick: (Producto) -> Unit,
     onQrClick: () -> Unit,
+    onHistoryClick: () -> Unit,
     onProduccionClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
 
     val productosFiltrados = if (textBusqueda.isEmpty()) {
         listaProductos
@@ -248,7 +273,7 @@ fun DashboardContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // ✨ Pasamos la acción al TopBar
-        item { AdminTopBar(onQrClick = onQrClick) }
+        item { AdminTopBar(onQrClick = onQrClick, onHistoryClick = onHistoryClick) }
 
         item {
             ResumenHoySection(
@@ -307,22 +332,38 @@ fun DashboardContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
+fun AdminTopBar(onQrClick: () -> Unit, onHistoryClick: () -> Unit) { // ✨ Recibe el evento del QR e Historial
     val context = LocalContext.current
+    val isDarkMode = isSystemInDarkTheme()
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val iconColor = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF6200EE)
+
+    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F9FA)
+
     TopAppBar(
         title = {
             Text(
                 text = "Administración",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = textColor
             )
         },
         actions = {
+            // ✨ NUEVO BOTÓN HISTORIAL ASISTENCIA
+            IconButton(onClick = onHistoryClick) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "Historial Asistencia",
+                    tint = iconColor
+                )
+            }
+
             // ✨ NUEVO BOTÓN GENERADOR DE QR
             IconButton(onClick = onQrClick) {
                 Icon(
                     imageVector = Icons.Default.QrCode,
                     contentDescription = "Generar QR Asistencia",
-                    tint = Color(0xFF6200EE)
+                    tint = iconColor
                 )
             }
 
@@ -332,7 +373,8 @@ fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = "Alertas",
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
+                    tint = textColor
                 )
                 Surface(
                     modifier = Modifier
@@ -340,7 +382,7 @@ fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
                         .align(Alignment.TopEnd),
                     color = Color.Red,
                     shape = CircleShape,
-                    border = BorderStroke(1.dp, Color.White)
+                    border = BorderStroke(1.dp, if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
                 ) {}
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -352,22 +394,23 @@ fun AdminTopBar(onQrClick: () -> Unit) { // ✨ Recibe el evento del QR
                         Toast.makeText(context, "Perfil de Administrador", Toast.LENGTH_SHORT).show()
                     },
                 shape = CircleShape,
-                color = Color.LightGray
+                color = if (isDarkMode) Color(0xFF333333) else Color.LightGray
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(4.dp))
+                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(4.dp), tint = textColor)
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8F9FA))
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
     )
 }
 
 @Composable
 fun AIPredictionsSection(onClick: () -> Unit) {
+    val isDarkMode = isSystemInDarkTheme()
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF673AB7)),
+        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF4527A0) else Color(0xFF673AB7)),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -415,11 +458,12 @@ fun AIPredictionsSection(onClick: () -> Unit) {
 
 @Composable
 fun ProduccionDiariaCard(onClick: () -> Unit) {
+    val isDarkMode = isSystemInDarkTheme()
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF3F51B5)),
+        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF283593) else Color(0xFF3F51B5)),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -468,6 +512,7 @@ fun ProduccionDiariaCard(onClick: () -> Unit) {
 
 @Composable
 fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosClick: () -> Unit) {
+    val isDarkMode = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Actualizado 10:30 AM",
@@ -487,7 +532,8 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
                 label = "Ventas Totales",
                 value = "$1,240.50",
                 trendText = "+12% vs ayer",
-                trendColor = Color(0xFF4CAF50)
+                trendColor = Color(0xFF4CAF50),
+                isDarkMode = isDarkMode
             )
             
             // ✨ Tarjeta de Alertas Dinámica
@@ -502,7 +548,8 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
                 iconColor = color,
                 label = "Estado de Almacén",
                 value = valueText,
-                isAlert = insumosCriticosCount > 0
+                isAlert = insumosCriticosCount > 0,
+                isDarkMode = isDarkMode
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -510,7 +557,10 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
             onClick = onGestionarPedidosClick,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE3F2FD), contentColor = Color(0xFF1976D2)),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE3F2FD),
+                contentColor = if (isDarkMode) Color(0xFFBBDEFB) else Color(0xFF1976D2)
+            ),
             contentPadding = PaddingValues(16.dp)
         ) {
             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
@@ -533,18 +583,22 @@ fun ResumenCard(
     value: String,
     trendText: String? = null,
     trendColor: Color = Color.Black,
-    isAlert: Boolean = false
+    isAlert: Boolean = false,
+    isDarkMode: Boolean
 ) {
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Icon(icon, contentDescription = null, tint = iconColor)
             Spacer(modifier = Modifier.height(8.dp))
             Text(label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+            Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = textColor)
             if (trendText != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = trendColor, modifier = Modifier.size(14.dp))
@@ -561,18 +615,23 @@ fun GestionProductosSection(
     onTextBusquedaChange: (String) -> Unit,
     onAddClick: () -> Unit
 ) {
+    val isDarkMode = isSystemInDarkTheme()
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val fieldColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Gestión de Productos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Text("Gestión de Productos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = textColor)
             Row {
                 OutlinedButton(
                     onClick = { /* TODO */ },
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.Gray)
                 ) {
                     Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -582,7 +641,8 @@ fun GestionProductosSection(
                 Button(
                     onClick = onAddClick,
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp)
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
                     Text("+ Nuevo")
                 }
@@ -597,8 +657,10 @@ fun GestionProductosSection(
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             shape = RoundedCornerShape(24.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
+                unfocusedContainerColor = fieldColor,
+                focusedContainerColor = fieldColor,
+                unfocusedTextColor = textColor,
+                focusedTextColor = textColor
             )
         )
     }
@@ -611,9 +673,13 @@ fun ProductoCard(
     onDarDeBajaClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
+    val isDarkMode = isSystemInDarkTheme()
+    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -631,14 +697,14 @@ fun ProductoCard(
                         modifier = Modifier
                             .size(50.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF0F0F0))
+                            .background(if (isDarkMode) Color(0xFF333333) else Color(0xFFF0F0F0))
                     )
                 } else {
                     Box(
                         modifier = Modifier
                             .size(50.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF0F0F0)),
+                            .background(if (isDarkMode) Color(0xFF333333) else Color(0xFFF0F0F0)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray)
@@ -648,7 +714,7 @@ fun ProductoCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(producto.nombre, fontWeight = FontWeight.Bold)
+                        Text(producto.nombre, fontWeight = FontWeight.Bold, color = textColor)
                         if (producto.isNuevo) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Surface(color = Color.Red.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp)) {
@@ -659,10 +725,10 @@ fun ProductoCard(
                     Text(producto.categoria, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall)
+                        Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
-                        Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall)
+                        Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -680,7 +746,7 @@ fun ProductoCard(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$ ${producto.precio}", fontWeight = FontWeight.Bold)
+                        Text("$ ${producto.precio}", fontWeight = FontWeight.Bold, color = textColor)
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
@@ -688,7 +754,7 @@ fun ProductoCard(
                     }
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = Color.LightGray)
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp), thickness = 0.5.dp, color = if (isDarkMode) Color.DarkGray else Color.LightGray)
             Row(
                 modifier = Modifier
                     .padding(8.dp)
@@ -716,6 +782,7 @@ fun ProductoCard(
 
 @Composable
 fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> Unit) {
+    val isDarkMode = isSystemInDarkTheme()
     val nombresTexto = if (insumosCriticosNombres.size == 1) {
         insumosCriticosNombres.first()
     } else {
@@ -726,7 +793,7 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFFB71C1C).copy(alpha = 0.2f) else Color(0xFFFFEBEE))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -738,7 +805,7 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
             Text(
                 "$nombresTexto $verbo en nivel crítico. Considere reabastecer hoy.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.DarkGray
+                color = if (isDarkMode) Color.LightGray else Color.DarkGray
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -765,53 +832,109 @@ fun AdminFAB(onAdd: () -> Unit) {
 }
 
 @Composable
-fun AdminBottomBar(
+fun AdminFloatingBottomBar(
     currentRoute: String,
     globalCriticosCount: Int,
-    onScreenSelected: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    isDarkMode: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    NavigationBar(containerColor = Color.White) {
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Dashboard.route,
-            onClick = { onScreenSelected(AdminScreen.Dashboard.route) },
-            icon = { Icon(Icons.Default.GridView, contentDescription = null) },
-            label = { Text("Dashboard") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
+    val bottomNavItems = remember {
+        listOf(
+            Triple(AdminScreen.Dashboard.route, "Dashboard", Icons.Default.GridView),
+            Triple(AdminScreen.Almacen.route, "Almacén", Icons.Default.Inventory2),
+            Triple(AdminScreen.Pedidos.route, "Pedidos", Icons.Default.ChatBubble)
         )
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Almacen.route,
-            onClick = { onScreenSelected(AdminScreen.Almacen.route) },
-            icon = {
-                BadgedBox(badge = { if (globalCriticosCount > 0) Badge { Text(globalCriticosCount.toString()) } }) {
-                    Icon(if (currentRoute == AdminScreen.Almacen.route) Icons.Filled.Inventory2 else Icons.Outlined.Inventory2, contentDescription = null)
+    }
+
+    val containerBackgroundColor = if (isDarkMode) Color(0xFF2C2C2C) else Color.White
+
+    Box(
+        modifier = modifier
+            .wrapContentWidth()
+            .navigationBarsPadding()
+            .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = containerBackgroundColor,
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                bottomNavItems.forEach { (route, title, icon) ->
+                    val isSelected = currentRoute == route
+                    val badgeCount = if (route == AdminScreen.Almacen.route || route == AdminScreen.Pedidos.route) globalCriticosCount else 0
+
+                    AdminFloatingNavItem(
+                        title = title,
+                        icon = icon,
+                        isSelected = isSelected,
+                        badgeCount = badgeCount,
+                        isDarkMode = isDarkMode,
+                        onClick = { onNavigate(route) }
+                    )
                 }
-            },
-            label = { Text("Almacén") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == AdminScreen.Pedidos.route,
-            onClick = { onScreenSelected(AdminScreen.Pedidos.route) },
-            icon = {
-                BadgedBox(badge = { if (globalCriticosCount > 0) Badge { Text(globalCriticosCount.toString()) } }) {
-                    Icon(if (currentRoute == AdminScreen.Pedidos.route) Icons.Filled.ChatBubble else Icons.Outlined.ChatBubbleOutline, contentDescription = null)
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminFloatingNavItem(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    badgeCount: Int,
+    isDarkMode: Boolean,
+    onClick: () -> Unit
+) {
+    val activeBackgroundColor = AdminPrimary.copy(alpha = 0.15f)
+    val contentColor = if (isSelected) AdminPrimary else Color.Gray
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (isSelected) activeBackgroundColor else Color.Transparent,
+        contentColor = contentColor
+    ) {
+        Row(
+            modifier = Modifier
+                .animateContentSize()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            BadgedBox(
+                badge = {
+                    if (badgeCount > 0) {
+                        Badge(containerColor = Color.Red, contentColor = Color.White) {
+                            Text(badgeCount.toString())
+                        }
+                    }
                 }
-            },
-            label = { Text("Pedidos") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF6200EE),
-                selectedTextColor = Color(0xFF6200EE),
-                indicatorColor = Color(0xFFF3E5F5)
-            )
-        )
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = contentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            if (isSelected) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+            }
+        }
     }
 }
 
