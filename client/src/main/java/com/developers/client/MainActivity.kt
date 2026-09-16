@@ -198,7 +198,8 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                     ProfileScreen(
                         appViewModel = appViewModel,
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToPayments = { navController.navigate("payment_methods") }
+                        onNavigateToPayments = { navController.navigate("payment_methods") },
+                        onNavigateToAddresses = { navController.navigate("manage_addresses") }
                     )
                 }
                 composable("payment_methods") {
@@ -216,6 +217,12 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                 }
                 composable("notifications") {
                     NotificationsScreen(
+                        appViewModel = appViewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+                composable("manage_addresses") {
+                    ManageAddressesScreen(
                         appViewModel = appViewModel,
                         onNavigateBack = { navController.popBackStack() }
                     )

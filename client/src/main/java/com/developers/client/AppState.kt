@@ -62,6 +62,7 @@ class AppViewModel : ViewModel() {
     var userPhone by mutableStateOf("...")
     var userImageUrl by mutableStateOf("")
     var userAddress by mutableStateOf("")
+    var userAddressesList by mutableStateOf<List<String>>(emptyList())
 
     // Datos de Banco / Saldo
     var userBalance by mutableStateOf(0.0)
@@ -71,6 +72,19 @@ class AppViewModel : ViewModel() {
     var userCardLast4 by mutableStateOf("")
     var userCardExp by mutableStateOf("")
     var hasSavedCard by mutableStateOf(false)
+
+    // ✨ NUEVO: Estado Temporal del Formulario de Pago (Controlador para persistencia)
+    var tempCardNumber by mutableStateOf("")
+    var tempExpiryDate by mutableStateOf("")
+    var tempCVC by mutableStateOf("")
+    var tempSaveCard by mutableStateOf(false)
+
+    fun resetTempPaymentData() {
+        tempCardNumber = ""
+        tempExpiryDate = userCardExp
+        tempCVC = ""
+        tempSaveCard = false
+    }
 
     var cartItems by mutableStateOf<List<CartItem>>(emptyList())
     var ordersList by mutableStateOf<List<OrderData>>(emptyList())
@@ -107,6 +121,7 @@ class AppViewModel : ViewModel() {
                     userPhone = doc.getString("telefono") ?: "..."
                     userImageUrl = doc.getString("imageUrl") ?: ""
                     userAddress = doc.getString("direccion") ?: ""
+                    userAddressesList = doc.get("listaDirecciones") as? List<String> ?: emptyList()
                     
                     // Cargar saldo del banco
                     userBalance = doc.getDouble("saldo") ?: 1500.0 // Saldo inicial de cortesía si no existe
@@ -166,11 +181,38 @@ class AppViewModel : ViewModel() {
     fun updateProfileData(name: String, phone: String, address: String, onComplete: () -> Unit) {
         val uid = currentUserId
         if (uid == "INVITADO") return
-        val updates = mapOf("nombre" to name, "telefono" to phone, "direccion" to address)
+        
+        val newList = if (!userAddressesList.contains(address) && address.isNotEmpty()) {
+            userAddressesList + address
+        } else userAddressesList
+
+        val updates = mapOf(
+            "nombre" to name, 
+            "telefono" to phone, 
+            "direccion" to address,
+            "listaDirecciones" to newList
+        )
         FirebaseFirestore.getInstance().collection("usuarios").document(uid).update(updates)
             .addOnSuccessListener {
                 userName = name; userPhone = phone; userAddress = address
+                userAddressesList = newList
                 onComplete()
+            }
+    }
+
+    fun addAddress(address: String) {
+        val uid = currentUserId
+        if (uid == "INVITADO" || address.isEmpty()) return
+        if (userAddressesList.contains(address)) {
+            userAddress = address
+            return
+        }
+        val newList = userAddressesList + address
+        FirebaseFirestore.getInstance().collection("usuarios").document(uid)
+            .update(mapOf("listaDirecciones" to newList, "direccion" to address))
+            .addOnSuccessListener {
+                userAddressesList = newList
+                userAddress = address
             }
     }
 
