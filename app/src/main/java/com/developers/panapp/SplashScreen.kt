@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.developers.panapp.ui.theme.PanAppIconBackgroundDark
 import com.developers.panapp.ui.theme.PanAppPeach
 import kotlinx.coroutines.delay
 
@@ -46,18 +47,20 @@ fun SplashScreen(onNextScreen: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val isDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
+            
             Box(
                 modifier = Modifier
                     .alpha(alpha.value)
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(25.dp))
-                    .background(PanAppPeach),
+                    .size(140.dp) // ✨ Cuadro global más grande
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(if (isDarkMode) PanAppIconBackgroundDark else PanAppPeach),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.icon),
+                    painter = painterResource(id = R.drawable.newp),
                     contentDescription = "Logo",
-                    modifier = Modifier.size(90.dp),
+                    modifier = Modifier.size(105.dp), // ✨ Logo proporcionalmente más grande
                     tint = Color.Unspecified
                 )
             }

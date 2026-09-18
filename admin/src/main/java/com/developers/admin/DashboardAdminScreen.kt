@@ -39,6 +39,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 
 data class Producto(
     val id: String = "",
@@ -81,6 +82,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
     var insumosCriticosNombres by remember { mutableStateOf<List<String>>(emptyList()) } // ✨ ESTADO DE ALERTAS DINÁMICO
     var isLoading by remember { mutableStateOf(true) }
     var textBusqueda by remember { mutableStateOf("") }
+    var showNotificationsSheet by remember { mutableStateOf(false) } // ✨ ESTADO DEL BOTTOM SHEET
     val context = LocalContext.current
 
     // ✨ 2. BADGES DINÁMICOS: ESTADO GLOBAL
@@ -207,7 +209,10 @@ fun DashboardAdminScreen(navController: NavHostController) {
                             },
                             onQrClick = { navController.navigate(AdminScreen.QrGenerator.route) },
                             onHistoryClick = { navController.navigate(AdminScreen.AttendanceHistory.route) },
-                            onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) }
+                            onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) },
+                            onNotificationClick = { showNotificationsSheet = true },
+                            onProfileClick = { navController.navigate(AdminScreen.Profile.route) },
+                            hasNotifications = globalCriticosCount > 0
                         )
                     }
                 }
@@ -225,6 +230,58 @@ fun DashboardAdminScreen(navController: NavHostController) {
                 composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.AttendanceHistory.route) { AttendanceHistoryScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.Asistencia.route) { AsistenciaMainScreen() }
+                composable(AdminScreen.Profile.route) { AdminProfileScreen(onBack = { navController.popBackStack() }) }
+            }
+        }
+
+        // ✨ HOJA DE NOTIFICACIONES
+        if (showNotificationsSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showNotificationsSheet = false },
+                containerColor = bgColor
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Notificaciones",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = if (isDarkMode) Color.White else Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (globalCriticosCount > 0) {
+                            item {
+                                NotificationItem(
+                                    icon = Icons.Default.Warning,
+                                    iconColor = Color.Red,
+                                    text = "Stock Bajo: Tienes $globalCriticosCount materias primas por agotarse. Recomendación: Pedir a proveedores.",
+                                    textColor = if (isDarkMode) Color.White else Color.Black
+                                )
+                            }
+                            item {
+                                NotificationItem(
+                                    icon = Icons.Default.Info,
+                                    iconColor = Color(0xFF2196F3),
+                                    text = "Pedidos Pendientes: Tienes $globalCriticosCount órdenes de WhatsApp por gestionar.",
+                                    textColor = if (isDarkMode) Color.White else Color.Black
+                                )
+                            }
+                        } else {
+                            item {
+                                Text(
+                                    text = "Todo al día, no hay alertas.",
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
 
@@ -266,7 +323,10 @@ fun DashboardContent(
     onEditClick: (Producto) -> Unit,
     onQrClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onProduccionClick: () -> Unit
+    onProduccionClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    hasNotifications: Boolean
 ) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
@@ -284,7 +344,15 @@ fun DashboardContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // ✨ Pasamos la acción al TopBar
-        item { AdminTopBar(onQrClick = onQrClick, onHistoryClick = onHistoryClick) }
+        item { 
+            AdminTopBar(
+                onQrClick = onQrClick, 
+                onHistoryClick = onHistoryClick,
+                onNotificationClick = onNotificationClick,
+                onProfileClick = onProfileClick,
+                hasNotifications = hasNotifications
+            ) 
+        }
 
         item {
             ResumenHoySection(
@@ -343,13 +411,19 @@ fun DashboardContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminTopBar(onQrClick: () -> Unit, onHistoryClick: () -> Unit) { // ✨ Recibe el evento del QR e Historial
+fun AdminTopBar(
+    onQrClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    hasNotifications: Boolean
+) { // ✨ Recibe el evento del QR, Historial, Notificaciones y Perfil
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     val textColor = if (isDarkMode) Color.White else Color.Black
-    val iconColor = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF6200EE)
-
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F9FA)
+
+    val photoUrl = AdminSession.userImageUrl
 
     TopAppBar(
         modifier = Modifier.statusBarsPadding(), // ✨ Añadido para evitar empalme en el Dashboard
@@ -361,36 +435,50 @@ fun AdminTopBar(onQrClick: () -> Unit, onHistoryClick: () -> Unit) { // ✨ Reci
             )
         },
         actions = {
-            Box(modifier = Modifier.padding(8.dp).clickable {
-                Toast.makeText(context, "No hay notificaciones nuevas", Toast.LENGTH_SHORT).show()
-            }) {
+            Box(modifier = Modifier.padding(8.dp).clickable(onClick = onNotificationClick)) {
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = "Alertas",
                     modifier = Modifier.size(28.dp),
                     tint = textColor
                 )
-                Surface(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .align(Alignment.TopEnd),
-                    color = Color.Red,
-                    shape = CircleShape,
-                    border = BorderStroke(1.dp, if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
-                ) {}
+                if (hasNotifications) {
+                    Surface(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .align(Alignment.TopEnd),
+                        color = Color.Red,
+                        shape = CircleShape,
+                        border = BorderStroke(1.dp, if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
+                    ) {}
+                }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Surface(
+            Box(
                 modifier = Modifier
-                    .size(36.dp)
                     .padding(end = 8.dp)
-                    .clickable {
-                        Toast.makeText(context, "Perfil de Administrador", Toast.LENGTH_SHORT).show()
-                    },
-                shape = CircleShape,
-                color = if (isDarkMode) Color(0xFF333333) else Color.LightGray
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onProfileClick),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(4.dp), tint = textColor)
+                if (photoUrl.isNotEmpty()) {
+                    coil.compose.AsyncImage(
+                        model = photoUrl,
+                        contentDescription = "Foto de perfil",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(if (isDarkMode) Color(0xFF333333) else Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = textColor)
+                    }
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
@@ -931,6 +1019,21 @@ fun AdminFloatingNavItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun NotificationItem(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColor: Color, text: String, textColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Gray.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(text = text, color = textColor, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

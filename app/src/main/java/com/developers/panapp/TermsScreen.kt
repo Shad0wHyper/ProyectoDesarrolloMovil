@@ -115,6 +115,8 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                     }
 
                     // Logo circle
+                    val isDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
+                    
                     Box(
                         modifier = Modifier
                             .size(70.dp)
@@ -124,15 +126,15 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(45.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(PanAppPeach),
+                                .size(50.dp) // ✨ Cuadro interno proporcionalmente más grande
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isDarkMode) PanAppIconBackgroundDark else PanAppPeach),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.icon),
+                                painter = painterResource(id = R.drawable.newp),
                                 contentDescription = null,
-                                modifier = Modifier.size(35.dp),
+                                modifier = Modifier.size(38.dp), // ✨ Logo un poco más grande
                                 tint = Color.Unspecified
                             )
                         }

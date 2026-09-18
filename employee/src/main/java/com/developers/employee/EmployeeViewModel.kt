@@ -34,6 +34,7 @@ class EmployeeViewModel : ViewModel() {
     var currentUserId by mutableStateOf("INVITADO")
     var userEmail by mutableStateOf("")
     var userName by mutableStateOf("Cargando...")
+    var userImageUrl by mutableStateOf("") // ✨ AÑADIDO PARA FOTO DE PERFIL
     var logs by mutableStateOf<List<LogData>>(emptyList())
     var isLoading by mutableStateOf(false)
 
@@ -50,6 +51,7 @@ class EmployeeViewModel : ViewModel() {
             db.collection("usuarios").document(uid).get()
                 .addOnSuccessListener { doc ->
                     userName = if (doc.exists()) doc.getString("nombre") ?: "Empleado" else "Empleado"
+                    userImageUrl = doc.getString("imageUrl") ?: "" // ✨ CARGAMOS LA FOTO DE FIREBASE
                     fetchLogs()
                 }
             db.collection("configuracion").document("asistencia")
@@ -124,5 +126,14 @@ class EmployeeViewModel : ViewModel() {
         val newLog = LogData(id = logId, type = type, timestamp = System.currentTimeMillis(), dateFormatted = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(now), timeFormatted = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now))
         FirebaseFirestore.getInstance().collection("usuarios").document(currentUserId).collection("asistencias").document(logId)
             .set(newLog).addOnSuccessListener { isLoading = false; fetchLogs(); onSuccess() }.addOnFailureListener { isLoading = false }
+    }
+
+    fun updateProfileImage(newUrl: String) {
+        if (currentUserId == "INVITADO") return
+        FirebaseFirestore.getInstance().collection("usuarios").document(currentUserId)
+            .update("imageUrl", newUrl)
+            .addOnSuccessListener {
+                userImageUrl = newUrl
+            }
     }
 }

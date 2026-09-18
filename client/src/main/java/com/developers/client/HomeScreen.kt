@@ -121,7 +121,7 @@ fun HomeScreen(
             ) {
                 // LOGO OFICIAL
                 Image(
-                    painter = painterResource(id = com.developers.client.R.drawable.log),
+                    painter = painterResource(id = com.developers.client.R.drawable.icon),
                     contentDescription = "Logo Oficial",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

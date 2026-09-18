@@ -146,6 +146,8 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(60.dp))
 
             // Logo
+            val isDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
+            
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -155,15 +157,15 @@ fun LoginScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(70.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(PanAppPeach),
+                        .size(85.dp) // ✨ Cuadro interno de color más grande
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(if (isDarkMode) PanAppIconBackgroundDark else PanAppPeach),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.icon),
+                        painter = painterResource(id = R.drawable.newp),
                         contentDescription = stringResource(id = R.string.common_logo),
-                        modifier = Modifier.size(50.dp),
+                        modifier = Modifier.size(65.dp), // ✨ Logo 30% más grande
                         tint = Color.Unspecified
                     )
                 }

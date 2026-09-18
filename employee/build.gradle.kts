@@ -67,4 +67,7 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
 }

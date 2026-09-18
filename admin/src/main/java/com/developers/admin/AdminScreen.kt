@@ -10,5 +10,6 @@ sealed class AdminScreen(val route: String) {
     object Produccion : AdminScreen("produccion")
     object Asistencia : AdminScreen("asistencia")
     object AttendanceHistory : AdminScreen("attendance_history")
+    object Profile : AdminScreen("profile")
 }
 

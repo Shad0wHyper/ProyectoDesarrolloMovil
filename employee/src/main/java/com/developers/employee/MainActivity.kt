@@ -77,7 +77,7 @@ fun PanAppEmployeeTheme(
     )
 }
 
-enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, PROVEEDORES, PERFIL, LAUNCHING_WS, HISTORIAL }
+enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, ALMACEN, PERFIL, LAUNCHING_WS, HISTORIAL }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,7 +106,7 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val bottomNavScreens = remember { 
-        listOf(AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.PROVEEDORES, AppScreen.PERFIL) 
+        listOf(AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.ALMACEN, AppScreen.PERFIL) 
     }
     val showBottomBar = bottomNavScreens.contains(currentScreen)
     val bgColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFF5F6FA)
@@ -125,7 +125,7 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
                 AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
-                AppScreen.PROVEEDORES -> ProveedoresScreen(onNavigate = { currentScreen = it })
+                AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel)
                 AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
                 AppScreen.LAUNCHING_WS -> {
@@ -158,7 +158,7 @@ fun EmployeeFloatingBottomBar(
             Triple(AppScreen.INICIO, "Inicio", Icons.Default.Home),
             Triple(AppScreen.ASISTENCIA, "Asistencia", Icons.Default.QrCodeScanner),
             Triple(AppScreen.PEDIDOS, "Pedidos", Icons.Default.ListAlt),
-            Triple(AppScreen.PROVEEDORES, "Envios", Icons.Default.LocalShipping),
+            Triple(AppScreen.ALMACEN, "Almacén", Icons.Default.Inventory2),
             Triple(AppScreen.PERFIL, "Perfil", Icons.Default.Person)
         )
     }

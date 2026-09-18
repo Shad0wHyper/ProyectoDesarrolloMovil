@@ -36,12 +36,11 @@ import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.firebase.storage.FirebaseStorage
 
-// Datos falsos solo para proveedores, los pedidos ahora son 100% reales
-data class SupplierItem(val name: String, val quantity: String)
-data class SupplierOrder(val id: String, val supplierName: String, val statusBadgeRes: String, val orderDate: String, val items: List<SupplierItem>, val trackingStatus: String, val trackingDate: String)
-
-val globalSupplierOrders = listOf(SupplierOrder("ORD-2023", "Harinas del Sol", "En Camino", "12 Oct, 2023", listOf(SupplierItem("Harina 000", "10 sacos")), "Pedido Confirmado", "12 Oct, 2023"))
+// Datos falsos eliminados
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -224,48 +223,37 @@ fun LaunchingWhatsappScreen(order: PedidoFirebase, onBackClick: () -> Unit) {
 // ==========================================
 // EL RESTO DEL CÓDIGO (Proveedores, Perfil, etc) QUEDA INTACTO
 // ==========================================
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProveedoresScreen(onNavigate: (AppScreen) -> Unit) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
-    var selectedSupplierOrderId by rememberSaveable { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Proveedores", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item { Text("Envíos en Tránsito", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface) }
-            items(globalSupplierOrders) { order ->
-                Card(modifier = Modifier.fillMaxWidth().clickable { selectedSupplierOrderId = order.id; showBottomSheet = true }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp)) {
-                    Column(modifier = Modifier.padding(16.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFFDF3F0)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.LocalShipping, null, tint = OrangePrep) }; Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) { Text(order.supplierName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface); Text(order.id, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp) }; Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0xFFEBEBFC)).padding(horizontal = 10.dp, vertical = 4.dp)) { Text(order.statusBadgeRes, color = DarkPurpleText, fontWeight = FontWeight.Bold, fontSize = 10.sp) } } }
-                }
-            }
-        }
-    }
-
-    if (showBottomSheet && selectedSupplierOrderId != null) {
-        val order = globalSupplierOrders.find { it.id == selectedSupplierOrderId }
-        if (order != null) {
-            ModalBottomSheet(onDismissRequest = { showBottomSheet = false }, sheetState = sheetState, containerColor = MaterialTheme.colorScheme.surface) {
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).padding(bottom = 32.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column { Text("Detalles del Pedido", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface); Text("ID: ${order.id}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp) }; IconButton(onClick = { showBottomSheet = false }) { Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
-                    Spacer(modifier = Modifier.height(24.dp)); Text("Items del Pedido", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(modifier = Modifier.height(8.dp))
-                    order.items.forEach { item -> Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))) { Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFEBEBFC)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Inventory2, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp)) }; Text(item.name, fontWeight = FontWeight.Medium, fontSize = 14.sp, modifier = Modifier.padding(start = 12.dp), color = MaterialTheme.colorScheme.onSurface) }; Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.background).padding(horizontal = 8.dp, vertical = 4.dp)) { Text(item.quantity, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface) } } } }
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { OutlinedButton(onClick = { Toast.makeText(context, "Reporte Enviado", Toast.LENGTH_SHORT).show() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("Reportar", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp) }; Button(onClick = { showBottomSheet = false; Toast.makeText(context, "Recepción confirmada", Toast.LENGTH_SHORT).show() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) { Text("Confirmar", color = Color.White, fontSize = 12.sp) } }
-                }
-            }
-        }
-    }
-}
-
+// ProveedoresScreen fue movido y reemplazado por EmpleadoAlmacenScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
     val context = LocalContext.current
+    var isUploadingImage by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri: Uri? ->
+            if (uri != null) {
+                isUploadingImage = true
+                val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference
+                    .child("perfiles/${viewModel.currentUserId}.jpg")
+
+                storageRef.putFile(uri)
+                    .addOnSuccessListener {
+                        storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                            viewModel.updateProfileImage(downloadUrl.toString())
+                            isUploadingImage = false
+                            Toast.makeText(context, "Foto actualizada", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener {
+                        isUploadingImage = false
+                        Toast.makeText(context, "Error al subir la foto", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+    )
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Mi Perfil", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
@@ -273,7 +261,77 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) 
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
                 Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(Color(0xFFFFD1DC)), contentAlignment = Alignment.BottomCenter) { Icon(Icons.Default.Person, null, modifier = Modifier.size(80.dp), tint = Color.DarkGray.copy(alpha = 0.5f)) }
+                    
+                    // SECCIÓN FOTO DE PERFIL
+                    Box(
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clickable {
+                                if (!isUploadingImage && viewModel.currentUserId != "INVITADO") {
+                                    photoPickerLauncher.launch(
+                                        androidx.activity.result.PickVisualMediaRequest(
+                                            androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        )
+                                    )
+                                } else if (viewModel.currentUserId == "INVITADO") {
+                                    Toast.makeText(context, "Inicia sesión para subir una foto", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Círculo principal de la foto
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEEEEEE)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (viewModel.userImageUrl.isNotEmpty()) {
+                                coil.compose.AsyncImage(
+                                    model = viewModel.userImageUrl,
+                                    contentDescription = "Foto de perfil",
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.Gray)
+                            }
+
+                            if (isUploadingImage) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.5f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
+                                }
+                            }
+                        }
+
+                        // Burbuja de la cámara
+                        if (!isUploadingImage) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = (-2).dp, y = (-2).dp)
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue)
+                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Cambiar foto",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(viewModel.userName, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
                     Text(viewModel.userEmail, color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -287,6 +345,30 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) 
                         Text(Locale.getDefault().displayLanguage.replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // BOTÓN CERRAR SESIÓN SEGURO
+            OutlinedButton(
+                onClick = {
+                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                    val intent = context.packageManager.getLaunchIntentForPackage("com.developers.panapp")
+                    if (intent != null) {
+                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
+                    } else {
+                        Toast.makeText(context, "App principal no encontrada", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Cerrar Sesión", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
             }
         }
     }

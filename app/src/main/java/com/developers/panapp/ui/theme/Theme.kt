@@ -36,7 +36,6 @@ private val LightColorScheme = lightColorScheme(
     onBackground = PanAppTextPrimary,
     onSurface = PanAppTextPrimary,
     outline = PanAppBorder,
-    surfaceVariant = PanAppSurface,
     onSurfaceVariant = PanAppTextSecondary
 )
 

@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ClientAppNavigation(appViewModel: AppViewModel) {
     val navController = rememberNavController()
-    val bottomNavRoutes = remember { listOf("home", "orders") }
+    val bottomNavRoutes = remember { listOf("home", "orders", "search") }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -147,6 +147,12 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                         onNavigateToOrders = { navController.navigate("orders") },
                         onNavigateToSettings = { navController.navigate("settings") },
                         onNavigateToProfile = { navController.navigate("profile") }
+                    )
+                }
+                composable("search") {
+                    SearchScreen(
+                        appViewModel = appViewModel,
+                        onNavigateToCart = { navController.navigate("cart") }
                     )
                 }
                 composable("cart") {
@@ -308,7 +314,7 @@ fun GooglePhotosFloatingBottomBar(
 
             // 2. Botón Circular Independiente de Búsqueda
             Surface(
-                onClick = { /* TODO: Búsqueda */ },
+                onClick = { onNavigate("search") },
                 shape = CircleShape,
                 color = containerBackgroundColor,
                 shadowElevation = 8.dp,
@@ -318,7 +324,7 @@ fun GooglePhotosFloatingBottomBar(
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Buscar",
-                        tint = searchIconColor,
+                        tint = if (currentRoute == "search") PanAppPrimary else searchIconColor,
                         modifier = Modifier.size(22.dp)
                     )
                 }

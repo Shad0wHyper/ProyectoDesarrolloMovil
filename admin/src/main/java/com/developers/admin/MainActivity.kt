@@ -68,6 +68,12 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        
+        // ✨ Extraemos la sesión que nos envía el módulo 'app'
+        val userIdFromIntent = intent.getStringExtra("USER_ID") ?: "INVITADO"
+        val userEmailFromIntent = intent.getStringExtra("USER_EMAIL") ?: ""
+        AdminSession.initialize(userIdFromIntent, userEmailFromIntent)
+
         setContent {
             val navController = rememberNavController()
             PanAppAdminTheme {

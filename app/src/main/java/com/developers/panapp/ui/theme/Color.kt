@@ -18,8 +18,7 @@ val PanAppTextSecondary = Color(0xFF757575)
 val PanAppAccent = Color(0xFF5E5CE6)
 val PanAppLink = Color(0xFF5E5CE6)
 val PanAppBorder = Color(0xFFE0E0E0)
-val PanAppSurface = Color(0xFFF3F3FF)
-val PanAppPeach = Color(0xFFFFB38E)
+val PanAppPeach = Color(0xFFE8E8FF) // Un tono azul/morado muy claro acorde a PanAppPrimary
 
 // PanApp Dark Theme Colors
 val PanAppPrimaryDark = Color(0xFF8B84FF)
@@ -28,3 +27,4 @@ val PanAppTextPrimaryDark = Color(0xFFF5F5F5)
 val PanAppTextSecondaryDark = Color(0xFFB0B0B0)
 val PanAppSurfaceDark = Color(0xFF1E1E2E)
 val PanAppBorderDark = Color(0xFF333333)
+val PanAppIconBackgroundDark = Color(0xFFFFFFFF) // Fondo blanco puro en modo oscuro para que contraste el logo negro
