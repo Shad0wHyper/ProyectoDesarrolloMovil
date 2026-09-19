@@ -46,7 +46,8 @@ fun ProfileScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToPayments: () -> Unit,
-    onNavigateToAddresses: () -> Unit
+    onNavigateToAddresses: () -> Unit,
+    onLogoutClick: () -> Unit = {}
 ) {
     var name by remember { mutableStateOf(appViewModel.userName) }
     var phone by remember { mutableStateOf(appViewModel.userPhone) }
@@ -237,8 +238,8 @@ fun ProfileScreen(
             OutlinedTextField(
                 value = address,
                 onValueChange = { address = it },
-                label = { Text("Dirección de Envío") },
-                placeholder = { Text("Calle, Número, Colonia...") },
+                label = { Text(appViewModel.getString("delivery_address")) },
+                placeholder = { Text(appViewModel.getString("address_placeholder")) },
                 leadingIcon = { Icon(Icons.Default.Home, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -251,7 +252,7 @@ fun ProfileScreen(
             // ✨ NUEVO: Gestión de Direcciones Guardadas
             if (appViewModel.userAddressesList.isNotEmpty()) {
                 Text(
-                    "Mis Direcciones Guardadas",
+                    appViewModel.getString("saved_addresses"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
@@ -291,7 +292,7 @@ fun ProfileScreen(
                 Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    "Gestionar Direcciones",
+                    appViewModel.getString("manage_addresses"),
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = if (isDarkMode) Color.White else Color.Black
                 )
@@ -310,7 +311,7 @@ fun ProfileScreen(
                 Icon(Icons.Default.Payment, contentDescription = null, tint = PanAppPrimary)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    "Métodos de Pago",
+                    appViewModel.getString("payment_methods"),
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = if (isDarkMode) Color.White else Color.Black
                 )
@@ -321,10 +322,11 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             // BOTÓN GUARDAR CAMBIOS
+            val msgPleaseFill = appViewModel.getString("please_fill_address")
             Button(
                 onClick = {
                     if (name.trim().isEmpty() || address.trim().isEmpty()) {
-                        Toast.makeText(context, "Por favor llena tu nombre y dirección", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, msgPleaseFill, Toast.LENGTH_SHORT).show()
                     } else {
                         isSaving = true
                         appViewModel.updateProfileData(name, phone, address) {
@@ -351,9 +353,9 @@ fun ProfileScreen(
             // BOTÓN CERRAR SESIÓN SEGURO
             OutlinedButton(
                 onClick = {
-                    appViewModel.cerrarSesion {
+                    appViewModel.limpiarDatosDeSesion {
                         Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
-                        onNavigateBack()
+                        onLogoutClick()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),

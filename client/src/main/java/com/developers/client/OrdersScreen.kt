@@ -116,6 +116,7 @@ fun OrdersScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Status: ${appViewModel.getString(statusKey)}", fontWeight = FontWeight.Bold, color = PanAppPrimary)
+                                /* ✨ Temporalmente oculto hasta la Fase de Pagos
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = if (selectedOrder?.pagado == true) "● PAGADO" else "● PAGO PENDIENTE",
@@ -123,6 +124,7 @@ fun OrdersScreen(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp
                                 )
+                                */
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -206,6 +208,7 @@ fun OrderItemCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    /* ✨ Temporalmente oculto hasta la Fase de Pagos
                     // ✨ Badge de Pago
                     Surface(
                         color = if (order.pagado) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
@@ -220,6 +223,7 @@ fun OrderItemCard(
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
+                    */
 
                     // Badge de Estado de Envío
                     Surface(

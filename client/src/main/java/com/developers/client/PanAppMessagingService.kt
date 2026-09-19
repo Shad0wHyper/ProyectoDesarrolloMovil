@@ -62,7 +62,7 @@ class PanAppMessagingService : FirebaseMessagingService() {
         notificationManager.createNotificationChannel(channel)
 
         // Intent para abrir la MainActivity al presionar la notificación
-        val intent = Intent(this, MainActivity::class.java).apply {
+        val intent = Intent(this, Class.forName("com.developers.panapp.MainActivity")).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
 

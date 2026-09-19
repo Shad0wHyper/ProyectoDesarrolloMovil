@@ -185,7 +185,7 @@ fun CartScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    "Dirección de Entrega",
+                    appViewModel.getString("delivery_address"),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (isDarkMode) Color.White else Color.Black
@@ -236,6 +236,7 @@ fun CartScreen(
                 OutlinedTextField(
                     value = editableAddress,
                     onValueChange = { editableAddress = it },
+                    label = { Text(appViewModel.getString("add_address_or_select")) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Ej. Calle Principal #123, Colonia Centro") },
                     leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary) },
@@ -300,8 +301,8 @@ fun CartScreen(
     if (showAddressErrorDialog) {
         AlertDialog(
             onDismissRequest = { showAddressErrorDialog = false },
-            title = { Text("Falta Dirección de Envío", fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black) },
-            text = { Text("Se necesita registrar una dirección de entrega para realizar una compra.", color = if (isDarkMode) Color.LightGray else Color.DarkGray) },
+            title = { Text(appViewModel.getString("missing_address_title"), fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black) },
+            text = { Text(appViewModel.getString("missing_address_desc"), color = if (isDarkMode) Color.LightGray else Color.DarkGray) },
             confirmButton = { Button(onClick = { showAddressErrorDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)) { Text("Entendido", color = Color.White) } },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
         )

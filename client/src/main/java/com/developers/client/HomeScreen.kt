@@ -47,7 +47,8 @@ fun HomeScreen(
     onNavigateToCart: () -> Unit,
     onNavigateToOrders: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onLogoutClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var selectedProduct by remember { mutableStateOf<Product?>(null) } // ✨ ESTADO PARA EL BOTTOM SHEET DE DETALLE DE PRODUCTO
@@ -81,14 +82,19 @@ fun HomeScreen(
         appViewModel.userName.split(" ").firstOrNull() ?: "Cliente"
     }
 
+    val catBreads = appViewModel.getString("cat_breads")
+    val catCoffee = appViewModel.getString("cat_coffee")
+    val catOthers = appViewModel.getString("cat_others")
+    val catAll = appViewModel.getString("cat_all")
+
     // ✨ MEMORIZAR TRADUCCIONES DE CATEGORÍAS
-    val categoryItems = remember(appViewModel.currentLanguage) {
+    val categoryItems = remember(catBreads, catCoffee, catOthers, catAll) {
         categories.mapIndexed { index, catKey ->
             val translatedName = when (catKey) {
-                "PANES" -> appViewModel.getString("cat_breads")
-                "CAFÉ" -> appViewModel.getString("cat_coffee")
-                "OTROS" -> appViewModel.getString("cat_others")
-                else -> appViewModel.getString("cat_all")
+                "PANES" -> catBreads
+                "CAFÉ" -> catCoffee
+                "OTROS" -> catOthers
+                else -> catAll
             }
             val icon = when (catKey) {
                 "PANES" -> Icons.Default.BakeryDining
@@ -195,7 +201,7 @@ fun HomeScreen(
                                 text = { Text(appViewModel.getString("logout"), color = Color.Red) },
                                 onClick = {
                                     showMenu = false
-                                    appViewModel.cerrarSesion()
+                                    appViewModel.limpiarDatosDeSesion { onLogoutClick() }
                                 },
                                 leadingIcon = { Icon(Icons.Outlined.Logout, contentDescription = null, tint = Color.Red) }
                             )
@@ -260,13 +266,11 @@ fun HomeScreen(
                     }
                 }
 
-                val currentCategoryDisplayName = remember(currentCat, appViewModel.currentLanguage) {
-                    when (currentCat) {
-                        "PANES" -> appViewModel.getString("cat_breads")
-                        "CAFÉ" -> appViewModel.getString("cat_coffee")
-                        "OTROS" -> appViewModel.getString("cat_others")
-                        else -> appViewModel.getString("cat_all")
-                    }
+                val currentCategoryDisplayName = when (currentCat) {
+                    "PANES" -> catBreads
+                    "CAFÉ" -> catCoffee
+                    "OTROS" -> catOthers
+                    else -> catAll
                 }
 
                 Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
