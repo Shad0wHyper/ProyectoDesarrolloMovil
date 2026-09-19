@@ -44,6 +44,10 @@ class EmployeeViewModel : ViewModel() {
     // ✨ LISTA EN VIVO DE PEDIDOS
     var pedidosActivos by mutableStateOf<List<PedidoFirebase>>(emptyList())
 
+    // ✨ VARIABLES PARA REGISTRAR LOS LISTENERS Y PODER DESTRUIRLOS (STATE LEAK PREVENTION)
+    private var asistenciaListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var pedidosListener: com.google.firebase.firestore.ListenerRegistration? = null
+
     fun setSessionUser(uid: String, email: String) {
         if (uid != "INVITADO" && uid.isNotEmpty()) {
             currentUserId = uid; userEmail = email
@@ -54,7 +58,10 @@ class EmployeeViewModel : ViewModel() {
                     userImageUrl = doc.getString("imageUrl") ?: "" // ✨ CARGAMOS LA FOTO DE FIREBASE
                     fetchLogs()
                 }
-            db.collection("configuracion").document("asistencia")
+
+            // Destruir listener anterior si existía
+            asistenciaListener?.remove()
+            asistenciaListener = db.collection("configuracion").document("asistencia")
                 .addSnapshotListener { snapshot, _ ->
                     if (snapshot != null && snapshot.exists()) {
                         claveEntrada = snapshot.getString("qrEntrada") ?: ""
@@ -70,8 +77,12 @@ class EmployeeViewModel : ViewModel() {
 
     private fun fetchPedidosReales() {
         val db = FirebaseFirestore.getInstance()
+        
+        // Destruir listener anterior si existía
+        pedidosListener?.remove()
+        
         // 'collectionGroup' busca en todas las subcolecciones que se llamen "pedidos"
-        db.collectionGroup("pedidos")
+        pedidosListener = db.collectionGroup("pedidos")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) return@addSnapshotListener
                 if (snapshot != null) {
@@ -101,6 +112,33 @@ class EmployeeViewModel : ViewModel() {
                     pedidosActivos = lista
                 }
             }
+    }
+
+    /**
+     * Limpieza segura de sesión para prevenir fugas de estado y memoria
+     */
+    fun limpiarDatosDeSesion(onComplete: () -> Unit = {}) {
+        // 1. Destruir Listeners (Prevenir que lleguen notificaciones o actualizaciones fantasma)
+        asistenciaListener?.remove()
+        asistenciaListener = null
+        pedidosListener?.remove()
+        pedidosListener = null
+
+        // 2. Ejecutar callback para navegar al Login primero (evita parpadeos en UI)
+        onComplete()
+
+        // 3. Limpiar variables en RAM
+        currentUserId = "INVITADO"
+        userEmail = ""
+        userName = "Cargando..."
+        userImageUrl = ""
+        logs = emptyList()
+        claveEntrada = ""
+        claveSalida = ""
+        pedidosActivos = emptyList()
+        
+        // 4. Desconectar de Firebase Auth
+        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
     }
 
     // ✨ ACTUALIZADOR DE ESTADOS EN FIREBASE MINIMALISTA

@@ -79,28 +79,10 @@ fun PanAppEmployeeTheme(
 
 enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, ALMACEN, PERFIL, LAUNCHING_WS, HISTORIAL }
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
-        )
-        super.onCreate(savedInstanceState)
-        val userIdFromIntent = intent.getStringExtra("USER_ID") ?: "INVITADO"
-        val userEmailFromIntent = intent.getStringExtra("USER_EMAIL") ?: "Sin correo"
-
-        setContent {
-            val viewModel: EmployeeViewModel = viewModel()
-            LaunchedEffect(Unit) { viewModel.setSessionUser(userIdFromIntent, userEmailFromIntent) }
-            PanAppEmployeeTheme {
-                MainAppNavigation(viewModel)
-            }
-        }
-    }
-}
+// class MainActivity removed.
 
 @Composable
-fun MainAppNavigation(viewModel: EmployeeViewModel) {
+fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) {
     val isDarkTheme = isSystemInDarkTheme()
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -126,7 +108,7 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
                 AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
                 AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel)
-                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it })
+                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it }, onLogoutClick = onLogoutClick)
                 AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
                 AppScreen.LAUNCHING_WS -> {
                     val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }

@@ -98,6 +98,8 @@ fun LoginScreen(
 
                                                 if (targetPackage == "com.developers.client") {
                                                     onLoginSuccess()
+                                                } else if (targetPackage == "com.developers.employee") {
+                                                    onEmployeeLoginSuccess()
                                                 } else if (targetPackage.isNotEmpty()) {
                                                     val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
                                                     if (intent != null) {
@@ -290,6 +292,8 @@ fun LoginScreen(
 
                                                 if (targetPackage == "com.developers.client") {
                                                     onLoginSuccess()
+                                                } else if (targetPackage == "com.developers.employee") {
+                                                    onEmployeeLoginSuccess()
                                                 } else if (targetPackage.isNotEmpty()) {
                                                     val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
 

@@ -28,6 +28,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.AppViewModel
 import com.developers.client.ui.ClientMainScreen
+import com.developers.employee.EmployeeViewModel
+import com.developers.employee.EmployeeMainScreen
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -91,6 +93,10 @@ fun AppNavigation() {
                                     val rol = doc.getString("rol") ?: "sin_rol"
                                     if (rol == "cliente") {
                                         navController.navigate("client_graph") {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
+                                    } else if (rol == "empleado") {
+                                        navController.navigate("employee_graph") {
                                             popUpTo("splash") { inclusive = true }
                                         }
                                     } else {

@@ -226,7 +226,7 @@ fun LaunchingWhatsappScreen(order: PedidoFirebase, onBackClick: () -> Unit) {
 // ProveedoresScreen fue movido y reemplazado por EmpleadoAlmacenScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
+fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onLogoutClick: () -> Unit = {}) {
     val context = LocalContext.current
     var isUploadingImage by remember { mutableStateOf(false) }
 
@@ -352,13 +352,8 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) 
             // BOTÓN CERRAR SESIÓN SEGURO
             OutlinedButton(
                 onClick = {
-                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                    val intent = context.packageManager.getLaunchIntentForPackage("com.developers.panapp")
-                    if (intent != null) {
-                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        context.startActivity(intent)
-                    } else {
-                        Toast.makeText(context, "App principal no encontrada", Toast.LENGTH_SHORT).show()
+                    viewModel.limpiarDatosDeSesion {
+                        onLogoutClick()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
