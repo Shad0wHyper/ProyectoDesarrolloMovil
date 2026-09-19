@@ -156,6 +156,7 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
         // BARRA FLOTANTE EN CAPA SUPERIOR
         if (showBottomBar) {
             GooglePhotosFloatingBottomBar(
+                appViewModel = appViewModel,
                 currentRoute = currentRoute,
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -177,15 +178,19 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GooglePhotosFloatingBottomBar(
+    appViewModel: AppViewModel,
     currentRoute: String,
     onNavigate: (String) -> Unit,
     isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val bottomNavItems = remember {
+    val navHome = appViewModel.getString("nav_home")
+    val navOrders = appViewModel.getString("nav_orders")
+    
+    val bottomNavItems = remember(navHome, navOrders) {
         listOf(
-            Triple("home", "Inicio", Icons.Default.Home),
-            Triple("orders", "Pedidos", Icons.Default.Receipt)
+            Triple("home", navHome, Icons.Default.Home),
+            Triple("orders", navOrders, Icons.Default.Receipt)
         )
     }
 
@@ -240,7 +245,7 @@ fun GooglePhotosFloatingBottomBar(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Buscar",
+                        contentDescription = appViewModel.getString("nav_search"),
                         tint = if (currentRoute == "search") PanAppPrimary else searchIconColor,
                         modifier = Modifier.size(22.dp)
                     )

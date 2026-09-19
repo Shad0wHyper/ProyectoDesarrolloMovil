@@ -32,8 +32,6 @@ fun SettingsScreen(
     onNavigateToNotifications: () -> Unit,
     onLogoutClick: () -> Unit = {}
 ) {
-    var showLanguageDialog by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -58,16 +56,6 @@ fun SettingsScreen(
                 .background(if (appViewModel.isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
         ) {
             item {
-                SettingsSectionTitle(appViewModel.getString("preferences"))
-                
-                SettingsClickableItem(
-                    title = appViewModel.getString("language"),
-                    subtitle = appViewModel.currentLanguage,
-                    icon = Icons.Default.Language,
-                    onClick = { showLanguageDialog = true },
-                    isDarkMode = appViewModel.isDarkMode
-                )
-
                 SettingsSectionTitle(appViewModel.getString("account"))
                 
                 SettingsClickableItem(
@@ -89,7 +77,7 @@ fun SettingsScreen(
                 val context = LocalContext.current
                 SettingsClickableItem(
                     title = appViewModel.getString("logout"),
-                    subtitle = "Cerrar sesión de forma segura",
+                    subtitle = appViewModel.getString("logout_desc"),
                     icon = Icons.AutoMirrored.Filled.Logout,
                     onClick = {
                         appViewModel.limpiarDatosDeSesion {
@@ -102,49 +90,6 @@ fun SettingsScreen(
             }
         }
     }
-
-
-    if (showLanguageDialog) {
-        AlertDialog(
-            onDismissRequest = { showLanguageDialog = false },
-            title = {
-                Text(
-                    appViewModel.getString("language"),
-                    fontWeight = FontWeight.Bold,
-                    color = if (appViewModel.isDarkMode) Color.White else Color.Black
-                )
-            },
-            text = {
-                Column {
-                    listOf("Español", "English", "Português", "Italiano", "Français").forEach { language ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = appViewModel.currentLanguage == language,
-                                onClick = { 
-                                    appViewModel.changeLanguage(language)
-                                    showLanguageDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(language, color = if (appViewModel.isDarkMode) Color.White else Color.Black)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showLanguageDialog = false }) {
-                    Text(appViewModel.getString("close"), color = PanAppPrimary)
-                }
-            },
-            containerColor = if (appViewModel.isDarkMode) Color(0xFF1E1E1E) else Color.White
-        )
-    }
-
 }
 
 @Composable

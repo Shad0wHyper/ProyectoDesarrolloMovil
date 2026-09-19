@@ -105,12 +105,12 @@ fun SearchScreen(
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(focusRequester),
-                        placeholder = { Text("¿Qué se te antoja hoy?") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                        placeholder = { Text(appViewModel.getString("what_fancy")) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = appViewModel.getString("nav_search")) },
                         trailingIcon = {
                             if (query.isNotEmpty()) {
                                 IconButton(onClick = { query = "" }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Borrar")
+                                    Icon(Icons.Default.Close, contentDescription = appViewModel.getString("clear"))
                                 }
                             }
                         },
@@ -137,7 +137,7 @@ fun SearchScreen(
                         ) {
                             Icon(
                                 Icons.Default.ShoppingCart,
-                                contentDescription = "Carrito",
+                                contentDescription = appViewModel.getString("cart"),
                                 modifier = Modifier.padding(12.dp),
                                 tint = if (isDarkMode) Color.White else Color.Black
                             )
@@ -193,7 +193,7 @@ fun SearchScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "Busca tus panes, postres\no bebidas favoritas",
+                        appViewModel.getString("search_hint_empty"),
                         textAlign = TextAlign.Center,
                         color = if (isDarkMode) Color.Gray else Color.DarkGray,
                         style = MaterialTheme.typography.titleMedium
@@ -212,13 +212,13 @@ fun SearchScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "No encontramos '$query'",
+                        "${appViewModel.getString("search_not_found")} '$query'",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = if (isDarkMode) Color.White else Color.Black
                     )
                     Text(
-                        "Intenta con otra palabra clave.",
+                        appViewModel.getString("search_try_again"),
                         color = Color.Gray
                     )
                 }

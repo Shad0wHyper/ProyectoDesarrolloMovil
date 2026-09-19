@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Módulo Client: Textos en Español de México -->
+    <string name="client_hello">¡Hola</string>
+    <string name="client_what_fancy">¿Qué te apetece hoy?</string>
+    <string name="client_search_placeholder">Busca tu pan favorito&#8230;</string>
+    <string name="client_categories_label">CATEGORÍAS</string>
+    <string name="client_cat_all">TODO</string>
+    <string name="client_cat_breads">PANES</string>
+    <string name="client_cat_coffee">CAFÉ</string>
+    <string name="client_cat_others">OTROS</string>
+    <string name="client_products">Nuestros Productos</string>
+    <string name="client_settings">Ajustes</string>
+    <string name="client_my_orders">Mis Pedidos</string>
+    <string name="client_profile">Mi Perfil</string>
+    <string name="client_logout">Cerrar Sesión</string>
+    <string name="client_dark_mode">Modo Nocturno</string>
+    <string name="client_language">Idioma</string>
+    <string name="client_notifications">Notificaciones</string>
+    <string name="client_save_changes">Guardar Cambios</string>
+    <string name="client_cart">Mi Carrito</string>
+    <string name="client_total">Total a pagar</string>
+    <string name="client_confirm_order">Confirmar Pedido</string>
+    <string name="client_history">Historial</string>
+    <string name="client_your_order">Tu Pedido</string>
+    <string name="client_items">artículos</string>
+    <string name="client_view_details">Ver detalles</string>
+    <string name="client_buy_again">Comprar de Nuevo</string>
+    <string name="client_order_details">Detalles del Pedido</string>
+    <string name="client_date">Fecha</string>
+    <string name="client_close">Cerrar</string>
+    <string name="client_payment_method">Método de Pago</string>
+    <string name="client_pay_now">Pagar Ahora</string>
+    <string name="client_card">Tarjeta</string>
+    <string name="client_transfer">Transferencia</string>
+    <string name="client_cash">Efectivo</string>
+    <string name="client_local_pay">Pago Local</string>
+    <string name="client_preferences">Preferencias</string>
+    <string name="client_account">Cuenta</string>
+    <string name="client_dark_mode_desc">Ahorra batería y descansa la vista</string>
+    <string name="client_profile_desc">Edita tu información personal</string>
+    <string name="client_notif_desc">Gestiona tus alertas</string>
+    <string name="client_full_name">Nombre Completo</string>
+    <string name="client_email_label">Correo Electrónico</string>
+    <string name="client_phone_label">Teléfono</string>
+    <string name="client_pendiente">Pendiente</string>
+    <string name="client_en_camino">En Camino</string>
+    <string name="client_entregado">Entregado</string>
+    <string name="client_payment_form">Formulario de pago para</string>
+    <string name="client_empty_cart">Tu carrito está vacío</string>
+    <string name="client_subtotal">Subtotal</string>
+    <string name="client_delivery">Envío</string>
+    <string name="client_taxes">Impuestos</string>
+
+    <!-- New Strings added for thoroughness -->
+    <string name="client_delivery_address">Dirección de Entrega</string>
+    <string name="client_add_address_or_select">Añadir o seleccionar dirección</string>
+    <string name="client_shipping_addresses">Direcciones de Envío</string>
+    <string name="client_manage_addresses">Gestionar direcciones</string>
+    <string name="client_payment_methods">Métodos de Pago</string>
+    <string name="client_add_card">Añadir tarjeta</string>
+    <string name="client_nav_home">Inicio</string>
+    <string name="client_nav_orders">Pedidos</string>
+    <string name="client_nav_search">Buscar</string>
+    <string name="client_logout_desc">Cerrar sesión de forma segura</string>
+    <string name="client_search_hint_empty">Busca tus panes, postres\no bebidas favoritas</string>
+    <string name="client_search_not_found">No encontramos</string>
+    <string name="client_search_try_again">Intenta con otra palabra clave.</string>
+    <string name="client_clear">Borrar</string>
+    <string name="client_missing_address_title">Falta Dirección de Envío</string>
+    <string name="client_missing_address_desc">Se necesita registrar una dirección de entrega para realizar una compra.</string>
+    <string name="client_please_fill_address">Por favor llena tu nombre y dirección</string>
+    <string name="client_main_address">Dirección principal</string>
+    <string name="client_new_address">Nueva Dirección</string>
+    <string name="client_saved_addresses">Mis Direcciones Guardadas</string>
+    <string name="client_address_placeholder">Calle, Número, Colonia&#8230;</string>
+</resources>
