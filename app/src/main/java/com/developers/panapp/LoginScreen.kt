@@ -49,7 +49,8 @@ import com.google.android.gms.common.api.ApiException
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToTerms: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit
+    onNavigateToForgotPassword: () -> Unit,
+    onLoginSuccess: () -> Unit = {}
 ) {
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -95,19 +96,21 @@ fun LoginScreen(
                                             else -> ""
                                         }
 
-                                        if (targetPackage.isNotEmpty()) {
-                                            val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
-                                            if (intent != null) {
-                                                intent.putExtra("USER_ID", auth.currentUser?.uid)
-                                                intent.putExtra("USER_EMAIL", auth.currentUser?.email)
-                                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                                context.startActivity(intent)
-                                            } else {
-                                                Toast.makeText(context, "La app de $rol no está instalada en este dispositivo", Toast.LENGTH_LONG).show()
-                                            }
-                                        } else {
-                                            Toast.makeText(context, "Rol no reconocido", Toast.LENGTH_SHORT).show()
-                                        }
+                                                if (targetPackage == "com.developers.client") {
+                                                    onLoginSuccess()
+                                                } else if (targetPackage.isNotEmpty()) {
+                                                    val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
+                                                    if (intent != null) {
+                                                        intent.putExtra("USER_ID", auth.currentUser?.uid)
+                                                        intent.putExtra("USER_EMAIL", auth.currentUser?.email)
+                                                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                        context.startActivity(intent)
+                                                    } else {
+                                                        Toast.makeText(context, "La app de $rol no está instalada en este dispositivo", Toast.LENGTH_LONG).show()
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, "Rol no reconocido", Toast.LENGTH_SHORT).show()
+                                                }
                                     } else {
                                         // Si no existe el usuario en firestore, podemos crearlo o dar error
                                         // Aquí asumo que no tiene rol, o puedes guardarlo como cliente por defecto.
@@ -285,7 +288,9 @@ fun LoginScreen(
                                                     else -> ""
                                                 }
 
-                                                if (targetPackage.isNotEmpty()) {
+                                                if (targetPackage == "com.developers.client") {
+                                                    onLoginSuccess()
+                                                } else if (targetPackage.isNotEmpty()) {
                                                     val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
 
                                                     if (intent != null) {

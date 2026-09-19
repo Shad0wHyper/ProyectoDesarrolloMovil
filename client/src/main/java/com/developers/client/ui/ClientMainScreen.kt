@@ -1,20 +1,9 @@
-package com.developers.client
+package com.developers.client.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -27,93 +16,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.developers.client.ui.theme.PanAppClientTheme
+import com.developers.client.*
 import com.developers.client.ui.theme.PanAppPrimary
-import com.stripe.android.PaymentConfiguration
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            )
-        )
-        super.onCreate(savedInstanceState)
-
-        // ✨ 1. ATRAPAMOS LOS DATOS SECRETOS DEL INTENT
-        val userIdFromIntent = intent.getStringExtra("USER_ID") ?: "INVITADO"
-        val userEmailFromIntent = intent.getStringExtra("USER_EMAIL") ?: "Sin correo"
-
-        PaymentConfiguration.init(
-            applicationContext,
-            PaymentConfig.PUBLISHABLE_KEY
-        )
-
-        setContent {
-            val appViewModel: AppViewModel = viewModel()
-            val context = LocalContext.current
-            val systemDarkTheme = isSystemInDarkTheme()
-
-            // ✨ Modo oscuro 100% automático derivado del tema del sistema Android
-            LaunchedEffect(systemDarkTheme) {
-                appViewModel.isDarkMode = systemDarkTheme
-            }
-
-            // Launcher para solicitar el permiso de notificaciones en Android 13+ (API 33+)
-            val notificationPermissionLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission()
-            ) { isGranted ->
-                if (isGranted) {
-                    appViewModel.registrarTokenFCM()
-                }
-            }
-
-            // ✨ 2. FORZAMOS A LA APP A RECONOCER AL USUARIO Y SOLICITAR PERMISOS DE NOTIFICACIÓN
-            LaunchedEffect(Unit) {
-                appViewModel.setSessionUser(userIdFromIntent, userEmailFromIntent)
-
-                // Verificación y solicitud del permiso POST_NOTIFICATIONS en Android 13+
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) != PackageManager.PERMISSION_GRANTED
-                    ) {
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        appViewModel.registrarTokenFCM()
-                    }
-                } else {
-                    appViewModel.registrarTokenFCM()
-                }
-            }
-
-            PanAppClientTheme(darkTheme = appViewModel.isDarkMode) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    ClientAppNavigation(appViewModel)
-                }
-            }
-        }
-    }
-}
 
 @Composable
-fun ClientAppNavigation(appViewModel: AppViewModel) {
+fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
     val navController = rememberNavController()
     val bottomNavRoutes = remember { listOf("home", "orders", "search") }
 
@@ -146,7 +60,8 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                         onNavigateToCart = { navController.navigate("cart") },
                         onNavigateToOrders = { navController.navigate("orders") },
                         onNavigateToSettings = { navController.navigate("settings") },
-                        onNavigateToProfile = { navController.navigate("profile") }
+                        onNavigateToProfile = { navController.navigate("profile") },
+                        onLogoutClick = onLogoutClick
                     )
                 }
                 composable("search") {
@@ -197,7 +112,8 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                         appViewModel = appViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToProfile = { navController.navigate("profile") },
-                        onNavigateToNotifications = { navController.navigate("notifications") }
+                        onNavigateToNotifications = { navController.navigate("notifications") },
+                        onLogoutClick = onLogoutClick
                     )
                 }
                 composable("profile") {
@@ -205,7 +121,8 @@ fun ClientAppNavigation(appViewModel: AppViewModel) {
                         appViewModel = appViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToPayments = { navController.navigate("payment_methods") },
-                        onNavigateToAddresses = { navController.navigate("manage_addresses") }
+                        onNavigateToAddresses = { navController.navigate("manage_addresses") },
+                        onLogoutClick = onLogoutClick
                     )
                 }
                 composable("payment_methods") {

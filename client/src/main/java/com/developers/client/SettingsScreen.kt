@@ -29,7 +29,8 @@ fun SettingsScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onNavigateToNotifications: () -> Unit
+    onNavigateToNotifications: () -> Unit,
+    onLogoutClick: () -> Unit = {}
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -91,9 +92,9 @@ fun SettingsScreen(
                     subtitle = "Cerrar sesión de forma segura",
                     icon = Icons.AutoMirrored.Filled.Logout,
                     onClick = {
-                        appViewModel.cerrarSesion {
+                        appViewModel.limpiarDatosDeSesion {
                             Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
-                            onNavigateBack()
+                            onLogoutClick()
                         }
                     },
                     isDarkMode = appViewModel.isDarkMode

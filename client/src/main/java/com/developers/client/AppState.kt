@@ -73,7 +73,10 @@ class AppViewModel : ViewModel() {
     var userCardExp by mutableStateOf("")
     var hasSavedCard by mutableStateOf(false)
 
-    // ✨ NUEVO: Estado Temporal del Formulario de Pago (Controlador para persistencia)
+    // Variable para almacenar el Listener de Firestore y destruirlo al salir
+    private var ordersListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+
+    // Resto del código...
     var tempCardNumber by mutableStateOf("")
     var tempExpiryDate by mutableStateOf("")
     var tempCVC by mutableStateOf("")
@@ -139,7 +142,10 @@ class AppViewModel : ViewModel() {
             }
 
         // ESCUCHA EN VIVO DE PEDIDOS
-        db.collection("usuarios").document(uid).collection("pedidos")
+        // Desconectamos cualquier listener anterior antes de crear uno nuevo
+        ordersListenerRegistration?.remove()
+        
+        ordersListenerRegistration = db.collection("usuarios").document(uid).collection("pedidos")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
                     val list = snapshot.documents.map { d ->
@@ -395,25 +401,32 @@ class AppViewModel : ViewModel() {
 
     /**
      * Cierre de sesión seguro:
-     * 1. Elimina el fcmToken de Firestore en usuarios/{currentUserId} para evitar notificaciones fantasma
-     * 2. Limpia los datos locales del ViewModel
-     * 3. Cierra la sesión en FirebaseAuth
-     * 4. Llama al callback onComplete
+     * 1. Elimina el fcmToken de Firebase
+     * 2. Destruye Listeners (Fuga de estado)
+     * 3. Limpia RAM (Variables de sesión)
      */
-    fun cerrarSesion(onComplete: () -> Unit = {}) {
+    fun limpiarDatosDeSesion(onComplete: () -> Unit = {}) {
         val uid = currentUserId
+        
+        val performCleanupAndNavigate = {
+            // 1. Destrucción de Listeners
+            ordersListenerRegistration?.remove()
+            ordersListenerRegistration = null
 
-        val resetLocalState = {
+            // 2. Limpieza de Variables en Memoria
             currentUserId = "INVITADO"
-            userName = "Invitado"
-            userEmail = "Inicia sesión para ordenar"
-            userPhone = "..."
+            userName = ""
+            userEmail = ""
+            userPhone = ""
             userImageUrl = ""
             userAddress = ""
+            userAddressesList = emptyList()
             cartItems = emptyList()
             ordersList = emptyList()
+            resetTempPaymentData()
+            userBalance = 0.0
 
-            FirebaseAuth.getInstance().signOut()
+            // 3. Ejecutar navegación al Login
             onComplete()
         }
 
@@ -422,15 +435,19 @@ class AppViewModel : ViewModel() {
             db.collection("usuarios").document(uid)
                 .update("fcmToken", FieldValue.delete())
                 .addOnSuccessListener {
-                    Log.d("AppViewModel", "fcmToken eliminado de Firestore exitosamente al cerrar sesión")
-                    resetLocalState()
+                    Log.d("AppViewModel", "fcmToken eliminado de Firestore")
+                    
+                    // 3. Revocación de Token FCM de la instancia local
+                    FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener {
+                        performCleanupAndNavigate()
+                    }
                 }
                 .addOnFailureListener { e ->
-                    Log.e("AppViewModel", "Error al eliminar fcmToken de Firestore", e)
-                    resetLocalState()
+                    Log.e("AppViewModel", "Error al eliminar fcmToken", e)
+                    performCleanupAndNavigate()
                 }
         } else {
-            resetLocalState()
+            performCleanupAndNavigate()
         }
     }
 

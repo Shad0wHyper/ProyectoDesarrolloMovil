@@ -13,7 +13,7 @@ android {
         minSdk = 30
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.8.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -62,4 +62,6 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(project(":client"))
+    implementation("com.stripe:stripe-android:20.35.0")
 }

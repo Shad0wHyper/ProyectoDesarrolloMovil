@@ -46,7 +46,8 @@ fun ProfileScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToPayments: () -> Unit,
-    onNavigateToAddresses: () -> Unit
+    onNavigateToAddresses: () -> Unit,
+    onLogoutClick: () -> Unit = {}
 ) {
     var name by remember { mutableStateOf(appViewModel.userName) }
     var phone by remember { mutableStateOf(appViewModel.userPhone) }
@@ -351,9 +352,9 @@ fun ProfileScreen(
             // BOTÓN CERRAR SESIÓN SEGURO
             OutlinedButton(
                 onClick = {
-                    appViewModel.cerrarSesion {
+                    appViewModel.limpiarDatosDeSesion {
                         Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
-                        onNavigateBack()
+                        onLogoutClick()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),

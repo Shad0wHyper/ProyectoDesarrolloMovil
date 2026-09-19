@@ -47,7 +47,8 @@ fun HomeScreen(
     onNavigateToCart: () -> Unit,
     onNavigateToOrders: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onLogoutClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var selectedProduct by remember { mutableStateOf<Product?>(null) } // ✨ ESTADO PARA EL BOTTOM SHEET DE DETALLE DE PRODUCTO
@@ -195,7 +196,7 @@ fun HomeScreen(
                                 text = { Text(appViewModel.getString("logout"), color = Color.Red) },
                                 onClick = {
                                     showMenu = false
-                                    appViewModel.cerrarSesion()
+                                    appViewModel.limpiarDatosDeSesion { onLogoutClick() }
                                 },
                                 leadingIcon = { Icon(Icons.Outlined.Logout, contentDescription = null, tint = Color.Red) }
                             )
