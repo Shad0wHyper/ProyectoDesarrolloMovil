@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -106,7 +107,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                             }
                         }
                         .addOnFailureListener {
-                            Toast.makeText(context, "Error al abrir escáner. Verifique que tenga servicios de Google Play.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.emp_scanner_error), Toast.LENGTH_SHORT).show()
                         }
                 },
                 containerColor = PrimaryBlue,
@@ -126,12 +127,12 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "Almacén",
+                text = stringResource(R.string.emp_warehouse),
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = if (isDarkMode) Color.White else Color.Black
             )
             Text(
-                text = "Consulta e inventario general",
+                text = stringResource(R.string.emp_warehouse_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
@@ -145,13 +146,13 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
             ) {
                 EmpleadoStockStatCard(
                     modifier = Modifier.weight(1f),
-                    label = "Insumos Críticos",
+                    label = stringResource(R.string.emp_critical_supplies),
                     value = insumosCriticosCount.toString(),
                     color = Color(0xFFF44336)
                 )
                 EmpleadoStockStatCard(
                     modifier = Modifier.weight(1f),
-                    label = "Total Insumos",
+                    label = stringResource(R.string.emp_total_supplies),
                     value = insumosList.size.toString(),
                     color = Color(0xFF2196F3)
                 )
@@ -171,7 +172,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No hay materias primas registradas.", color = Color.Gray)
+                    Text(stringResource(R.string.emp_no_supplies), color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -192,14 +193,14 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
         AlertDialog(
             onDismissRequest = { scannedCodeError = null },
             icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red, modifier = Modifier.size(40.dp)) },
-            title = { Text("Código no encontrado", fontWeight = FontWeight.Bold) },
-            text = { Text("Este producto no está registrado en el sistema. Contacte al Administrador.") },
+            title = { Text(stringResource(R.string.emp_code_not_found), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.emp_code_not_found_desc)) },
             confirmButton = {
                 Button(
                     onClick = { scannedCodeError = null },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) {
-                    Text("Entendido")
+                    Text(stringResource(R.string.emp_understood))
                 }
             },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
@@ -215,16 +216,16 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
 
         AlertDialog(
             onDismissRequest = { if (!isSaving) showModifyDialog = false },
-            title = { Text("Ajustar Inventario", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.emp_adjust_inventory), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
-                        text = "Producto: ${insumoToModify!!.nombre}",
+                        text = stringResource(R.string.emp_product, insumoToModify!!.nombre),
                         fontWeight = FontWeight.SemiBold,
                         color = PrimaryBlue
                     )
                     Text(
-                        text = "Stock Actual: ${insumoToModify!!.cantidadActual} ${insumoToModify!!.unidadMedida}",
+                        text = stringResource(R.string.emp_current_stock, insumoToModify!!.cantidadActual.toString(), insumoToModify!!.unidadMedida),
                         color = Color.Gray,
                         fontSize = 12.sp
                     )
@@ -232,14 +233,14 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                     OutlinedTextField(
                         value = modifyAmount,
                         onValueChange = { modifyAmount = it },
-                        label = { Text("Cantidad a ajustar") },
+                        label = { Text(stringResource(R.string.emp_amount_to_adjust)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Use valores positivos para ENTRADA, o negativos (-) para SALIDA manual.",
+                        text = stringResource(R.string.emp_adjust_hint),
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
@@ -257,26 +258,26 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                                 .addOnSuccessListener {
                                     isSaving = false
                                     showModifyDialog = false
-                                    Toast.makeText(context, "Stock actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.emp_stock_updated), Toast.LENGTH_SHORT).show()
                                 }
                                 .addOnFailureListener {
                                     isSaving = false
-                                    Toast.makeText(context, "Error al actualizar", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.emp_update_error), Toast.LENGTH_SHORT).show()
                                 }
                         } else {
-                            Toast.makeText(context, "Ingrese una cantidad válida", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.emp_invalid_amount), Toast.LENGTH_SHORT).show()
                         }
                     },
                     enabled = !isSaving,
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) {
                     if (isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                    else Text("Aplicar Ajuste")
+                    else Text(stringResource(R.string.emp_apply_adjustment))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showModifyDialog = false }, enabled = !isSaving) {
-                    Text("Cancelar", color = Color.Gray)
+                    Text(stringResource(R.string.emp_cancel), color = Color.Gray)
                 }
             },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
@@ -345,15 +346,15 @@ fun EmpleadoInsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
                     color = if (isDarkMode) Color.White else Color.Black
                 )
                 Text(
-                    text = "Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", 
+                    text = stringResource(R.string.emp_stock_label, insumo.cantidadActual.toString(), insumo.unidadMedida), 
                     color = if (isCritico) Color.Red else Color.Gray, 
                     fontSize = 14.sp,
                     fontWeight = if (isCritico) FontWeight.Bold else FontWeight.Normal
                 )
                 if (insumo.codigosBarras.isNotEmpty()) {
-                    Text("Códigos: ${insumo.codigosBarras.joinToString(", ")}", color = Color.LightGray, fontSize = 11.sp, maxLines = 1)
+                    Text(stringResource(R.string.emp_codes_label, insumo.codigosBarras.joinToString(", ")), color = Color.LightGray, fontSize = 11.sp, maxLines = 1)
                 } else if (insumo.codigoBarras.isNotEmpty()) {
-                    Text("Cód: ${insumo.codigoBarras}", color = Color.LightGray, fontSize = 11.sp)
+                    Text(stringResource(R.string.emp_code_label, insumo.codigoBarras), color = Color.LightGray, fontSize = 11.sp)
                 }
             }
             CircularProgressIndicator(

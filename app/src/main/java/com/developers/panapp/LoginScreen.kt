@@ -50,7 +50,9 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToTerms: () -> Unit,
     onNavigateToForgotPassword: () -> Unit,
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    onEmployeeLoginSuccess: () -> Unit = {},
+    onAdminLoginSuccess: () -> Unit = {}
 ) {
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -98,6 +100,10 @@ fun LoginScreen(
 
                                                 if (targetPackage == "com.developers.client") {
                                                     onLoginSuccess()
+                                                } else if (targetPackage == "com.developers.employee") {
+                                                    onEmployeeLoginSuccess()
+                                                } else if (targetPackage == "com.developers.admin") {
+                                                    onAdminLoginSuccess()
                                                 } else if (targetPackage.isNotEmpty()) {
                                                     val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
                                                     if (intent != null) {
@@ -290,6 +296,10 @@ fun LoginScreen(
 
                                                 if (targetPackage == "com.developers.client") {
                                                     onLoginSuccess()
+                                                } else if (targetPackage == "com.developers.employee") {
+                                                    onEmployeeLoginSuccess()
+                                                } else if (targetPackage == "com.developers.admin") {
+                                                    onAdminLoginSuccess()
                                                 } else if (targetPackage.isNotEmpty()) {
                                                     val intent = context.packageManager.getLaunchIntentForPackage(targetPackage)
 

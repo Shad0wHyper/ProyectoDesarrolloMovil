@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Módulo Employee: Texts in English (Default) -->
+    <string name="emp_nav_home">Home</string>
+    <string name="emp_nav_attendance">Attendance</string>
+    <string name="emp_nav_orders">Orders</string>
+    <string name="emp_nav_warehouse">Warehouse</string>
+    <string name="emp_nav_profile">Profile</string>
+
+    <string name="emp_portal_title">Employee Portal</string>
+    <string name="emp_hello_user">Hello, %1$s!</string>
+    <string name="emp_active_shift">Active Shift</string>
+    <string name="emp_quick_access">Quick Access</string>
+    <string name="emp_dispatch">Dispatch</string>
+    <string name="emp_scan_instruction">Register your attendance by scanning the branch QR code.</string>
+    <string name="emp_scan_qr">SCAN QR CODE</string>
+    <string name="emp_history_today">Your History Today</string>
+    <string name="emp_no_attendance_logs">You don\'t have attendance logs yet.</string>
+    <string name="emp_register_attendance">Register Attendance</string>
+    <string name="emp_simulating_qr">Simulating branch QR code scan&#8230;</string>
+    <string name="emp_check_in_btn">Check In</string>
+    <string name="emp_check_out_btn">Check Out</string>
+    <string name="emp_check_in_success">Check-in registered</string>
+    <string name="emp_check_out_success">Check-out registered</string>
+
+    <string name="emp_dispatch_queue">Dispatch Queue</string>
+    <string name="emp_no_active_orders">No active orders.</string>
+    <string name="emp_order_id">ID: %1$s</string>
+    <string name="emp_closed_delivered">CLOSED - DELIVERED</string>
+    <string name="emp_order_details">Order Details</string>
+    <string name="emp_quantity">Quantity: %1$d</string>
+    <string name="emp_total_to_charge">Total to Charge</string>
+    <string name="emp_launching_whatsapp">Launching WhatsApp&#8230;</string>
+    <string name="emp_notify_whatsapp">Notify via WhatsApp</string>
+    <string name="emp_error_whatsapp">Error opening WhatsApp</string>
+    <string name="emp_whatsapp_opening_title">Opening WhatsApp&#8230;</string>
+    <string name="emp_whatsapp_msg_shipped">Your order is on the way to your address!</string>
+    <string name="emp_whatsapp_msg_prep">Your order is being prepared and will be out soon!</string>
+    <string name="emp_whatsapp_msg_body">Hello %1$s,\n%2$s\nTotal to pay: $%3$s\nRegards: PanApp Bakery</string>
+
+    <string name="emp_attendance_control">Attendance Control</string>
+    <string name="emp_digital_id">DIGITAL ID</string>
+    <string name="emp_senior_baker">Senior Baker</string>
+    <string name="emp_access_qr">Access QR Code</string>
+    <string name="emp_last_log">LAST LOG</string>
+    <string name="emp_view_full_history">View full history</string>
+    <string name="emp_full_history">Full History</string>
+    <string name="emp_app_not_found">Main app not found</string>
+    <string name="emp_recent_logs">Recent Logs</string>
+
+    <string name="emp_warehouse_mgmt">Warehouse Management</string>
+    <string name="emp_refresh">Refresh</string>
+    <string name="emp_suppliers">Suppliers</string>
+    <string name="emp_premium_supplies">Premium Supplies</string>
+    <string name="emp_shipments_transit">Shipments in Transit</string>
+    <string name="emp_contact_supplier">Contact Supplier</string>
+    <string name="emp_items_in_transit">Items in transit:</string>
+    <string name="emp_confirm_receipt">Confirm Receipt</string>
+    <string name="emp_report_issue">Report Issue</string>
+    <string name="emp_receipt_confirmed">Receipt Confirmed</string>
+    <string name="emp_report_sent">Report sent</string>
+
+    <string name="emp_my_profile">My Profile</string>
+    <string name="emp_account_settings">Account Settings</string>
+    <string name="emp_language">Language</string>
+    <string name="emp_logout">Logout</string>
+    <string name="emp_login_to_upload">Log in to upload a photo</string>
+    <string name="emp_photo_updated">Photo updated</string>
+    <string name="emp_photo_error">Error uploading photo</string>
+
+    <!-- Status -->
+    <string name="emp_status_pending">PENDING</string>
+    <string name="emp_status_sent">SENT</string>
+    <string name="emp_status_delivered">DELIVERED</string>
+    <string name="emp_status_recent">Recent</string>
+    <!-- Warehouse -->
+    <string name="emp_warehouse">Warehouse</string>
+    <string name="emp_warehouse_desc">General inventory query</string>
+    <string name="emp_critical_supplies">Critical Supplies</string>
+    <string name="emp_total_supplies">Total Supplies</string>
+    <string name="emp_no_supplies">No raw materials registered.</string>
+    <string name="emp_code_not_found">Code not found</string>
+    <string name="emp_code_not_found_desc">This product is not registered in the system. Contact the Administrator.</string>
+    <string name="emp_understood">Understood</string>
+    <string name="emp_adjust_inventory">Adjust Inventory</string>
+    <string name="emp_product">Product: %1$s</string>
+    <string name="emp_current_stock">Current Stock: %1$s %2$s</string>
+    <string name="emp_amount_to_adjust">Amount to adjust</string>
+    <string name="emp_adjust_hint">Use positive values for IN, or negative (-) for manual OUT.</string>
+    <string name="emp_apply_adjustment">Apply Adjustment</string>
+    <string name="emp_cancel">Cancel</string>
+    <string name="emp_invalid_amount">Enter a valid amount</string>
+    <string name="emp_stock_updated">Stock successfully updated</string>
+    <string name="emp_update_error">Update error</string>
+    <string name="emp_scanner_error">Error opening scanner. Check Google Play services.</string>
+    <string name="emp_stock_label">Stock: %1$s %2$s</string>
+    <string name="emp_codes_label">Codes: %1$s</string>
+    <string name="emp_code_label">Code: %1$s</string>
+</resources>

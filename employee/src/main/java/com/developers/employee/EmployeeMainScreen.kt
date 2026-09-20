@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -79,28 +80,10 @@ fun PanAppEmployeeTheme(
 
 enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, ALMACEN, PERFIL, LAUNCHING_WS, HISTORIAL }
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
-        )
-        super.onCreate(savedInstanceState)
-        val userIdFromIntent = intent.getStringExtra("USER_ID") ?: "INVITADO"
-        val userEmailFromIntent = intent.getStringExtra("USER_EMAIL") ?: "Sin correo"
-
-        setContent {
-            val viewModel: EmployeeViewModel = viewModel()
-            LaunchedEffect(Unit) { viewModel.setSessionUser(userIdFromIntent, userEmailFromIntent) }
-            PanAppEmployeeTheme {
-                MainAppNavigation(viewModel)
-            }
-        }
-    }
-}
+// class MainActivity removed.
 
 @Composable
-fun MainAppNavigation(viewModel: EmployeeViewModel) {
+fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) {
     val isDarkTheme = isSystemInDarkTheme()
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -126,7 +109,7 @@ fun MainAppNavigation(viewModel: EmployeeViewModel) {
                 AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
                 AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel)
-                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it })
+                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it }, onLogoutClick = onLogoutClick)
                 AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
                 AppScreen.LAUNCHING_WS -> {
                     val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
@@ -153,13 +136,19 @@ fun EmployeeFloatingBottomBar(
     isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val bottomNavItems = remember {
+    val navHome = stringResource(R.string.emp_nav_home)
+    val navAttendance = stringResource(R.string.emp_nav_attendance)
+    val navOrders = stringResource(R.string.emp_nav_orders)
+    val navWarehouse = stringResource(R.string.emp_nav_warehouse)
+    val navProfile = stringResource(R.string.emp_nav_profile)
+
+    val bottomNavItems = remember(navHome, navAttendance, navOrders, navWarehouse, navProfile) {
         listOf(
-            Triple(AppScreen.INICIO, "Inicio", Icons.Default.Home),
-            Triple(AppScreen.ASISTENCIA, "Asistencia", Icons.Default.QrCodeScanner),
-            Triple(AppScreen.PEDIDOS, "Pedidos", Icons.Default.ListAlt),
-            Triple(AppScreen.ALMACEN, "Almacén", Icons.Default.Inventory2),
-            Triple(AppScreen.PERFIL, "Perfil", Icons.Default.Person)
+            Triple(AppScreen.INICIO, navHome, Icons.Default.Home),
+            Triple(AppScreen.ASISTENCIA, navAttendance, Icons.Default.QrCodeScanner),
+            Triple(AppScreen.PEDIDOS, navOrders, Icons.Default.ListAlt),
+            Triple(AppScreen.ALMACEN, navWarehouse, Icons.Default.Inventory2),
+            Triple(AppScreen.PERFIL, navProfile, Icons.Default.Person)
         )
     }
 

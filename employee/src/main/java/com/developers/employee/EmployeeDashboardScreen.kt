@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 // ✨ EL IMPORT DEL CONTEXTO QUE TE FALTABA
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,7 +49,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Portal de Empleados", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.emp_portal_title), fontWeight = FontWeight.Bold) },
                 actions = {
                     Box(
                         modifier = Modifier
@@ -73,13 +74,13 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Hola, ${viewModel.userName}",
+                text = stringResource(R.string.emp_hello_user, viewModel.userName),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
             Text(
-                text = "Registra tu asistencia escaneando el código QR de la sucursal.",
+                text = stringResource(R.string.emp_scan_instruction),
                 color = Color.Gray,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
@@ -104,7 +105,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "ESCANEAR CÓDIGO QR",
+                        stringResource(R.string.emp_scan_qr),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontSize = 18.sp
@@ -115,7 +116,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Tu Historial de Hoy",
+                text = stringResource(R.string.emp_history_today),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -127,7 +128,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 }
             } else if (viewModel.logs.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("Aún no tienes registros de asistencia.", color = Color.Gray)
+                    Text(stringResource(R.string.emp_no_attendance_logs), color = Color.Gray)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -142,29 +143,29 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Registrar Asistencia", fontWeight = FontWeight.Bold) },
-            text = { Text("Simulando lectura de código QR de la sucursal...") },
+            title = { Text(stringResource(R.string.emp_register_attendance), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.emp_simulating_qr)) },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.registerAttendance("ENTRADA") {
-                            Toast.makeText(context, "Entrada registrada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.emp_check_in_success), Toast.LENGTH_SHORT).show()
                             showDialog = false
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) { Text("Marcar Entrada") }
+                ) { Text(stringResource(R.string.emp_check_in_btn)) }
             },
             dismissButton = {
                 Button(
                     onClick = {
                         viewModel.registerAttendance("SALIDA") {
-                            Toast.makeText(context, "Salida registrada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.emp_check_out_success), Toast.LENGTH_SHORT).show()
                             showDialog = false
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                ) { Text("Marcar Salida") }
+                ) { Text(stringResource(R.string.emp_check_out_btn)) }
             }
         )
     }

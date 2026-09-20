@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Módulo Employee: Texts in Spanish (Mexico) -->
+    <string name="emp_nav_home">Inicio</string>
+    <string name="emp_nav_attendance">Asistencia</string>
+    <string name="emp_nav_orders">Pedidos</string>
+    <string name="emp_nav_warehouse">Almacén</string>
+    <string name="emp_nav_profile">Perfil</string>
+
+    <string name="emp_portal_title">Portal de Empleados</string>
+    <string name="emp_hello_user">¡Hola, %1$s!</string>
+    <string name="emp_active_shift">Turno Activo</string>
+    <string name="emp_quick_access">Accesos Rápidos</string>
+    <string name="emp_dispatch">Despachar</string>
+    <string name="emp_scan_instruction">Registra tu asistencia escaneando el código QR de la sucursal.</string>
+    <string name="emp_scan_qr">ESCANEAR CÓDIGO QR</string>
+    <string name="emp_history_today">Tu Historial de Hoy</string>
+    <string name="emp_no_attendance_logs">Aún no tienes registros de asistencia.</string>
+    <string name="emp_register_attendance">Registrar Asistencia</string>
+    <string name="emp_simulating_qr">Simulando lectura de código QR de la sucursal&#8230;</string>
+    <string name="emp_check_in_btn">Marcar Entrada</string>
+    <string name="emp_check_out_btn">Marcar Salida</string>
+    <string name="emp_check_in_success">Entrada registrada</string>
+    <string name="emp_check_out_success">Salida registrada</string>
+
+    <string name="emp_dispatch_queue">Cola de Despacho</string>
+    <string name="emp_no_active_orders">No hay pedidos activos.</string>
+    <string name="emp_order_id">ID: %1$s</string>
+    <string name="emp_closed_delivered">CERRADO - ENTREGADO</string>
+    <string name="emp_order_details">Detalles del Pedido</string>
+    <string name="emp_quantity">Cantidad: %1$d</string>
+    <string name="emp_total_to_charge">Total a Cobrar</string>
+    <string name="emp_launching_whatsapp">Iniciando WhatsApp&#8230;</string>
+    <string name="emp_notify_whatsapp">Avisar por WhatsApp</string>
+    <string name="emp_error_whatsapp">No se pudo abrir WhatsApp</string>
+    <string name="emp_whatsapp_opening_title">Abriendo WhatsApp&#8230;</string>
+    <string name="emp_whatsapp_msg_shipped">¡Tu pedido está en camino a tu domicilio!</string>
+    <string name="emp_whatsapp_msg_prep">¡Tu pedido está siendo preparado y pronto saldrá!</string>
+    <string name="emp_whatsapp_msg_body">Hola %1$s,\n%2$s\nTotal a pagar: $%3$s\nAtte: Panadería</string>
+
+    <string name="emp_attendance_control">CONTROL DE ASISTENCIA</string>
+    <string name="emp_digital_id">IDENTIFICACIÓN DIGITAL</string>
+    <string name="emp_senior_baker">Panadero Senior</string>
+    <string name="emp_access_qr">Código QR de Acceso</string>
+    <string name="emp_last_log">ÚLTIMO REGISTRO</string>
+    <string name="emp_view_full_history">Ver historial completo</string>
+    <string name="emp_full_history">Historial Completo</string>
+    <string name="emp_app_not_found">App principal no encontrada</string>
+    <string name="emp_recent_logs">Registros Recientes</string>
+
+    <string name="emp_warehouse_mgmt">Gestión de Almacén</string>
+    <string name="emp_refresh">Actualizar</string>
+    <string name="emp_suppliers">Proveedores</string>
+    <string name="emp_premium_supplies">Suministros Premium</string>
+    <string name="emp_shipments_transit">Envíos en Tránsito</string>
+    <string name="emp_contact_supplier">Contactar Proveedor</string>
+    <string name="emp_items_in_transit">Artículos en tránsito:</string>
+    <string name="emp_confirm_receipt">Confirmar Recepción</string>
+    <string name="emp_report_issue">Reportar Problema</string>
+    <string name="emp_receipt_confirmed">Recepción Confirmada</string>
+    <string name="emp_report_sent">Reporte enviado</string>
+
+    <string name="emp_my_profile">Mi Perfil</string>
+    <string name="emp_account_settings">Ajustes de Cuenta</string>
+    <string name="emp_language">Idioma</string>
+    <string name="emp_logout">Cerrar Sesión</string>
+    <string name="emp_login_to_upload">Inicia sesión para subir una foto</string>
+    <string name="emp_photo_updated">Foto actualizada</string>
+    <string name="emp_photo_error">Error al subir la foto</string>
+
+    <string name="emp_status_pending">PENDIENTE</string>
+    <string name="emp_status_sent">ENVIADO</string>
+    <string name="emp_status_delivered">ENTREGADO</string>
+    <string name="emp_status_recent">Reciente</string>
+    <!-- Warehouse -->
+    <string name="emp_warehouse">Almacén</string>
+    <string name="emp_warehouse_desc">Consulta e inventario general</string>
+    <string name="emp_critical_supplies">Insumos Críticos</string>
+    <string name="emp_total_supplies">Total Insumos</string>
+    <string name="emp_no_supplies">No hay materias primas registradas.</string>
+    <string name="emp_code_not_found">Código no encontrado</string>
+    <string name="emp_code_not_found_desc">Este producto no está registrado en el sistema. Contacte al Administrador.</string>
+    <string name="emp_understood">Entendido</string>
+    <string name="emp_adjust_inventory">Ajustar Inventario</string>
+    <string name="emp_product">Producto: %1$s</string>
+    <string name="emp_current_stock">Stock Actual: %1$s %2$s</string>
+    <string name="emp_amount_to_adjust">Cantidad a ajustar</string>
+    <string name="emp_adjust_hint">Use valores positivos para ENTRADA, o negativos (-) para SALIDA manual.</string>
+    <string name="emp_apply_adjustment">Aplicar Ajuste</string>
+    <string name="emp_cancel">Cancelar</string>
+    <string name="emp_invalid_amount">Ingrese una cantidad válida</string>
+    <string name="emp_stock_updated">Stock actualizado exitosamente</string>
+    <string name="emp_update_error">Error al actualizar</string>
+    <string name="emp_scanner_error">Error al abrir escáner. Verifique que tenga servicios de Google Play.</string>
+    <string name="emp_stock_label">Stock: %1$s %2$s</string>
+    <string name="emp_codes_label">Códigos: %1$s</string>
+    <string name="emp_code_label">Cód: %1$s</string>
+</resources>

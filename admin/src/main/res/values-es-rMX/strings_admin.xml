@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Admin Module: Texts in Spanish (Mexico) -->
+    <string name="admin_nav_dashboard">Dashboard</string>
+    <string name="admin_nav_warehouse">Almacén</string>
+    <string name="admin_nav_orders">Pedidos</string>
+    <string name="admin_nav_attendance">Asistencia</string>
+    <string name="admin_nav_profile">Perfil</string>
+
+    <string name="admin_title">Administración</string>
+    <string name="admin_notifications">Notificaciones</string>
+    <string name="admin_no_notifications">Todo al día, no hay alertas.</string>
+    <string name="admin_low_stock_alert">Stock Bajo: Tienes %1$d materias primas por agotarse. Recomendación: Pedir a proveedores.</string>
+    <string name="admin_pending_orders_alert">Pedidos Pendientes: Tienes %1$d órdenes de WhatsApp por gestionar.</string>
+    <string name="admin_predict_title">Predicciones Inteligentes (Beta)</string>
+    <string name="admin_predict_desc">Ventas hoy, Stock y Producción</string>
+    <string name="admin_prod_manager">Gestor de Producción ERP</string>
+    <string name="admin_prod_desc">Registrar horneados y producción del día</string>
+    <string name="admin_updated_time">Actualizado 10:30 AM</string>
+    <string name="admin_total_sales">Ventas Totales</string>
+    <string name="admin_sales_value">$1,240.50</string>
+    <string name="admin_sales_trend">+12% vs ayer</string>
+    <string name="admin_wh_status">Estado de Almacén</string>
+    <string name="admin_optimal">Óptimo</string>
+    <string name="admin_items_count">%1$d items</string>
+    <string name="admin_manage_orders">Gestionar Pedidos</string>
+    <string name="admin_send_whatsapp">Envío vía WhatsApp</string>
+
+    <string name="admin_prod_mgmt">Gestión de Productos</string>
+    <string name="admin_filter">Filtrar</string>
+    <string name="admin_new_btn">+ Nuevo</string>
+    <string name="admin_search_prod">Buscar producto&#8230;</string>
+    <string name="admin_active_catalog">CATÁLOGO DE PRODUCTOS ACTIVOS</string>
+    <string name="admin_no_products">No hay productos en inventario.</string>
+    <string name="admin_new_badge">NUEVO</string>
+    <string name="admin_stock_label">Stock: %1$d und.</string>
+    <string name="admin_price_format">$ %1$s</string>
+    <string name="admin_inventory_btn">Inventario</string>
+    <string name="admin_reduce_stock_btn">Reducir Stock</string>
+    <string name="admin_supply_alert">Alerta de Suministros</string>
+    <string name="admin_supply_alert_desc">%1$s %2$s en nivel crítico. Considere reabastecer hoy.</string>
+    <string name="admin_verb_is">está</string>
+    <string name="admin_verb_are">están</string>
+    <string name="admin_view_critical">Ver Inventario Crítico</string>
+
+    <!-- Profile -->
+    <string name="admin_my_profile">Mi Perfil</string>
+    <string name="admin_full_name">Nombre Completo</string>
+    <string name="admin_email">Correo Electrónico</string>
+    <string name="admin_phone">Teléfono de Contacto</string>
+    <string name="admin_save_changes">Guardar Cambios</string>
+    <string name="admin_logout">Cerrar Sesión</string>
+    <string name="admin_photo_updated">Foto de perfil actualizada</string>
+    <string name="admin_photo_error">Error al subir la foto</string>
+    <string name="admin_profile_saved">Perfil guardado con éxito</string>
+    <string name="admin_save_error">Error al guardar: %1$s</string>
+    <string name="admin_app_not_found">App principal no encontrada</string>
+    <string name="admin_login_required">Debes iniciar sesión para subir fotos</string>
+    <string name="admin_no_email">Sin Correo</string>
+    <!-- Additional Strings Extracted -->
+    <string name="admin_attendance_history">Historial de Asistencias</string>
+    <string name="admin_search_employee">Buscar empleado&#8230;</string>
+    <string name="admin_no_records">No se encontraron registros.</string>
+    <string name="admin_prod_registry">Registro de Producción</string>
+    <string name="admin_daily_baking">Horneados Diarios (ERP)</string>
+    <string name="admin_prod_instruction">Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.</string>
+    <string name="admin_product_made">Producto Elaborado</string>
+    <string name="admin_no_products_catalog">No hay productos en catálogo</string>
+    <string name="admin_quantity_baked">Cantidad de Panes Horneados (Piezas)</string>
+    <string name="admin_confirm_deduct">Confirmar y Descontar Insumos</string>
+    <string name="admin_insufficient_stock">No hay inventario suficiente en almacén para hornear esta cantidad:</string>
+    <string name="admin_qr_generator_title">Generador QR de Asistencia</string>
+    <string name="admin_qr_attendance">QR de Asistencia</string>
+    <string name="admin_save_image">Guardar como Imagen</string>
+    <string name="admin_qr_instruction">Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.</string>
+    <string name="admin_generate_new_qr">Generar Nuevos Códigos QR Hoy</string>
+    <string name="admin_tap_to_add_photo">Toca para añadir foto del pan</string>
+    <string name="admin_product_name">Nombre del Producto</string>
+    <string name="admin_category">Categoría</string>
+    <string name="admin_price_label">Precio ($)</string>
+    <string name="admin_rating_label">Estrellas (1.0 - 5.0)</string>
+    <string name="admin_recipe_title">Receta (Insumos por unidad)</string>
+    <string name="admin_recipe_instruction">Seleccione la materia prima y la cantidad necesaria para elaborar 1 pan.</string>
+    <string name="admin_raw_material">Materia Prima</string>
+    <string name="admin_no_supplies_wh">No hay insumos en almacén</string>
+    <string name="admin_quantity_unit">Cantidad (%1$s)</string>
+    <string name="admin_add_btn">Añadir</string>
+    <string name="admin_recipe_ingredients">Ingredientes de la Receta:</string>
+    <string name="admin_mark_as_new">Marcar como Nuevo</string>
+    <string name="admin_new_tag_desc">Aparecerá con etiqueta en la app cliente</string>
+    <string name="admin_ai_prediction_report">Reporte de Predicciones IA</string>
+    <string name="admin_order_via_whatsapp">Pedir vía WhatsApp</string>
+    <string name="admin_cloud_connection">Conexión en Nube: Activa</string>
+    <string name="admin_supplier_name">Nombre del Proveedor</string>
+    <string name="admin_phone_whatsapp">Teléfono (WhatsApp)</string>
+    <string name="admin_supplied_material">Materia Prima que surte</string>
+</resources>
