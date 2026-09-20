@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,7 +38,7 @@ fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Un
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Control de Asistencia", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                title = { Text(stringResource(R.string.emp_attendance_control), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
@@ -101,10 +102,10 @@ fun AttendanceScannerControl(viewModel: EmployeeViewModel) {
 @Composable
 fun DigitalIdCard(userName: String) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Identificación Digital", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.emp_digital_id), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
             Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Gafete Autorizado", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(stringResource(R.string.emp_senior_baker), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 val dashPathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f)
                 Box(modifier = Modifier.size(150.dp).padding(16.dp), contentAlignment = Alignment.Center) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -123,12 +124,12 @@ fun DigitalIdCard(userName: String) {
 fun RecentLogs(logs: List<LogData>, onViewHistoryClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Registros Recientes", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.emp_recent_logs), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Icon(Icons.Default.DateRange, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
         logs.take(3).forEach { log -> RenderLogItem(log) }
         TextButton(onClick = onViewHistoryClick, modifier = Modifier.fillMaxWidth()) {
-            Text("Ver Historial Completo", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.emp_view_full_history), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -163,7 +164,7 @@ fun FullHistoryScreen(viewModel: EmployeeViewModel, onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial Completo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                title = { Text(stringResource(R.string.emp_full_history), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )

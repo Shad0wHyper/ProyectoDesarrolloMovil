@@ -30,6 +30,8 @@ import com.developers.client.AppViewModel
 import com.developers.client.ui.ClientMainScreen
 import com.developers.employee.EmployeeViewModel
 import com.developers.employee.EmployeeMainScreen
+import com.developers.admin.AdminViewModel
+import com.developers.admin.AdminMainScreen
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -99,6 +101,10 @@ fun AppNavigation() {
                                         navController.navigate("employee_graph") {
                                             popUpTo("splash") { inclusive = true }
                                         }
+                                    } else if (rol == "admin") {
+                                        navController.navigate("admin_graph") {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
                                     } else {
                                         // Si es de otro rol, lo mandamos al login para que la lógica de LoginScreen lo derive
                                         navController.navigate("login") {
@@ -131,6 +137,16 @@ fun AppNavigation() {
                 onNavigateToForgotPassword = { navController.navigate("forgot_password") },
                 onLoginSuccess = {
                     navController.navigate("client_graph") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onEmployeeLoginSuccess = {
+                    navController.navigate("employee_graph") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onAdminLoginSuccess = {
+                    navController.navigate("admin_graph") {
                         popUpTo("login") { inclusive = true }
                     }
                 }
@@ -182,6 +198,41 @@ fun AppNavigation() {
 
             ClientMainScreen(
                 appViewModel = clientViewModel,
+                onLogoutClick = { logoutUser() }
+            )
+        }
+
+        // 4. Ruta Employee Graph
+        composable("employee_graph") {
+            val employeeViewModel: EmployeeViewModel = viewModel()
+            
+            // Cargar los datos del empleado logueado en el ViewModel
+            LaunchedEffect(Unit) {
+                val user = auth.currentUser
+                if (user != null) {
+                    employeeViewModel.setSessionUser(user.uid, user.email ?: "Sin correo")
+                }
+            }
+
+            EmployeeMainScreen(
+                viewModel = employeeViewModel,
+                onLogoutClick = { logoutUser() }
+            )
+        }
+
+        // 5. Ruta Admin Graph
+        composable("admin_graph") {
+            val adminViewModel: AdminViewModel = viewModel()
+            
+            LaunchedEffect(Unit) {
+                val user = auth.currentUser
+                if (user != null) {
+                    adminViewModel.setSessionUser(user.uid, user.email ?: "Sin correo")
+                }
+            }
+
+            AdminMainScreen(
+                viewModel = adminViewModel,
                 onLogoutClick = { logoutUser() }
             )
         }

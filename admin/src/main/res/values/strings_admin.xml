@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Admin Module: Texts in English (Default) -->
+    <string name="admin_nav_dashboard">Dashboard</string>
+    <string name="admin_nav_warehouse">Warehouse</string>
+    <string name="admin_nav_orders">Orders</string>
+    <string name="admin_nav_attendance">Attendance</string>
+    <string name="admin_nav_profile">Profile</string>
+
+    <string name="admin_title">Administration</string>
+    <string name="admin_notifications">Notifications</string>
+    <string name="admin_no_notifications">Up to date, no alerts.</string>
+    <string name="admin_low_stock_alert">Low Stock: You have %1$d raw materials running out. Recommendation: Order from suppliers.</string>
+    <string name="admin_pending_orders_alert">Pending Orders: You have %1$d WhatsApp orders to manage.</string>
+    <string name="admin_predict_title">Smart Predictions (Beta)</string>
+    <string name="admin_predict_desc">Sales today, Stock and Production</string>
+    <string name="admin_prod_manager">ERP Production Manager</string>
+    <string name="admin_prod_desc">Record baking and daily production</string>
+    <string name="admin_updated_time">Updated 10:30 AM</string>
+    <string name="admin_total_sales">Total Sales</string>
+    <string name="admin_sales_value">$1,240.50</string>
+    <string name="admin_sales_trend">+12% vs yesterday</string>
+    <string name="admin_wh_status">Warehouse Status</string>
+    <string name="admin_optimal">Optimal</string>
+    <string name="admin_items_count">%1$d items</string>
+    <string name="admin_manage_orders">Manage Orders</string>
+    <string name="admin_send_whatsapp">Send via WhatsApp</string>
+
+    <string name="admin_prod_mgmt">Product Management</string>
+    <string name="admin_filter">Filter</string>
+    <string name="admin_new_btn">+ New</string>
+    <string name="admin_search_prod">Search product&#8230;</string>
+    <string name="admin_active_catalog">ACTIVE PRODUCTS CATALOG</string>
+    <string name="admin_no_products">No products in inventory.</string>
+    <string name="admin_new_badge">NEW</string>
+    <string name="admin_stock_label">Stock: %1$d units</string>
+    <string name="admin_price_format">$ %1$s</string>
+    <string name="admin_inventory_btn">Inventory</string>
+    <string name="admin_reduce_stock_btn">Reduce Stock</string>
+    <string name="admin_supply_alert">Supplies Alert</string>
+    <string name="admin_supply_alert_desc">%1$s %2$s at critical level. Consider restocking today.</string>
+    <string name="admin_verb_is">is</string>
+    <string name="admin_verb_are">are</string>
+    <string name="admin_view_critical">View Critical Inventory</string>
+
+    <!-- Profile -->
+    <string name="admin_my_profile">My Profile</string>
+    <string name="admin_full_name">Full Name</string>
+    <string name="admin_email">Email</string>
+    <string name="admin_phone">Contact Phone</string>
+    <string name="admin_save_changes">Save Changes</string>
+    <string name="admin_logout">Logout</string>
+    <string name="admin_photo_updated">Profile photo updated</string>
+    <string name="admin_photo_error">Error uploading photo</string>
+    <string name="admin_profile_saved">Profile saved successfully</string>
+    <string name="admin_save_error">Error saving: %1$s</string>
+    <string name="admin_app_not_found">Main app not found</string>
+    <string name="admin_login_required">You must log in to upload photos</string>
+    <string name="admin_no_email">No Email</string>
+
+    <!-- Additional Strings Extracted -->
+    <string name="admin_attendance_history">Attendance History</string>
+    <string name="admin_search_employee">Search employee...</string>
+    <string name="admin_no_records">No records found.</string>
+    <string name="admin_prod_registry">Production Registry</string>
+    <string name="admin_daily_baking">Daily Baking (ERP)</string>
+    <string name="admin_prod_instruction">Record the baking. The system will automatically deduct raw materials.</string>
+    <string name="admin_product_made">Product Made</string>
+    <string name="admin_no_products_catalog">No products in catalog</string>
+    <string name="admin_quantity_baked">Quantity Baked (Pieces)</string>
+    <string name="admin_confirm_deduct">Confirm and Deduct Supplies</string>
+    <string name="admin_insufficient_stock">Not enough inventory to bake this quantity:</string>
+    <string name="admin_qr_generator_title">Attendance QR Generator</string>
+    <string name="admin_qr_attendance">Attendance QR</string>
+    <string name="admin_save_image">Save as Image</string>
+    <string name="admin_qr_instruction">Show these codes at the branch so employees can scan their check-in or check-out.</string>
+    <string name="admin_generate_new_qr">Generate New QR Codes Today</string>
+    <string name="admin_tap_to_add_photo">Tap to add bread photo</string>
+    <string name="admin_product_name">Product Name</string>
+    <string name="admin_category">Category</string>
+    <string name="admin_price_label">Price ($)</string>
+    <string name="admin_rating_label">Stars (1.0 - 5.0)</string>
+    <string name="admin_recipe_title">Recipe (Supplies per unit)</string>
+    <string name="admin_recipe_instruction">Select the raw material and the quantity needed to make 1 bread.</string>
+    <string name="admin_raw_material">Raw Material</string>
+    <string name="admin_no_supplies_wh">No supplies in warehouse</string>
+    <string name="admin_quantity_unit">Quantity (%1$s)</string>
+    <string name="admin_add_btn">Add</string>
+    <string name="admin_recipe_ingredients">Recipe Ingredients:</string>
+    <string name="admin_mark_as_new">Mark as New</string>
+    <string name="admin_new_tag_desc">Will appear with a tag in the client app</string>
+    <string name="admin_ai_prediction_report">AI Prediction Report</string>
+    <string name="admin_order_via_whatsapp">Order via WhatsApp</string>
+    <string name="admin_cloud_connection">Cloud Connection: Active</string>
+    <string name="admin_supplier_name">Supplier Name</string>
+    <string name="admin_phone_whatsapp">Phone (WhatsApp)</string>
+    <string name="admin_supplied_material">Raw Material Supplied</string>
+</resources>

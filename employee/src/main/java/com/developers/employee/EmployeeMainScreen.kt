@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -135,13 +136,19 @@ fun EmployeeFloatingBottomBar(
     isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val bottomNavItems = remember {
+    val navHome = stringResource(R.string.emp_nav_home)
+    val navAttendance = stringResource(R.string.emp_nav_attendance)
+    val navOrders = stringResource(R.string.emp_nav_orders)
+    val navWarehouse = stringResource(R.string.emp_nav_warehouse)
+    val navProfile = stringResource(R.string.emp_nav_profile)
+
+    val bottomNavItems = remember(navHome, navAttendance, navOrders, navWarehouse, navProfile) {
         listOf(
-            Triple(AppScreen.INICIO, "Inicio", Icons.Default.Home),
-            Triple(AppScreen.ASISTENCIA, "Asistencia", Icons.Default.QrCodeScanner),
-            Triple(AppScreen.PEDIDOS, "Pedidos", Icons.Default.ListAlt),
-            Triple(AppScreen.ALMACEN, "Almacén", Icons.Default.Inventory2),
-            Triple(AppScreen.PERFIL, "Perfil", Icons.Default.Person)
+            Triple(AppScreen.INICIO, navHome, Icons.Default.Home),
+            Triple(AppScreen.ASISTENCIA, navAttendance, Icons.Default.QrCodeScanner),
+            Triple(AppScreen.PEDIDOS, navOrders, Icons.Default.ListAlt),
+            Triple(AppScreen.ALMACEN, navWarehouse, Icons.Default.Inventory2),
+            Triple(AppScreen.PERFIL, navProfile, Icons.Default.Person)
         )
     }
 

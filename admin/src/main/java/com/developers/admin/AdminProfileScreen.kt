@@ -41,17 +41,17 @@ import androidx.compose.material.icons.filled.CameraAlt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminProfileScreen(onBack: () -> Unit) {
+fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutClick: () -> Unit) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     val scrollState = rememberScrollState()
 
     val db = FirebaseFirestore.getInstance()
-    val uid = AdminSession.userId
+    val uid = viewModel.currentUserId
 
     // Variables de estado
     var phone by remember { mutableStateOf("") }
-    var nombreEditable by remember { mutableStateOf(AdminSession.userName) } // ✨ ESTADO PARA EL NOMBRE EDITABLE
+    var nombreEditable by remember { mutableStateOf(viewModel.userName) } // ✨ ESTADO PARA EL NOMBRE EDITABLE
     var isSaving by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var isUploadingImage by remember { mutableStateOf(false) }
@@ -71,7 +71,7 @@ fun AdminProfileScreen(onBack: () -> Unit) {
                             val newUrl = downloadUrl.toString()
                             db.collection("usuarios").document(uid).update("imageUrl", newUrl)
                                 .addOnSuccessListener {
-                                    AdminSession.userImageUrl = newUrl
+                                    viewModel.userImageUrl = newUrl
                                     isUploadingImage = false
                                     Toast.makeText(context, "Foto de perfil actualizada", Toast.LENGTH_SHORT).show()
                                 }
@@ -93,7 +93,7 @@ fun AdminProfileScreen(onBack: () -> Unit) {
             db.collection("usuarios").document(uid).get()
                 .addOnSuccessListener { doc ->
                     phone = doc.getString("telefono") ?: ""
-                    nombreEditable = doc.getString("nombre") ?: AdminSession.userName
+                    nombreEditable = doc.getString("nombre") ?: viewModel.userName
                     isLoading = false
                 }
                 .addOnFailureListener {
@@ -156,10 +156,10 @@ fun AdminProfileScreen(onBack: () -> Unit) {
                         .background(if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFEEEEEE)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (AdminSession.userImageUrl.isNotEmpty()) {
+                    if (viewModel.userImageUrl.isNotEmpty()) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(AdminSession.userImageUrl)
+                                .data(viewModel.userImageUrl)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "Foto de perfil",
@@ -224,7 +224,7 @@ fun AdminProfileScreen(onBack: () -> Unit) {
 
             // CORREO (BLOQUEADO)
             OutlinedTextField(
-                value = AdminSession.userEmail.ifEmpty { "Sin Correo" },
+                value = viewModel.userEmail.ifEmpty { "Sin Correo" },
                 onValueChange = { },
                 readOnly = true,
                 enabled = false,
@@ -265,7 +265,7 @@ fun AdminProfileScreen(onBack: () -> Unit) {
                         db.collection("usuarios").document(uid).update(updates)
                             .addOnSuccessListener {
                                 isSaving = false
-                                AdminSession.userName = nombreEditable.trim() // Actualiza la variable de sesión
+                                viewModel.userName = nombreEditable.trim() // Actualiza la variable de sesión
                                 Toast.makeText(context, "Perfil guardado con éxito", Toast.LENGTH_SHORT).show()
                                 onBack()
                             }
@@ -292,16 +292,7 @@ fun AdminProfileScreen(onBack: () -> Unit) {
             // BOTÓN CERRAR SESIÓN
             OutlinedButton(
                 onClick = {
-                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                    AdminSession.clear()
-                    
-                    val intent = context.packageManager.getLaunchIntentForPackage("com.developers.panapp")
-                    if (intent != null) {
-                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        context.startActivity(intent)
-                    } else {
-                        Toast.makeText(context, "App principal no encontrada", Toast.LENGTH_SHORT).show()
-                    }
+                    viewModel.limpiarDatosDeSesion { onLogoutClick() }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp),

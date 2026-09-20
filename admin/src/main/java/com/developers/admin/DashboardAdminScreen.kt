@@ -56,7 +56,7 @@ data class Producto(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardAdminScreen(navController: NavHostController) {
+fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewModel, onLogoutClick: () -> Unit) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: AdminScreen.Dashboard.route
     val isDarkMode = isSystemInDarkTheme()
@@ -79,29 +79,18 @@ fun DashboardAdminScreen(navController: NavHostController) {
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
 
     var listaProductos by remember { mutableStateOf<List<Producto>>(emptyList()) }
-    var insumosCriticosNombres by remember { mutableStateOf<List<String>>(emptyList()) } // ✨ ESTADO DE ALERTAS DINÁMICO
     var isLoading by remember { mutableStateOf(true) }
     var textBusqueda by remember { mutableStateOf("") }
     var showNotificationsSheet by remember { mutableStateOf(false) } // ✨ ESTADO DEL BOTTOM SHEET
     val context = LocalContext.current
 
     // ✨ 2. BADGES DINÁMICOS: ESTADO GLOBAL
-    var globalCriticosCount by remember { mutableIntStateOf(0) }
+    // Usamos el viewmodel
+    val globalCriticosCount = viewModel.globalCriticosCount
+    val insumosCriticosNombres = viewModel.insumosCriticosNombres
 
     LaunchedEffect(currentRoute) {
         val db = FirebaseFirestore.getInstance()
-
-        // ✨ 1. ALERTA DINÁMICA: Nombres reales en vez de sólo el count
-        db.collection("materia_prima").addSnapshotListener { snap, _ ->
-            if (snap != null) {
-                val criticos = snap.documents.filter { 
-                    (it.getDouble("cantidadActual") ?: 0.0) <= (it.getDouble("nivelCritico") ?: 0.0) 
-                }.map { it.getString("nombre") ?: "Desconocido" }
-                
-                insumosCriticosNombres = criticos
-                globalCriticosCount = criticos.size
-            }
-        }
 
         if (currentRoute == AdminScreen.Dashboard.route) {
             isLoading = true
@@ -176,6 +165,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
                         }
                     } else {
                         DashboardContent(
+                            viewModel = viewModel,
                             listaProductos = listaProductos,
                             insumosCriticosNombres = insumosCriticosNombres,
                             textBusqueda = textBusqueda,
@@ -230,7 +220,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
                 composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.AttendanceHistory.route) { AttendanceHistoryScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.Asistencia.route) { AsistenciaMainScreen() }
-                composable(AdminScreen.Profile.route) { AdminProfileScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.Profile.route) { AdminProfileScreen(viewModel = viewModel, onBack = { navController.popBackStack() }, onLogoutClick = onLogoutClick) }
             }
         }
 
@@ -311,6 +301,7 @@ fun DashboardAdminScreen(navController: NavHostController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardContent(
+    viewModel: AdminViewModel,
     listaProductos: List<Producto>,
     insumosCriticosNombres: List<String>,
     textBusqueda: String,
@@ -346,6 +337,7 @@ fun DashboardContent(
         // ✨ Pasamos la acción al TopBar
         item { 
             AdminTopBar(
+                viewModel = viewModel,
                 onQrClick = onQrClick, 
                 onHistoryClick = onHistoryClick,
                 onNotificationClick = onNotificationClick,
@@ -412,6 +404,7 @@ fun DashboardContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminTopBar(
+    viewModel: AdminViewModel,
     onQrClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onNotificationClick: () -> Unit,
@@ -423,7 +416,7 @@ fun AdminTopBar(
     val textColor = if (isDarkMode) Color.White else Color.Black
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F9FA)
 
-    val photoUrl = AdminSession.userImageUrl
+    val photoUrl = viewModel.userImageUrl
 
     TopAppBar(
         modifier = Modifier.statusBarsPadding(), // ✨ Añadido para evitar empalme en el Dashboard
@@ -1037,9 +1030,9 @@ fun NotificationItem(icon: androidx.compose.ui.graphics.vector.ImageVector, icon
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun DashboardAdminPreview() {
-    val navController = androidx.navigation.compose.rememberNavController()
-    DashboardAdminScreen(navController = navController)
-}
+// @Preview(showBackground = true)
+// @Composable
+// fun DashboardAdminPreview() {
+//     val navController = androidx.navigation.compose.rememberNavController()
+//     DashboardAdminScreen(navController = navController, viewModel = AdminViewModel(), onLogoutClick = {})
+// }

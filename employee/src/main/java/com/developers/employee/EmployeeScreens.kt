@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,20 +47,20 @@ import com.google.firebase.storage.FirebaseStorage
 @Composable
 fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Dashboard", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_nav_home), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(16.dp)) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text("¡Hola, ${viewModel.userName}!", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
-                    Text("Turno Activo", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+                    Text(stringResource(R.string.emp_hello_user, viewModel.userName), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                    Text(stringResource(R.string.emp_active_shift), color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
                 }
             }
-            Text("Accesos Rápidos", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
+            Text(stringResource(R.string.emp_quick_access), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                DashboardButton(modifier = Modifier.weight(1f), icon = Icons.Outlined.CheckCircle, text = "Asistencia", onClick = { onNavigate(AppScreen.ASISTENCIA) })
-                DashboardButton(modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Outlined.List, text = "Despachar", onClick = { onNavigate(AppScreen.PEDIDOS) })
+                DashboardButton(modifier = Modifier.weight(1f), icon = Icons.Outlined.CheckCircle, text = stringResource(R.string.emp_nav_attendance), onClick = { onNavigate(AppScreen.ASISTENCIA) })
+                DashboardButton(modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Outlined.List, text = stringResource(R.string.emp_dispatch), onClick = { onNavigate(AppScreen.PEDIDOS) })
             }
         }
     }
@@ -70,12 +71,12 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
 @Composable
 fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Cola de Despacho", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_dispatch_queue), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (viewModel.pedidosActivos.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("No hay pedidos activos.", color = Color.Gray)
+                Text(stringResource(R.string.emp_no_active_orders), color = Color.Gray)
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -113,7 +114,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column {
-                    Text("ID: ${pedido.id.take(8).uppercase()}", color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(stringResource(R.string.emp_order_id, pedido.id.take(8).uppercase()), color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                         Icon(Icons.Default.AccessTime, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
                         Text(" $dateFormateada", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
@@ -130,7 +131,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
                         color = if (isEntregado) statusColor.copy(alpha = 0.2f) else statusColor
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-                            Text(if (isEntregado) "CERRADO - ENTREGADO" else pedido.estado, color = if (isEntregado) statusColor else Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(if (isEntregado) stringResource(R.string.emp_closed_delivered) else pedido.estado, color = if (isEntregado) statusColor else Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             if (!isEntregado) {
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp).padding(start = 4.dp))
                             }
@@ -162,14 +163,14 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
                 Text(" ${pedido.direccion}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
             }
 
-            Text("Detalles del Pedido", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+            Text(stringResource(R.string.emp_order_details), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
             pedido.items.forEach { item ->
                 Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Column(modifier = Modifier.padding(start = 8.dp)) {
                             Text(item.nombre, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Cantidad: ${item.cantidad}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                            Text(stringResource(R.string.emp_quantity, item.cantidad), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                         }
                     }
                     Text(String.format("$%.2f", item.precio), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
@@ -177,15 +178,15 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
             }
 
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total a Cobrar", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(stringResource(R.string.emp_total_to_charge), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 Text(String.format("$%.2f", pedido.total), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = statusColor)
             }
 
             if (isLaunching) {
-                OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) { Icon(Icons.AutoMirrored.Outlined.Chat, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(modifier = Modifier.width(8.dp)); Text("Iniciando WhatsApp...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
+                OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) { Icon(Icons.AutoMirrored.Outlined.Chat, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(modifier = Modifier.width(8.dp)); Text(stringResource(R.string.emp_launching_whatsapp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) }
             } else if (!isEntregado) {
                 Button(onClick = onSendClick, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = WhatsappGreen, contentColor = Color.White), shape = RoundedCornerShape(8.dp)) {
-                    Icon(Icons.AutoMirrored.Outlined.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Avisar por WhatsApp", fontWeight = FontWeight.Bold)
+                    Icon(Icons.AutoMirrored.Outlined.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(8.dp)); Text(stringResource(R.string.emp_notify_whatsapp), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -198,15 +199,15 @@ fun LaunchingWhatsappScreen(order: PedidoFirebase, onBackClick: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         delay(1500)
-        val mensajeEstado = if (order.estado == "ENVIADO") "¡Tu pedido está en camino a tu domicilio!" else "¡Tu pedido está siendo preparado y pronto saldrá!"
-        val message = "Hola ${order.clienteNombre},\n$mensajeEstado\nTotal a pagar: $${order.total}\nAtte: Panadería"
+        val mensajeEstado = if (order.estado == "ENVIADO") context.getString(R.string.emp_whatsapp_msg_shipped) else context.getString(R.string.emp_whatsapp_msg_prep)
+        val message = context.getString(R.string.emp_whatsapp_msg_body, order.clienteNombre, mensajeEstado, order.total.toString())
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply { data = Uri.parse("https://api.whatsapp.com/send?text=${URLEncoder.encode(message, "UTF-8")}") }
             context.startActivity(intent)
-        } catch (e: Exception) { Toast.makeText(context, "Error abriendo WhatsApp", Toast.LENGTH_SHORT).show() }
+        } catch (e: Exception) { Toast.makeText(context, context.getString(R.string.emp_error_whatsapp), Toast.LENGTH_SHORT).show() }
     }
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Abriendo WhatsApp...", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_whatsapp_opening_title), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -255,7 +256,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mi Perfil", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_my_profile), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -290,7 +291,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
                             if (viewModel.userImageUrl.isNotEmpty()) {
                                 coil.compose.AsyncImage(
                                     model = viewModel.userImageUrl,
-                                    contentDescription = "Foto de perfil",
+                                    contentDescription = stringResource(R.string.emp_my_profile),
                                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -337,15 +338,15 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
                     Text(viewModel.userEmail, color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Text("Ajustes de Cuenta", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
-            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth().clickable { context.startActivity(Intent(android.provider.Settings.ACTION_LOCALE_SETTINGS)) }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text("Idioma", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp)) }
-                        Text(Locale.getDefault().displayLanguage.replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+            // Text(stringResource(R.string.emp_account_settings), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
+            // Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            //     Column {
+            //         Row(modifier = Modifier.fillMaxWidth().clickable { context.startActivity(Intent(android.provider.Settings.ACTION_LOCALE_SETTINGS)) }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            //             Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text(stringResource(R.string.emp_language), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp)) }
+            //             Text(Locale.getDefault().displayLanguage.replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            //         }
+            //     }
+            // }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -363,7 +364,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Cerrar Sesión", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+                Text(stringResource(R.string.emp_logout), fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
             }
         }
     }

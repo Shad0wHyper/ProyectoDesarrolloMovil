@@ -61,29 +61,19 @@ fun PanAppAdminTheme(
     )
 }
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
-        )
-        super.onCreate(savedInstanceState)
-        
-        // ✨ Extraemos la sesión que nos envía el módulo 'app'
-        val userIdFromIntent = intent.getStringExtra("USER_ID") ?: "INVITADO"
-        val userEmailFromIntent = intent.getStringExtra("USER_EMAIL") ?: ""
-        AdminSession.initialize(userIdFromIntent, userEmailFromIntent)
+// class MainActivity removed.
 
-        setContent {
-            val navController = rememberNavController()
-            PanAppAdminTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    DashboardAdminScreen(navController = navController)
-                }
-            }
+@Composable
+fun AdminMainScreen(viewModel: AdminViewModel, onLogoutClick: () -> Unit) {
+    val navController = rememberNavController()
+    
+    // El tema y modo oscuro ahora pueden configurarse con PanAppAdminTheme
+    PanAppAdminTheme(darkTheme = viewModel.isDarkMode) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            DashboardAdminScreen(navController = navController, viewModel = viewModel, onLogoutClick = onLogoutClick)
         }
     }
 }
