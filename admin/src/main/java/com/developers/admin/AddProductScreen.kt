@@ -2,6 +2,8 @@ package com.developers.admin
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -114,10 +116,10 @@ fun AddProductScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (productoAEditar != null) "Editar Producto" else "Alta de Producto", fontWeight = FontWeight.Bold, color = textColor) },
+                title = { Text(if (productoAEditar != null) stringResource(R.string.admin_edit_product) else stringResource(R.string.admin_add_product), fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
@@ -155,14 +157,14 @@ fun AddProductScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri != null) {
-                    AsyncImage(model = imageUri, contentDescription = "Vista previa", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    AsyncImage(model = imageUri, contentDescription = stringResource(R.string.admin_preview), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else if (imageUrlGuardada.isNotEmpty()) {
-                    AsyncImage(model = imageUrlGuardada, contentDescription = "Foto Guardada", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    AsyncImage(model = imageUrlGuardada, contentDescription = stringResource(R.string.admin_saved_photo), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(48.dp), tint = AdminPrimary)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Toca para añadir foto del pan", color = Color.Gray, fontSize = 14.sp)
+                        Text(stringResource(R.string.admin_tap_to_add_photo), color = Color.Gray, fontSize = 14.sp)
                     }
                 }
             }
@@ -173,7 +175,7 @@ fun AddProductScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre del Producto") },
+                label = { Text(stringResource(R.string.admin_product_name)) },
                 leadingIcon = { Icon(Icons.Default.BakeryDining, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -192,7 +194,7 @@ fun AddProductScreen(
                     value = categoriaSeleccionada,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Categoría") },
+                    label = { Text(stringResource(R.string.admin_category)) },
                     leadingIcon = { Icon(Icons.Default.Label, contentDescription = null) },
                     trailingIcon = {
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.clickable { expandedDropdown = true })
@@ -216,7 +218,7 @@ fun AddProductScreen(
             // PRECIO Y CALIFICACIÓN
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = precio, onValueChange = { precio = it }, label = { Text("Precio ($)") },
+                    value = precio, onValueChange = { precio = it }, label = { Text(stringResource(R.string.admin_price_label)) },
                     leadingIcon = { Icon(Icons.Default.CurrencyExchange, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
@@ -226,7 +228,7 @@ fun AddProductScreen(
                     )
                 )
                 OutlinedTextField(
-                    value = calificacion, onValueChange = { calificacion = it }, label = { Text("Estrellas (1.0 - 5.0)") },
+                    value = calificacion, onValueChange = { calificacion = it }, label = { Text(stringResource(R.string.admin_rating_label)) },
                     leadingIcon = { Icon(Icons.Default.StarBorder, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
@@ -246,8 +248,8 @@ fun AddProductScreen(
                 colors = CardDefaults.cardColors(containerColor = cardColor)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Receta (Insumos por unidad)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
-                    Text("Seleccione la materia prima y la cantidad necesaria para elaborar 1 pan.", fontSize = 12.sp, color = Color.Gray)
+                    Text(stringResource(R.string.admin_recipe_title), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
+                    Text(stringResource(R.string.admin_recipe_instruction), fontSize = 12.sp, color = Color.Gray)
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -257,7 +259,7 @@ fun AddProductScreen(
                             value = insumoSeleccionado?.let { "${it.nombre} (${it.unidadMedida})" } ?: "Seleccionar Insumo...",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Materia Prima") },
+                            label = { Text(stringResource(R.string.admin_raw_material)) },
                             leadingIcon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                             trailingIcon = {
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.clickable { expandedInsumoDropdown = true })
@@ -278,7 +280,7 @@ fun AddProductScreen(
                         ) {
                             if (insumosDisponibles.isEmpty()) {
                                 DropdownMenuItem(
-                                    text = { Text("No hay insumos en almacén", color = Color.Gray) },
+                                    text = { Text(stringResource(R.string.admin_no_supplies_wh), color = Color.Gray) },
                                     onClick = { expandedInsumoDropdown = false }
                                 )
                             } else {
@@ -305,7 +307,7 @@ fun AddProductScreen(
                         OutlinedTextField(
                             value = cantidadInsumoText,
                             onValueChange = { cantidadInsumoText = it },
-                            label = { Text("Cantidad (${insumoSeleccionado?.unidadMedida ?: "g"})") },
+                            label = { Text(stringResource(R.string.admin_quantity_unit, insumoSeleccionado?.unidadMedida ?: "g")) },
                             leadingIcon = { Icon(Icons.Default.Scale, contentDescription = null) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
@@ -332,22 +334,22 @@ fun AddProductScreen(
                                     cantidadInsumoText = ""
                                     insumoSeleccionado = null
                                 } else {
-                                    Toast.makeText(context, "Seleccione un insumo e ingrese una cantidad válida", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_select_supply_valid_quantity), Toast.LENGTH_SHORT).show()
                                 }
                             },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Agregar Insumo")
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supply))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Añadir")
+                            Text(stringResource(R.string.admin_add_btn))
                         }
                     }
 
                     // Lista de ingredientes agregados
                     if (ingredientesAgregados.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Ingredientes de la Receta:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = textColor)
+                        Text(stringResource(R.string.admin_recipe_ingredients), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = textColor)
                         Spacer(modifier = Modifier.height(8.dp))
 
                         ingredientesAgregados.forEach { ing ->
@@ -376,7 +378,7 @@ fun AddProductScreen(
                                         },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.Close, contentDescription = "Eliminar", tint = Color.Red, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.admin_delete), tint = Color.Red, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }
@@ -391,8 +393,8 @@ fun AddProductScreen(
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = cardColor)) {
                 Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("Marcar como Nuevo", fontWeight = FontWeight.Bold, color = textColor)
-                        Text("Aparecerá con etiqueta en la app cliente", fontSize = 12.sp, color = Color.Gray)
+                        Text(stringResource(R.string.admin_mark_as_new), fontWeight = FontWeight.Bold, color = textColor)
+                        Text(stringResource(R.string.admin_new_tag_desc), fontSize = 12.sp, color = Color.Gray)
                     }
                     Switch(checked = isNuevo, onCheckedChange = { isNuevo = it }, colors = SwitchDefaults.colors(checkedThumbColor = AdminPrimary))
                 }
@@ -407,7 +409,7 @@ fun AddProductScreen(
                     val califDouble = calificacion.toDoubleOrNull() ?: 5.0
 
                     if (nombre.trim().isEmpty() || priceDouble == null || (imageUri == null && imageUrlGuardada.isEmpty())) {
-                        Toast.makeText(context, "Llena los datos y asegúrate de tener foto", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.admin_fill_data_and_photo), Toast.LENGTH_SHORT).show()
                     } else {
                         isSaving = true
 
@@ -432,17 +434,17 @@ fun AddProductScreen(
                                         db.collection("recetas").document(productoAEditar.id).set(recetaMap)
                                             .addOnSuccessListener {
                                                 isSaving = false
-                                                Toast.makeText(context, "Producto y receta actualizados", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.admin_product_recipe_updated), Toast.LENGTH_SHORT).show()
                                                 onSuccessSave()
                                             }
                                             .addOnFailureListener {
                                                 isSaving = false
-                                                Toast.makeText(context, "Producto actualizado pero falló receta", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.admin_product_updated_recipe_failed), Toast.LENGTH_SHORT).show()
                                             }
                                     }
                                     .addOnFailureListener {
                                         isSaving = false
-                                        Toast.makeText(context, "Error al actualizar producto", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.admin_error_updating_product), Toast.LENGTH_SHORT).show()
                                     }
                             } else {
                                 // MODO CREACIÓN: Crea producto, obtiene id y guarda receta
@@ -453,17 +455,17 @@ fun AddProductScreen(
                                         db.collection("recetas").document(nuevoId).set(recetaMap)
                                             .addOnSuccessListener {
                                                 isSaving = false
-                                                Toast.makeText(context, "Producto y receta creados", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.admin_product_recipe_created), Toast.LENGTH_SHORT).show()
                                                 onSuccessSave()
                                             }
                                             .addOnFailureListener {
                                                 isSaving = false
-                                                Toast.makeText(context, "Producto creado pero falló receta", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.admin_product_created_recipe_failed), Toast.LENGTH_SHORT).show()
                                             }
                                     }
                                     .addOnFailureListener {
                                         isSaving = false
-                                        Toast.makeText(context, "Error al crear producto", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.admin_error_creating_product), Toast.LENGTH_SHORT).show()
                                     }
                             }
                         }
@@ -478,7 +480,7 @@ fun AddProductScreen(
                                 }
                                 .addOnFailureListener {
                                     isSaving = false
-                                    Toast.makeText(context, "Error al subir foto", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_error_uploading_photo), Toast.LENGTH_SHORT).show()
                                 }
                         } else {
                             guardarEnFirestore(imageUrlGuardada)
@@ -493,7 +495,7 @@ fun AddProductScreen(
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(if (productoAEditar != null) "Actualizar Producto y Receta" else "Dar de Alta Producto y Receta", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(if (productoAEditar != null) stringResource(R.string.admin_update_product_recipe) else stringResource(R.string.admin_create_product_recipe), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(30.dp))

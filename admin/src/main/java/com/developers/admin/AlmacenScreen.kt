@@ -1,6 +1,8 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -127,7 +129,7 @@ fun AlmacenScreen() {
                     showSuccessDialog = true
                 }
                 .addOnFailureListener {
-                    Toast.makeText(context, "Error al actualizar stock en Firestore", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.admin_error_updating_stock_firestore), Toast.LENGTH_SHORT).show()
                 }
         } else {
             // SI NO LO ENCUENTRA (Modo Aprendizaje)
@@ -167,7 +169,7 @@ fun AlmacenScreen() {
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = 80.dp) // ✨ Subimos el FAB para que no tape la barra
             ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Código de Barras")
+                Icon(Icons.Default.QrCodeScanner, contentDescription = stringResource(R.string.admin_scan_barcode))
             }
         },
         containerColor = bgColor
@@ -196,7 +198,7 @@ fun AlmacenScreen() {
                     contentPadding = PaddingValues(horizontal = 8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.Gray)
                 ) {
-                    Text("Probar Código", fontSize = 12.sp)
+                    Text(stringResource(R.string.admin_test_code), fontSize = 12.sp)
                 }
             }
 
@@ -248,7 +250,7 @@ fun AlmacenScreen() {
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No hay materias primas registradas en Firestore.", color = Color.Gray)
+                    Text(stringResource(R.string.admin_no_raw_materials_firestore), color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -269,14 +271,14 @@ fun AlmacenScreen() {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
             icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(48.dp)) },
-            title = { Text("¡Ingreso Exitoso!", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.admin_success_entry), fontWeight = FontWeight.Bold) },
             text = { Text(successMessage, fontSize = 15.sp) },
             confirmButton = {
                 Button(
                     onClick = { showSuccessDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.admin_ok))
                 }
             }
         )
@@ -289,10 +291,10 @@ fun AlmacenScreen() {
         AlertDialog(
             onDismissRequest = { unregisteredCode = null },
             containerColor = cardColor,
-            title = { Text("Código No Registrado", fontWeight = FontWeight.Bold, color = textColor) },
+            title = { Text(stringResource(R.string.admin_code_not_registered), fontWeight = FontWeight.Bold, color = textColor) },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Código leído: $code", fontWeight = FontWeight.Bold, color = AdminPrimary, fontSize = 13.sp)
+                    Text(stringResource(R.string.admin_code_read, code), fontWeight = FontWeight.Bold, color = AdminPrimary, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Selector de opción
@@ -300,7 +302,7 @@ fun AlmacenScreen() {
                         FilterChip(
                             selected = modoAprendizajeOpcion == "A",
                             onClick = { modoAprendizajeOpcion = "A" },
-                            label = { Text("A) Vincular a Insumo", fontSize = 11.sp) },
+                            label = { Text(stringResource(R.string.admin_link_to_supply), fontSize = 11.sp) },
                             modifier = Modifier.weight(1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 labelColor = textColor,
@@ -311,7 +313,7 @@ fun AlmacenScreen() {
                         FilterChip(
                             selected = modoAprendizajeOpcion == "B",
                             onClick = { modoAprendizajeOpcion = "B" },
-                            label = { Text("B) Dar de Alta Nuevo", fontSize = 11.sp) },
+                            label = { Text(stringResource(R.string.admin_register_new), fontSize = 11.sp) },
                             modifier = Modifier.weight(1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 labelColor = textColor,
@@ -325,7 +327,7 @@ fun AlmacenScreen() {
 
                     if (modoAprendizajeOpcion == "A") {
                         // OPCIÓN A: VINCULAR A INSUMO EXISTENTE
-                        Text("Selecciona el insumo existente:", fontSize = 12.sp, color = Color.Gray)
+                        Text(stringResource(R.string.admin_select_existing_supply), fontSize = 12.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -349,7 +351,7 @@ fun AlmacenScreen() {
                             ) {
                                 insumosList.forEach { item ->
                                     DropdownMenuItem(
-                                        text = { Text("${item.nombre} (${item.unidadMedida})", color = textColor) },
+                                        text = { Text(stringResource(R.string.admin_supply_format, item.nombre, item.unidadMedida), color = textColor) },
                                         onClick = {
                                             insumoASeleccionar = item
                                             expandedDropdownInsumo = false
@@ -364,7 +366,7 @@ fun AlmacenScreen() {
                         OutlinedTextField(
                             value = cantidadAportaTextA,
                             onValueChange = { cantidadAportaTextA = it },
-                            label = { Text("Cantidad que aporta este empaque") },
+                            label = { Text(stringResource(R.string.admin_package_contribution_quantity)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
@@ -380,7 +382,7 @@ fun AlmacenScreen() {
                         OutlinedTextField(
                             value = nuevoNombre,
                             onValueChange = { nuevoNombre = it },
-                            label = { Text("Nombre de Insumo") },
+                            label = { Text(stringResource(R.string.admin_supply_name)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
@@ -395,7 +397,7 @@ fun AlmacenScreen() {
                         OutlinedTextField(
                             value = nuevoNivelCriticoText,
                             onValueChange = { nuevoNivelCriticoText = it },
-                            label = { Text("Se considera stock bajo cuando queda...", fontSize = 12.sp) },
+                            label = { Text(stringResource(R.string.admin_low_stock_when), fontSize = 12.sp) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             trailingIcon = {
                                 Text(
@@ -422,7 +424,7 @@ fun AlmacenScreen() {
                                     value = nuevaUnidad,
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("Unidad") },
+                                    label = { Text(stringResource(R.string.admin_unit)) },
                                     trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdownUnidad = true }) },
                                     modifier = Modifier.fillMaxWidth().clickable { expandedDropdownUnidad = true },
                                     shape = RoundedCornerShape(8.dp),
@@ -442,7 +444,7 @@ fun AlmacenScreen() {
                             OutlinedTextField(
                                 value = cantidadAportaTextB,
                                 onValueChange = { cantidadAportaTextB = it },
-                                label = { Text("Aporte Empaque") },
+                                label = { Text(stringResource(R.string.admin_package_contribution)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
@@ -476,14 +478,14 @@ fun AlmacenScreen() {
                                 )
                                 targetDoc.update(updates).addOnSuccessListener {
                                     isSavingInsumo = false
-                                    Toast.makeText(context, "Código $code vinculado a ${insumoASeleccionar!!.nombre}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_code_linked, code, insumoASeleccionar!!.nombre), Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
                                 }.addOnFailureListener { e ->
                                     isSavingInsumo = false
-                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
                                 }
                             } else {
-                                Toast.makeText(context, "Seleccione un insumo e ingrese la cantidad que aporta", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.admin_select_supply_contribution), Toast.LENGTH_SHORT).show()
                             }
                         } else {
                             val cantAporta = cantidadAportaTextB.toDoubleOrNull() ?: 0.0
@@ -502,14 +504,14 @@ fun AlmacenScreen() {
                                 )
                                 db.collection("materia_prima").add(nuevoMap).addOnSuccessListener {
                                     isSavingInsumo = false
-                                    Toast.makeText(context, "Nuevo insumo registrado y vinculado", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_new_supply_linked), Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
                                 }.addOnFailureListener { e ->
                                     isSavingInsumo = false
-                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
                                 }
                             } else {
-                                Toast.makeText(context, "Ingrese el nombre y la cantidad aportada", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.admin_enter_name_contribution), Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
@@ -519,13 +521,13 @@ fun AlmacenScreen() {
                     if (isSavingInsumo) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                     } else {
-                        Text("Confirmar y Guardar")
+                        Text(stringResource(R.string.admin_confirm_and_save))
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { unregisteredCode = null }) {
-                    Text("Cancelar", color = textColor)
+                    Text(stringResource(R.string.admin_cancel), color = textColor)
                 }
             }
         )
@@ -536,15 +538,15 @@ fun AlmacenScreen() {
         AlertDialog(
             onDismissRequest = { showTestInputCodeDialog = false },
             containerColor = cardColor,
-            title = { Text("Escanear / Probar Código", color = textColor) },
+            title = { Text(stringResource(R.string.admin_scan_test_code), color = textColor) },
             text = {
                 Column {
-                    Text("Ingresa o pega un código de barras para probar la lógica WMS:", fontSize = 12.sp, color = Color.Gray)
+                    Text(stringResource(R.string.admin_enter_barcode_test), fontSize = 12.sp, color = Color.Gray)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = testCodeInputText,
                         onValueChange = { testCodeInputText = it },
-                        label = { Text("Código de Barras") },
+                        label = { Text(stringResource(R.string.admin_barcode)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -567,12 +569,12 @@ fun AlmacenScreen() {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
-                    Text("Procesar Código")
+                    Text(stringResource(R.string.admin_process_code))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTestInputCodeDialog = false }) {
-                    Text("Cancelar", color = textColor)
+                    Text(stringResource(R.string.admin_cancel), color = textColor)
                 }
             }
         )
@@ -636,13 +638,13 @@ fun InsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(insumo.nombre, fontWeight = FontWeight.Bold, color = textColor)
-                Text("Stock: ${insumo.cantidadActual} ${insumo.unidadMedida}", color = Color.Gray, fontSize = 14.sp)
+                Text(stringResource(R.string.admin_stock_with_unit, insumo.cantidadActual.toString(), insumo.unidadMedida), color = Color.Gray, fontSize = 14.sp)
                 
                 // Mostrar resumen de códigos asociados
                 if (insumo.codigosBarras.isNotEmpty()) {
-                    Text("Códigos: ${insumo.codigosBarras.joinToString(", ")}", color = Color.LightGray, fontSize = 11.sp, maxLines = 1)
+                    Text(stringResource(R.string.admin_barcodes_list, insumo.codigosBarras.joinToString(", ")), color = Color.LightGray, fontSize = 11.sp, maxLines = 1)
                 } else if (insumo.codigoBarras.isNotEmpty()) {
-                    Text("Cód: ${insumo.codigoBarras}", color = Color.LightGray, fontSize = 11.sp)
+                    Text(stringResource(R.string.admin_code_short, insumo.codigoBarras), color = Color.LightGray, fontSize = 11.sp)
                 }
             }
             CircularProgressIndicator(

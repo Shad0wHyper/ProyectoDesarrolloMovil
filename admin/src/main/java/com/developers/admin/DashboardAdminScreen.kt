@@ -1,6 +1,8 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -125,7 +127,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 isLoading = false
             }.addOnFailureListener {
                 isLoading = false
-                Toast.makeText(context, "Error al cargar inventario", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.admin_error_loading_inventory), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -374,7 +376,7 @@ fun DashboardContent(
         if (productosFiltrados.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("No hay productos en inventario.", color = Color.Gray)
+                    Text(stringResource(R.string.admin_no_products), color = Color.Gray)
                 }
             }
         } else {
@@ -431,7 +433,7 @@ fun AdminTopBar(
             Box(modifier = Modifier.padding(8.dp).clickable(onClick = onNotificationClick)) {
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
-                    contentDescription = "Alertas",
+                    contentDescription = stringResource(R.string.admin_notifications_desc),
                     modifier = Modifier.size(28.dp),
                     tint = textColor
                 )
@@ -458,7 +460,7 @@ fun AdminTopBar(
                 if (photoUrl.isNotEmpty()) {
                     coil.compose.AsyncImage(
                         model = photoUrl,
-                        contentDescription = "Foto de perfil",
+                        contentDescription = stringResource(R.string.admin_profile_photo),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -641,8 +643,8 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
             Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Gestionar Pedidos", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Envío vía WhatsApp", fontSize = 12.sp)
+                Text(stringResource(R.string.admin_manage_orders), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.admin_send_whatsapp), fontSize = 12.sp)
             }
             Icon(Icons.Default.ChevronRight, contentDescription = null)
         }
@@ -700,7 +702,7 @@ fun GestionProductosSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Gestión de Productos", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = textColor)
+            Text(stringResource(R.string.admin_prod_mgmt), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = textColor)
             Row {
                 OutlinedButton(
                     onClick = { /* TODO */ },
@@ -710,7 +712,7 @@ fun GestionProductosSection(
                 ) {
                     Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Filtrar")
+                    Text(stringResource(R.string.admin_filter))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
@@ -719,7 +721,7 @@ fun GestionProductosSection(
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
-                    Text("+ Nuevo")
+                    Text(stringResource(R.string.admin_new_btn))
                 }
             }
         }
@@ -728,7 +730,7 @@ fun GestionProductosSection(
             value = textBusqueda,
             onValueChange = onTextBusquedaChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Buscar producto...") },
+            placeholder = { Text(stringResource(R.string.admin_search_prod)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             shape = RoundedCornerShape(24.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -793,14 +795,14 @@ fun ProductoCard(
                         if (producto.isNuevo) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Surface(color = Color.Red.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp)) {
-                                Text("NUEVO", fontSize = 9.sp, color = Color.Red, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                Text(stringResource(R.string.admin_new_badge), fontSize = 9.sp, color = Color.Red, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                             }
                         }
                     }
                     Text(producto.categoria, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Stock: ${producto.stock} und.", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                        Text(stringResource(R.string.admin_stock_label, producto.stock), style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
                         Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
@@ -821,7 +823,7 @@ fun ProductoCard(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$ ${producto.precio}", fontWeight = FontWeight.Bold, color = textColor)
+                        Text(stringResource(R.string.admin_price_format, producto.precio), fontWeight = FontWeight.Bold, color = textColor)
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
@@ -839,12 +841,12 @@ fun ProductoCard(
                 TextButton(onClick = onInventarioClick) {
                     Icon(Icons.Outlined.Inventory2, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF2196F3))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Inventario", color = Color(0xFF2196F3))
+                    Text(stringResource(R.string.admin_inventory_btn), color = Color(0xFF2196F3))
                 }
                 TextButton(onClick = onDarDeBajaClick) {
                     Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reducir Stock", color = Color.Gray)
+                    Text(stringResource(R.string.admin_reduce_stock_btn), color = Color.Gray)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = { /* TODO */ }) {
@@ -874,7 +876,7 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Alerta de Suministros", fontWeight = FontWeight.Bold, color = Color.Red)
+                Text(stringResource(R.string.admin_supply_alert), fontWeight = FontWeight.Bold, color = Color.Red)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -903,7 +905,7 @@ fun AdminFAB(modifier: Modifier = Modifier, onAdd: () -> Unit) {
         shape = CircleShape,
         modifier = modifier
     ) {
-        Icon(Icons.Default.Add, contentDescription = "Nuevo")
+        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.admin_new_btn))
     }
 }
 

@@ -1,6 +1,8 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -95,7 +97,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
     fun procesarRegistroProduccion() {
         val cantidadProducida = cantidadProducidaText.toIntOrNull() ?: 0
         if (productoSeleccionado == null || cantidadProducida <= 0) {
-            Toast.makeText(context, "Seleccione un producto e ingrese una cantidad mayor a 0", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.admin_select_product_quantity), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -107,7 +109,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
         db.collection("recetas").document(producto.id).get().addOnSuccessListener { recetaDoc ->
             if (!recetaDoc.exists()) {
                 isProcessing = false
-                Toast.makeText(context, "Este producto no tiene receta registrada. Registre su receta en Almacén.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.admin_no_recipe_registered), Toast.LENGTH_LONG).show()
                 return@addOnSuccessListener
             }
 
@@ -122,7 +124,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
 
             if (ingredientes.isEmpty()) {
                 isProcessing = false
-                Toast.makeText(context, "La receta de este producto no contiene ingredientes.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.admin_recipe_no_ingredients), Toast.LENGTH_LONG).show()
                 return@addOnSuccessListener
             }
 
@@ -176,30 +178,30 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     // 3. Ejecutar la transacción en la nube
                     batch.commit().addOnSuccessListener {
                         isProcessing = false
-                        Toast.makeText(context, "¡Producción de ${cantidadProducida} unidades de ${producto.nombre} registrada!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.admin_production_registered, cantidadProducida, producto.nombre), Toast.LENGTH_LONG).show()
                         onBack()
                     }.addOnFailureListener { e ->
                         isProcessing = false
-                        Toast.makeText(context, "Error en la transacción de producción: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.admin_production_transaction_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
                     }
                 }
             }.addOnFailureListener {
                 isProcessing = false
-                Toast.makeText(context, "Error al consultar inventario de materia prima", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.admin_error_query_inventory), Toast.LENGTH_SHORT).show()
             }
         }.addOnFailureListener {
             isProcessing = false
-            Toast.makeText(context, "Error al consultar la receta del producto", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.admin_error_query_recipe), Toast.LENGTH_SHORT).show()
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro de Producción", fontWeight = FontWeight.Bold, color = textColor) },
+                title = { Text(stringResource(R.string.admin_prod_registry), fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
@@ -235,8 +237,8 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("Horneados Diarios (ERP)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF1A237E))
-                        Text("Registra la hornada. El sistema descontará los insumos de materia prima automáticamente.", fontSize = 12.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                        Text(stringResource(R.string.admin_daily_baking), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF1A237E))
+                        Text(stringResource(R.string.admin_prod_instruction), fontSize = 12.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     }
                 }
             }
@@ -252,7 +254,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                         value = productoSeleccionado?.nombre ?: "Seleccionar Producto...",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Producto Elaborado") },
+                        label = { Text(stringResource(R.string.admin_product_made)) },
                         leadingIcon = { Icon(Icons.Default.BakeryDining, contentDescription = null) },
                         trailingIcon = {
                             Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.clickable { expandedDropdown = true })
@@ -275,13 +277,13 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     ) {
                         if (productosList.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No hay productos en catálogo", color = Color.Gray) },
+                                text = { Text(stringResource(R.string.admin_no_products_catalog), color = Color.Gray) },
                                 onClick = { expandedDropdown = false }
                             )
                         } else {
                             productosList.forEach { producto ->
                                 DropdownMenuItem(
-                                    text = { Text("${producto.nombre} (Stock actual: ${producto.stock})", fontWeight = FontWeight.Medium, color = textColor) },
+                                    text = { Text(stringResource(R.string.admin_product_stock, producto.nombre, producto.stock.toString()), fontWeight = FontWeight.Medium, color = textColor) },
                                     onClick = {
                                         productoSeleccionado = producto
                                         expandedDropdown = false
@@ -298,7 +300,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                 OutlinedTextField(
                     value = cantidadProducidaText,
                     onValueChange = { cantidadProducidaText = it },
-                    label = { Text("Cantidad de Panes Horneados (Piezas)") },
+                    label = { Text(stringResource(R.string.admin_quantity_baked)) },
                     leadingIcon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -327,7 +329,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     } else {
                         Icon(Icons.Default.CheckCircle, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Confirmar y Descontar Insumos", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.admin_confirm_deduct), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -349,7 +351,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
             title = { Text(tituloDinamico, fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 16.sp) },
             text = {
                 Column {
-                    Text("No hay inventario suficiente en almacén para hornear esta cantidad:", fontSize = 13.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                    Text(stringResource(R.string.admin_insufficient_stock), fontSize = 13.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = faltantesList.joinToString("\n\n"),
@@ -364,7 +366,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     onClick = { showFaltaStockDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {
-                    Text("Entendido", color = Color.White)
+                    Text(stringResource(R.string.admin_understood), color = Color.White)
                 }
             }
         )

@@ -3,6 +3,8 @@ package com.developers.admin
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -99,7 +101,7 @@ fun PedidosScreen() {
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = 80.dp) // ✨ Subimos el FAB para que no tape la barra
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir Proveedor")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supplier))
             }
         },
         containerColor = bgColor
@@ -286,7 +288,7 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                                         val intent = Intent(Intent.ACTION_VIEW, uri)
                                         context.startActivity(intent)
                                     } catch (e: Exception) {
-                                        Toast.makeText(context, "No se pudo abrir WhatsApp", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.admin_error_open_whatsapp), Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -363,7 +365,7 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(prov.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Tel: ${prov.telefono}", color = Color.Gray, fontSize = 14.sp)
+                            Text(stringResource(R.string.admin_supplier_tel, prov.telefono), color = Color.Gray, fontSize = 14.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Surface(
                                 color = if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5),
@@ -379,7 +381,7 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, 
                             }
                         }
                         IconButton(onClick = { onEditClick(prov) }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Gray)
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.admin_edit), tint = Color.Gray)
                         }
                     }
                 }
@@ -414,13 +416,13 @@ fun AddEditProveedorDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = cardColor,
-        title = { Text(if (proveedor == null) "Nuevo Proveedor" else "Editar Proveedor", fontWeight = FontWeight.Bold, color = textColor) },
+        title = { Text(if (proveedor == null) stringResource(R.string.admin_new_supplier) else stringResource(R.string.admin_edit_supplier), fontWeight = FontWeight.Bold, color = textColor) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
-                    label = { Text("Nombre del Proveedor") },
+                    label = { Text(stringResource(R.string.admin_supplier_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -431,7 +433,7 @@ fun AddEditProveedorDialog(
                 OutlinedTextField(
                     value = telefono,
                     onValueChange = { telefono = it },
-                    label = { Text("Teléfono (WhatsApp)") },
+                    label = { Text(stringResource(R.string.admin_phone_whatsapp)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -446,7 +448,7 @@ fun AddEditProveedorDialog(
                         value = selectedInsumo?.nombre ?: "Seleccionar Materia Prima",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Materia Prima que surte") },
+                        label = { Text(stringResource(R.string.admin_supplied_material)) },
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdown = true }) },
                         modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true },
                         colors = OutlinedTextFieldDefaults.colors(
@@ -488,29 +490,29 @@ fun AddEditProveedorDialog(
                         if (proveedor == null) {
                             db.collection("proveedores").add(dataMap)
                                 .addOnSuccessListener { 
-                                    Toast.makeText(context, "Proveedor creado", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_supplier_created), Toast.LENGTH_SHORT).show()
                                     onDismiss() 
                                 }
                         } else {
                             db.collection("proveedores").document(proveedor.id).update(dataMap as Map<String, Any>)
                                 .addOnSuccessListener { 
-                                    Toast.makeText(context, "Proveedor actualizado", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_supplier_updated), Toast.LENGTH_SHORT).show()
                                     onDismiss() 
                                 }
                         }
                     } else {
-                        Toast.makeText(context, "Llene todos los campos", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.admin_fill_all_fields), Toast.LENGTH_SHORT).show()
                     }
                 },
                 enabled = !isSaving,
                 colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
             ) {
-                Text(if (isSaving) "Guardando..." else "Guardar")
+                Text(if (isSaving) stringResource(R.string.admin_saving) else stringResource(R.string.admin_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isSaving) {
-                Text("Cancelar", color = textColor)
+                Text(stringResource(R.string.admin_cancel), color = textColor)
             }
         }
     )

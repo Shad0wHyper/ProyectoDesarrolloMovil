@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -114,10 +116,10 @@ fun AIReportScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Reporte de Predicciones IA", fontWeight = FontWeight.Bold, color = textColor) },
+                title = { Text(stringResource(R.string.admin_ai_prediction_report), fontWeight = FontWeight.Bold, color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = textColor)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
@@ -184,7 +186,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                                     try {
                                         context.startActivity(intent)
                                     } catch (e: Exception) {
-                                        Toast.makeText(context, "No se pudo abrir WhatsApp", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.admin_error_open_whatsapp), Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
@@ -193,7 +195,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                             ) {
                                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Pedir vía WhatsApp")
+                                Text(stringResource(R.string.admin_order_via_whatsapp))
                             }
                         }
                     )
@@ -220,7 +222,7 @@ fun AIReportScreen(onBack: () -> Unit) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Conexión en Nube: Activa", fontWeight = FontWeight.Bold, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7))
+                                Text(stringResource(R.string.admin_cloud_connection), fontWeight = FontWeight.Bold, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7))
                             }
                             Text(
                                 "Datos servidos desde Render (FastAPI)",

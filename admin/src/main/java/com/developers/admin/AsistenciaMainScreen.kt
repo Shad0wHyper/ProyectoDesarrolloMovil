@@ -1,5 +1,7 @@
 package com.developers.admin
 
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,7 +39,7 @@ fun AsistenciaMainScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Asistencia",
+                text = stringResource(R.string.admin_nav_attendance),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = textColor
@@ -59,7 +61,7 @@ fun AsistenciaMainScreen() {
                 modifier = Modifier.clickable { tabIndex = 0 }
             ) {
                 Text(
-                    text = "Historial",
+                    text = stringResource(R.string.admin_attendance_history),
                     color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -74,7 +76,7 @@ fun AsistenciaMainScreen() {
                 modifier = Modifier.clickable { tabIndex = 1 }
             ) {
                 Text(
-                    text = "Generar QR",
+                    text = stringResource(R.string.admin_qr_attendance),
                     color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)

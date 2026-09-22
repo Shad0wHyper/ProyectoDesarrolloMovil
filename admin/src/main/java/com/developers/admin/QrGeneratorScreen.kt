@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.developers.core.R
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -91,11 +91,11 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
                 qrEntrada = nuevaEntrada
                 qrSalida = nuevaSalida
                 isSaving = false
-                Toast.makeText(context, "Códigos QR actualizados y sincronizados", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.admin_qr_updated_synced), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener {
                 isSaving = false
-                Toast.makeText(context, "Error al guardar en Firebase", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.admin_error_saving_firebase), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -117,9 +117,9 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Generador QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor) },
+                    title = { Text(stringResource(R.string.admin_qr_generator_title), fontWeight = FontWeight.Bold, color = textColor) },
                     navigationIcon = {
-                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor) }
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor) }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
                 )
@@ -154,7 +154,7 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
             containerColor = cardColor,
             title = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("QR de Asistencia", fontWeight = FontWeight.Bold, color = textColor)
+                    Text(stringResource(R.string.admin_qr_attendance), fontWeight = FontWeight.Bold, color = textColor)
                     IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = secondaryTextColor) }
                 }
             },
@@ -206,7 +206,7 @@ fun QrGeneratorContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Text("Muestra estos códigos en la sucursal para que los empleados escaneen su entrada o salida.", textAlign = TextAlign.Center, color = secondaryTextColor)
+        Text(stringResource(R.string.admin_qr_instruction), textAlign = TextAlign.Center, color = secondaryTextColor)
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { onQrClick(qrEntrada, ColorEntrada) })
@@ -291,12 +291,12 @@ private fun guardarQrEnGaleria(context: Context, bitmap: Bitmap, filename: Strin
                 imageDetails.put(MediaStore.Images.Media.IS_PENDING, 0)
                 contextResolver.update(imageUri, imageDetails, null, null)
             }
-            Toast.makeText(context, "QR Guardado en Galería -> Imágenes/PanappQRs", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.admin_qr_saved_gallery), Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             contextResolver.delete(imageUri, null, null)
-            Toast.makeText(context, "Error al guardar imagen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.admin_error_saving_image), Toast.LENGTH_SHORT).show()
         }
     } else {
-        Toast.makeText(context, "Error creando Uri de imagen", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.admin_error_creating_uri), Toast.LENGTH_SHORT).show()
     }
 }

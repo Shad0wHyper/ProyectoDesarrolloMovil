@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,25 +70,25 @@ fun AlmacenStockScreen() {
         AlertDialog(
             onDismissRequest = { showAddMaterialDialog = false },
             containerColor = cardColor,
-            title = { Text("Nuevo Material", color = textColor) },
+            title = { Text(stringResource(R.string.admin_new_material), color = textColor) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = nuevoNombreMat,
                         onValueChange = { nuevoNombreMat = it },
-                        label = { Text("Nombre") },
+                        label = { Text(stringResource(R.string.admin_name)) },
                         colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
                     )
                     OutlinedTextField(
                         value = nuevoSKUMat,
                         onValueChange = { nuevoSKUMat = it },
-                        label = { Text("SKU") },
+                        label = { Text(stringResource(R.string.admin_sku)) },
                         colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
                     )
                     OutlinedTextField(
                         value = nuevoMinimoMat,
                         onValueChange = { nuevoMinimoMat = it },
-                        label = { Text("Mínimo Requerido") },
+                        label = { Text(stringResource(R.string.admin_min_required)) },
                         colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
                     )
                 }
@@ -99,14 +101,14 @@ fun AlmacenStockScreen() {
                             showAddMaterialDialog = false
                             nuevoNombreMat = ""
                             nuevoSKUMat = ""
-                            Toast.makeText(context, "Material agregado", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.admin_material_added), Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
-                ) { Text("Agregar") }
+                ) { Text(stringResource(R.string.admin_add_btn)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddMaterialDialog = false }) { Text("Cancelar", color = textColor) }
+                TextButton(onClick = { showAddMaterialDialog = false }) { Text(stringResource(R.string.admin_cancel), color = textColor) }
             }
         )
     }
@@ -115,10 +117,10 @@ fun AlmacenStockScreen() {
         AlertDialog(
             onDismissRequest = { materialParaAjustar = null },
             containerColor = cardColor,
-            title = { Text("Ajustar Stock: ${materialParaAjustar?.nombre}", color = textColor) },
+            title = { Text(stringResource(R.string.admin_adjust_stock_title, materialParaAjustar?.nombre ?: ""), color = textColor) },
             text = {
                 Column {
-                    Text("Ingrese la nueva cantidad en ${materialParaAjustar?.unidad}:", color = textColor)
+                    Text(stringResource(R.string.admin_enter_new_quantity, materialParaAjustar?.unidad ?: ""), color = textColor)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = nuevoStockValue,
@@ -139,7 +141,7 @@ fun AlmacenStockScreen() {
                             val index = listaMateriales.indexOfFirst { it.sku == materialParaAjustar?.sku }
                             if (index != -1) {
                                 listaMateriales[index] = materialParaAjustar!!.copy(existencia = nuevaCant)
-                                Toast.makeText(context, "Stock actualizado", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.admin_stock_updated), Toast.LENGTH_SHORT).show()
                             }
                             materialParaAjustar = null
                             nuevoStockValue = ""
@@ -147,7 +149,7 @@ fun AlmacenStockScreen() {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
-                    Text("Guardar")
+                    Text(stringResource(R.string.admin_save))
                 }
             },
             dismissButton = {
@@ -180,7 +182,7 @@ fun AlmacenStockScreen() {
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Panaderia Stock", fontWeight = FontWeight.Bold, color = textColor)
+                    Text(stringResource(R.string.admin_bakery_stock), fontWeight = FontWeight.Bold, color = textColor)
                 }
             },
             actions = {
@@ -188,7 +190,7 @@ fun AlmacenStockScreen() {
                     Icon(Icons.Default.Add, contentDescription = "Nuevo Material", tint = textColor)
                 }
                 IconButton(onClick = { 
-                    Toast.makeText(context, "Sincronizando con base de datos...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.admin_syncing_db), Toast.LENGTH_SHORT).show()
                 }) {
                     Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones", tint = textColor)
                 }
@@ -208,7 +210,7 @@ fun AlmacenStockScreen() {
                     value = textBusqueda,
                     onValueChange = { textBusqueda = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Buscar por nombre o SKU...", color = Color.Gray) },
+                    placeholder = { Text(stringResource(R.string.admin_search_name_sku), color = Color.Gray) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -249,12 +251,12 @@ fun AlmacenStockScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Mostrando ${materialesFiltrados.size} materiales", color = Color.Gray, fontSize = 14.sp)
+                    Text(stringResource(R.string.admin_showing_materials, materialesFiltrados.size), color = Color.Gray, fontSize = 14.sp)
                     if (alertasCount > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(modifier = Modifier.size(8.dp), color = Color.Red, shape = CircleShape) {}
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("$alertasCount Alertas de stock", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(stringResource(R.string.admin_stock_alerts_count, alertasCount), color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -270,7 +272,7 @@ fun AlmacenStockScreen() {
                         nuevoStockValue = material.existencia.toString()
                     },
                     onEditClick = {
-                        Toast.makeText(context, "Modificando ${material.nombre}...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.admin_modifying_material, material.nombre), Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -336,12 +338,12 @@ fun MaterialStockCard(
             // Existencias
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("EXISTENCIA ACTUAL", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text("${material.existencia} ${material.unidad}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textColor)
+                    Text(stringResource(R.string.admin_current_stock), fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.admin_stock_unit, material.existencia.toString(), material.unidad), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textColor)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("MÍNIMO REQUERIDO", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text("${material.minimo} ${material.unidad}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                    Text(stringResource(R.string.admin_min_required_caps), fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.admin_stock_unit, material.minimo.toString(), material.unidad), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                 }
             }
 
@@ -373,7 +375,7 @@ fun MaterialStockCard(
                     ) {
                         Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Ajustar", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.admin_adjust), fontWeight = FontWeight.Bold)
                     }
                     TextButton(
                         onClick = onEditClick,
@@ -382,7 +384,7 @@ fun MaterialStockCard(
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Editar", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.admin_edit), fontWeight = FontWeight.Bold)
                     }
                 }
                 IconButton(onClick = { /* TODO */ }) {

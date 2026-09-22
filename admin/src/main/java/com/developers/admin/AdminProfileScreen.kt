@@ -1,6 +1,8 @@
 package com.developers.admin
 
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -73,16 +75,16 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                                 .addOnSuccessListener {
                                     viewModel.userImageUrl = newUrl
                                     isUploadingImage = false
-                                    Toast.makeText(context, "Foto de perfil actualizada", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_photo_updated), Toast.LENGTH_SHORT).show()
                                 }
                         }
                     }
                     .addOnFailureListener {
                         isUploadingImage = false
-                        Toast.makeText(context, "Error al subir la foto", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.admin_photo_error), Toast.LENGTH_SHORT).show()
                     }
             } else if (uid == "INVITADO") {
-                Toast.makeText(context, "Debes iniciar sesión para subir fotos", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.admin_login_required), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -107,10 +109,10 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi Perfil", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.admin_my_profile), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -162,7 +164,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                                 .data(viewModel.userImageUrl)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "Foto de perfil",
+                            contentDescription = stringResource(R.string.admin_profile_photo),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -196,7 +198,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                     ) {
                         Icon(
                             Icons.Default.CameraAlt,
-                            contentDescription = "Cambiar foto",
+                            contentDescription = stringResource(R.string.admin_change_photo),
                             tint = Color.White,
                             modifier = Modifier.size(18.dp)
                         )
@@ -210,7 +212,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
             OutlinedTextField(
                 value = nombreEditable,
                 onValueChange = { nombreEditable = it },
-                label = { Text("Nombre Completo") },
+                label = { Text(stringResource(R.string.admin_full_name)) },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -228,9 +230,9 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                 onValueChange = { },
                 readOnly = true,
                 enabled = false,
-                label = { Text("Correo Electrónico") },
+                label = { Text(stringResource(R.string.admin_email)) },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                trailingIcon = { Icon(Icons.Default.Lock, contentDescription = "Bloqueado") },
+                trailingIcon = { Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.admin_locked)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -241,7 +243,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Teléfono de Contacto") },
+                label = { Text(stringResource(R.string.admin_phone)) },
                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -266,12 +268,12 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                             .addOnSuccessListener {
                                 isSaving = false
                                 viewModel.userName = nombreEditable.trim() // Actualiza la variable de sesión
-                                Toast.makeText(context, "Perfil guardado con éxito", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.admin_profile_saved), Toast.LENGTH_SHORT).show()
                                 onBack()
                             }
                             .addOnFailureListener {
                                 isSaving = false
-                                Toast.makeText(context, "Error al guardar: ${it.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.admin_save_error, it.message ?: ""), Toast.LENGTH_SHORT).show()
                             }
                     }
                 },
@@ -283,7 +285,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Guardar Cambios", modifier = Modifier.padding(vertical = 8.dp))
+                    Text(stringResource(R.string.admin_save_changes), modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
 
@@ -301,7 +303,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Cerrar Sesión", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+                Text(stringResource(R.string.admin_logout), fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
             }
         }
     }

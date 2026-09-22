@@ -1,5 +1,7 @@
 package com.developers.admin
 
+import androidx.compose.ui.res.stringResource
+import com.developers.admin.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -104,10 +106,10 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Historial de Asistencias", fontWeight = FontWeight.Bold, color = textColor) },
+                    title = { Text(stringResource(R.string.admin_attendance_history), fontWeight = FontWeight.Bold, color = textColor) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textColor)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
@@ -152,7 +154,7 @@ fun AttendanceContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text("Buscar empleado...", color = Color.Gray) },
+            placeholder = { Text(stringResource(R.string.admin_search_employee), color = Color.Gray) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
             shape = RoundedCornerShape(24.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -202,7 +204,7 @@ fun AttendanceContent(
                 if (registrosFiltrados.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("No se encontraron registros.", color = Color.Gray)
+                            Text(stringResource(R.string.admin_no_records), color = Color.Gray)
                         }
                     }
                 } else {
