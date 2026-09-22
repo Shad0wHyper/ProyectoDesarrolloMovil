@@ -411,9 +411,10 @@ fun registrarPedidoEnFirebase(
     if (uid != "INVITADO" && uid.isNotEmpty()) {
         val userRef = db.collection("usuarios").document(uid).collection("pedidos").document()
         batch.set(userRef, nuevoPedido)
+    } else {
+        val globalRef = db.collection("pedidos").document()
+        batch.set(globalRef, nuevoPedido)
     }
-    val globalRef = db.collection("pedidos").document()
-    batch.set(globalRef, nuevoPedido)
 
     batch.commit().addOnSuccessListener {
         appViewModel.clearCart()
