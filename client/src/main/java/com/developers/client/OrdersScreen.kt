@@ -1,5 +1,12 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.paymentMethodLabel
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,8 +56,8 @@ fun OrdersScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 ),
                 windowInsets = WindowInsets.statusBars
             )
@@ -73,7 +80,7 @@ fun OrdersScreen(
                         appViewModel.getString("history"),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -81,7 +88,7 @@ fun OrdersScreen(
                 if (orderList.isEmpty() && appViewModel.currentUserId != "INVITADO") {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("Aún no tienes pedidos registrados.", color = Color.Gray)
+                            Text(localizedText(TextR.string.pan_no_orders), color = contrastTextColor(Color.Gray, secondary = true))
                         }
                     }
                 } else {
@@ -110,16 +117,16 @@ fun OrdersScreen(
                     text = {
                         Column {
                             Text("${appViewModel.getString("date")}: ${selectedOrder?.date}")
-                            Text("Envío a: ${selectedOrder?.direccionEnvio}", fontSize = 12.sp, color = Color.Gray)
-                            Text("Total: ${selectedOrder?.total}")
-                            Text("Método: ${selectedOrder?.metodoPago}", fontSize = 12.sp, color = Color.Gray)
+                            Text(localizedText(TextR.string.pan_shipping_to, selectedOrder?.direccionEnvio.toString()), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
+                            Text(localizedText(TextR.string.pan_order_total, selectedOrder?.total.toString()))
+                            Text(localizedText(TextR.string.pan_order_method, paymentMethodLabel(selectedOrder?.metodoPago.orEmpty())), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Status: ${appViewModel.getString(statusKey)}", fontWeight = FontWeight.Bold, color = PanAppPrimary)
+                                Text(localizedText(TextR.string.pan_order_status, appViewModel.getString(statusKey)), fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
                                 /* ✨ Temporalmente oculto hasta la Fase de Pagos
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = if (selectedOrder?.pagado == true) "● PAGADO" else "● PAGO PENDIENTE",
+                                    text = if (selectedOrder?.pagado == true) localizedText(TextR.string.pan_paid_bullet) else localizedText(TextR.string.pan_unpaid_bullet),
                                     color = if (selectedOrder?.pagado == true) Color(0xFF2E7D32) else Color(0xFFC62828),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp
@@ -147,7 +154,7 @@ fun OrdersScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text("- ${item.cantidad}x ${item.nombre}", fontSize = 14.sp)
-                                        Text(String.format("$%.2f", item.precio * item.cantidad), fontSize = 14.sp, color = Color.Gray)
+                                        Text(String.format("$%.2f", item.precio * item.cantidad), fontSize = 14.sp, color = contrastTextColor(Color.Gray, secondary = true))
                                     }
                                 }
                             }
@@ -194,10 +201,10 @@ fun OrderItemCard(
                     Text(
                         text = "ID ${order.id.take(8).uppercase()}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = contrastTextColor(Color.Gray, secondary = true),
                         fontWeight = FontWeight.Bold
                     )
-                    Text(order.date, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Text(order.date, style = MaterialTheme.typography.labelSmall, color = contrastTextColor(Color.Gray, secondary = true))
                 }
 
                 val statusUpper = order.status.uppercase()
@@ -216,7 +223,7 @@ fun OrderItemCard(
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text(
-                            text = if (order.pagado) "PAGADO" else "PAGO PENDIENTE",
+                            text = if (order.pagado) localizedText(TextR.string.pan_paid) else localizedText(TextR.string.pan_unpaid),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             color = if (order.pagado) Color(0xFF2E7D32) else Color(0xFFC62828),
                             style = MaterialTheme.typography.labelSmall,
@@ -262,7 +269,7 @@ fun OrderItemCard(
                         .background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF3F3FF)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Outlined.Inventory2, contentDescription = null, tint = PanAppPrimary)
+                    Icon(Icons.Outlined.Inventory2, contentDescription = null, tint = contrastAccentColor(PanAppPrimary))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -270,16 +277,16 @@ fun OrderItemCard(
                         order.mainItem,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
                     // En la tarjeta principal seguimos mostrando un resumen rápido
-                    Text("${order.itemCount} ${appViewModel.getString("items")}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Text("${order.itemCount} ${appViewModel.getString("items")}", style = MaterialTheme.typography.labelSmall, color = contrastTextColor(Color.Gray, secondary = true))
                 }
                 Text(
                     order.total,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             }
 
@@ -292,8 +299,8 @@ fun OrderItemCard(
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, if (isDarkMode) Color.DarkGray else Color(0xFFF0F0F0))
                 ) {
-                    Text(appViewModel.getString("view_details"), color = if (isDarkMode) Color.White else Color.Black)
-                    Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = if (isDarkMode) Color.White else Color.Black)
+                    Text(appViewModel.getString("view_details"), color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
+                    Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = contrastTextColor(Color.Black, darkBackground = isDarkMode))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(

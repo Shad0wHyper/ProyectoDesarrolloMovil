@@ -1,5 +1,7 @@
 package com.developers.panapp
 
+import com.developers.core.ui.contrastFieldColors
+
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -167,10 +169,10 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                             focusedBorderColor = MaterialTheme.colorScheme.primary
-                        ),
+                        )),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         enabled = !showModal

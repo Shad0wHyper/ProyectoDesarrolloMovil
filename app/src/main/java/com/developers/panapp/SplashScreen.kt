@@ -1,5 +1,8 @@
 package com.developers.panapp
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -59,7 +62,7 @@ fun SplashScreen(onNextScreen: () -> Unit) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.newp),
-                    contentDescription = "Logo",
+                    contentDescription = localizedText(TextR.string.pan_logo),
                     modifier = Modifier.size(105.dp), // ✨ Logo proporcionalmente más grande
                     tint = Color.Unspecified
                 )
@@ -68,7 +71,7 @@ fun SplashScreen(onNextScreen: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = "PanApp",
+                text = androidx.compose.ui.res.stringResource(R.string.app_name),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,

@@ -1,5 +1,13 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.categoryLabel
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -34,7 +42,7 @@ fun AlmacenStockScreen() {
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     
     // 1. Base de Datos Reactiva (Estado de la Lista)
     val listaMateriales = remember { 
@@ -77,19 +85,19 @@ fun AlmacenStockScreen() {
                         value = nuevoNombreMat,
                         onValueChange = { nuevoNombreMat = it },
                         label = { Text(stringResource(R.string.admin_name)) },
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor))
                     )
                     OutlinedTextField(
                         value = nuevoSKUMat,
                         onValueChange = { nuevoSKUMat = it },
                         label = { Text(stringResource(R.string.admin_sku)) },
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor))
                     )
                     OutlinedTextField(
                         value = nuevoMinimoMat,
                         onValueChange = { nuevoMinimoMat = it },
                         label = { Text(stringResource(R.string.admin_min_required)) },
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor))
                     )
                 }
             },
@@ -105,7 +113,7 @@ fun AlmacenStockScreen() {
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
-                ) { Text(stringResource(R.string.admin_add_btn)) }
+                ) { Text( stringResource(R.string.admin_add_btn), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) }
             },
             dismissButton = {
                 TextButton(onClick = { showAddMaterialDialog = false }) { Text(stringResource(R.string.admin_cancel), color = textColor) }
@@ -129,7 +137,7 @@ fun AlmacenStockScreen() {
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                         ),
                         modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor)
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(unfocusedTextColor = textColor, focusedTextColor = textColor))
                     )
                 }
             },
@@ -149,12 +157,12 @@ fun AlmacenStockScreen() {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
-                    Text(stringResource(R.string.admin_save))
+                    Text( stringResource(R.string.admin_save), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { materialParaAjustar = null }) {
-                    Text("Cancelar", color = textColor)
+                    Text(localizedText(TextR.string.pan_cancel), color = textColor)
                 }
             }
         )
@@ -187,12 +195,12 @@ fun AlmacenStockScreen() {
             },
             actions = {
                 IconButton(onClick = { showAddMaterialDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Nuevo Material", tint = textColor)
+                    Icon(Icons.Default.Add, contentDescription = localizedText(TextR.string.pan_new_material), tint = textColor)
                 }
                 IconButton(onClick = { 
                     Toast.makeText(context, context.getString(R.string.admin_syncing_db), Toast.LENGTH_SHORT).show()
                 }) {
-                    Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones", tint = textColor)
+                    Icon(Icons.Outlined.Notifications, contentDescription = localizedText(TextR.string.pan_notifications), tint = textColor)
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
@@ -210,16 +218,16 @@ fun AlmacenStockScreen() {
                     value = textBusqueda,
                     onValueChange = { textBusqueda = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.admin_search_name_sku), color = Color.Gray) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                    placeholder = { Text(stringResource(R.string.admin_search_name_sku), color = contrastTextColor(Color.Gray, secondary = true)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true)) },
                     shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = cardColor,
                         focusedContainerColor = cardColor,
                         unfocusedBorderColor = Color.LightGray,
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
             }
 
@@ -231,13 +239,13 @@ fun AlmacenStockScreen() {
                         FilterChip(
                             selected = categoriaSeleccionada == category,
                             onClick = { categoriaSeleccionada = category },
-                            label = { Text(category) },
+                            label = { Text( categoryLabel(category), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) },
                             shape = RoundedCornerShape(16.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = AdminPrimary,
                                 selectedLabelColor = Color.White,
                                 containerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE0E0E0),
-                                labelColor = if (isDarkMode) Color.LightGray else Color.DarkGray
+                                labelColor = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode)
                             )
                         )
                     }
@@ -251,12 +259,12 @@ fun AlmacenStockScreen() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.admin_showing_materials, materialesFiltrados.size), color = Color.Gray, fontSize = 14.sp)
+                    Text(stringResource(R.string.admin_showing_materials, materialesFiltrados.size), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 14.sp)
                     if (alertasCount > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(modifier = Modifier.size(8.dp), color = Color.Red, shape = CircleShape) {}
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.admin_stock_alerts_count, alertasCount), color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(stringResource(R.string.admin_stock_alerts_count, alertasCount), color = contrastErrorColor(Color.Red), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -290,13 +298,13 @@ fun MaterialStockCard(
     onEditClick: () -> Unit
 ) {
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     // 2. Lógica Dinámica de Estado y Color
     val (estado, color) = when {
-        material.existencia <= 0 -> "AGOTADO" to Color(0xFFF44336)
-        material.existencia < material.minimo -> "BAJO" to Color(0xFFFFA000)
-        else -> "OK" to Color(0xFF4CAF50)
+        material.existencia <= 0 -> localizedText(TextR.string.pan_status_out) to Color(0xFFF44336)
+        material.existencia < material.minimo -> localizedText(TextR.string.pan_status_low) to Color(0xFFFFA000)
+        else -> localizedText(TextR.string.pan_status_ok) to Color(0xFF4CAF50)
     }
 
     Card(
@@ -315,7 +323,7 @@ fun MaterialStockCard(
                             "SKU: ${material.sku}",
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = contrastTextColor(Color.Gray, secondary = true)
                         )
                     }
                 }
@@ -326,7 +334,7 @@ fun MaterialStockCard(
                     Text(
                         estado,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        color = color,
+                        color = contrastTextColor(color),
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
@@ -338,12 +346,12 @@ fun MaterialStockCard(
             // Existencias
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.admin_current_stock), fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.admin_current_stock), fontSize = 10.sp, color = contrastTextColor(Color.Gray, secondary = true), fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.admin_stock_unit, material.existencia.toString(), material.unidad), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textColor)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(stringResource(R.string.admin_min_required_caps), fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.admin_stock_unit, material.minimo.toString(), material.unidad), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                    Text(stringResource(R.string.admin_min_required_caps), fontSize = 10.sp, color = contrastTextColor(Color.Gray, secondary = true), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.admin_stock_unit, material.minimo.toString(), material.unidad), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Gray, secondary = true))
                 }
             }
 
@@ -373,22 +381,22 @@ fun MaterialStockCard(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     ) {
-                        Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon( Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.admin_adjust), fontWeight = FontWeight.Bold)
+                        Text( stringResource(R.string.admin_adjust), fontWeight = FontWeight.Bold, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                     }
                     TextButton(
                         onClick = onEditClick,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.DarkGray)
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon( Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.admin_edit), fontWeight = FontWeight.Bold)
+                        Text( stringResource(R.string.admin_edit), fontWeight = FontWeight.Bold, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                     }
                 }
                 IconButton(onClick = { /* TODO */ }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true))
                 }
             }
         }
@@ -405,11 +413,11 @@ data class MaterialStock(
 )
 
 fun getMaterialesStockInicial() = listOf(
-    MaterialStock("Harina de Trigo 000", "HRN-001", 12.5, 50.0, "kg", "Harinas"),
-    MaterialStock("Levadura Seca", "LEV-042", 5.0, 2.0, "kg", "Lácteos"),
-    MaterialStock("Mantequilla Sin Sal", "LAC-015", 0.0, 10.0, "kg", "Lácteos"),
-    MaterialStock("Azúcar Refinada", "AZU-009", 85.0, 30.0, "kg", "Azúcares"),
-    MaterialStock("Huevos Docena", "HUE-221", 4.0, 12.0, "pcs", "Otros")
+    MaterialStock(localizedText(TextR.string.pan_initial_flour), "HRN-001", 12.5, 50.0, "kg", "Harinas"),
+    MaterialStock(localizedText(TextR.string.pan_initial_yeast), "LEV-042", 5.0, 2.0, "kg", "Lácteos"),
+    MaterialStock(localizedText(TextR.string.pan_initial_butter), "LAC-015", 0.0, 10.0, "kg", "Lácteos"),
+    MaterialStock(localizedText(TextR.string.pan_initial_sugar), "AZU-009", 85.0, 30.0, "kg", "Azúcares"),
+    MaterialStock(localizedText(TextR.string.pan_initial_eggs), "HUE-221", 4.0, 12.0, "pcs", "Otros")
 )
 
 @Preview(showBackground = true)

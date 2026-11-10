@@ -1,5 +1,11 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -58,7 +64,7 @@ fun PedidosScreen() {
     var proveedores by remember { mutableStateOf<List<Proveedor>>(emptyList()) }
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Escucha en tiempo real de materia_prima y proveedores
@@ -101,7 +107,7 @@ fun PedidosScreen() {
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = 80.dp) // ✨ Subimos el FAB para que no tape la barra
             ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supplier))
+                Icon( Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supplier), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
             }
         },
         containerColor = bgColor
@@ -123,7 +129,7 @@ fun PedidosScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Pedidos",
+                    text = localizedText(TextR.string.pan_orders),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = textColor
@@ -134,7 +140,7 @@ fun PedidosScreen() {
                     color = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE3F2FD)
                 ) {
                     Text(
-                        text = "$sugerenciasCount sugerencias hoy",
+                        text = localizedText(TextR.string.pan_suggestions_count, sugerenciasCount),
                         color = if (isDarkMode) Color(0xFFBBDEFB) else Color(0xFF1976D2),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         fontWeight = FontWeight.Medium,
@@ -158,8 +164,8 @@ fun PedidosScreen() {
                     modifier = Modifier.clickable { tabIndex = 0 }
                 ) {
                     Text(
-                        text = "Sugerencias",
-                        color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
+                        text = localizedText(TextR.string.pan_suggestions),
+                        color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -173,8 +179,8 @@ fun PedidosScreen() {
                     modifier = Modifier.clickable { tabIndex = 1 }
                 ) {
                     Text(
-                        text = "Proveedores",
-                        color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
+                        text = localizedText(TextR.string.pan_suppliers),
+                        color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -206,14 +212,14 @@ fun PedidosScreen() {
 @Composable
 fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List<Proveedor>, isDarkMode: Boolean) {
     val context = LocalContext.current
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
     
     if (insumosCriticos.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "No hay pedidos pendientes.\nStock óptimo.",
-                color = Color.Gray,
+                text = localizedText(TextR.string.pan_no_pending_orders),
+                color = contrastTextColor(Color.Gray, secondary = true),
                 textAlign = TextAlign.Center,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
@@ -254,7 +260,7 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "SUGERENCIA",
+                                        text = localizedText(TextR.string.pan_suggestion),
                                         color = if (isDarkMode) Color(0xFFFFB74D) else Color(0xFFE65100),
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 10.sp
@@ -265,8 +271,8 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                             Text(proveedor.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Se recomienda pedir más unidades de ${insumo.nombre}",
-                                color = if (isDarkMode) Color.LightGray else Color.DarkGray,
+                                localizedText(TextR.string.pan_reorder_suggestion, insumo.nombre),
+                                color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode),
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -282,7 +288,7 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
 
                                     // Lanza el Intent de WhatsApp
                                     try {
-                                        val mensaje = "Buen día. Nos comunicamos de PanApp para solicitar un resurtido. Reportamos niveles bajos de ${insumo.nombre}. El pedido será de X ${insumo.unidadMedida}. Quedamos a la espera de su confirmación."
+                                        val mensaje = localizedText(TextR.string.pan_supplier_message, insumo.nombre, insumo.unidadMedida)
                                         val encodedMessage = URLEncoder.encode(mensaje, "UTF-8")
                                         val uri = Uri.parse("https://api.whatsapp.com/send?phone=${proveedor.telefono}&text=$encodedMessage")
                                         val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -311,8 +317,8 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                                         Spacer(modifier = Modifier.width(8.dp))
                                     }
                                     Text(
-                                        if (limiteAlcanzado) "Límite de avisos alcanzado" else "Enviar WhatsApp",
-                                        color = if (limiteAlcanzado) Color.Gray else Color.White,
+                                        if (limiteAlcanzado) localizedText(TextR.string.pan_notice_limit) else localizedText(TextR.string.pan_send_whatsapp),
+                                        color = if (limiteAlcanzado) contrastTextColor(Color.Gray, secondary = true) else Color.White,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -329,14 +335,14 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
 // 5. Pestaña 2: 'Proveedores' (Directorio)
 @Composable
 fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, onEditClick: (Proveedor) -> Unit) {
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     if (proveedores.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "No hay proveedores registrados.",
-                color = Color.Gray,
+                text = localizedText(TextR.string.pan_no_suppliers),
+                color = contrastTextColor(Color.Gray, secondary = true),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -365,7 +371,7 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(prov.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(stringResource(R.string.admin_supplier_tel, prov.telefono), color = Color.Gray, fontSize = 14.sp)
+                            Text(stringResource(R.string.admin_supplier_tel, prov.telefono), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 14.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Surface(
                                 color = if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5),
@@ -381,7 +387,7 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, 
                             }
                         }
                         IconButton(onClick = { onEditClick(prov) }) {
-                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.admin_edit), tint = Color.Gray)
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.admin_edit), tint = contrastTextColor(Color.Gray, secondary = true))
                         }
                     }
                 }
@@ -410,7 +416,7 @@ fun AddEditProveedorDialog(
 
     var isSaving by remember { mutableStateOf(false) }
 
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     AlertDialog(
@@ -425,10 +431,10 @@ fun AddEditProveedorDialog(
                     label = { Text(stringResource(R.string.admin_supplier_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
                 OutlinedTextField(
                     value = telefono,
@@ -437,24 +443,24 @@ fun AddEditProveedorDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
 
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
-                        value = selectedInsumo?.nombre ?: "Seleccionar Materia Prima",
+                        value = selectedInsumo?.nombre ?: localizedText(TextR.string.pan_select_material),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.admin_supplied_material)) },
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable { expandedDropdown = true }) },
                         modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true },
-                        colors = OutlinedTextFieldDefaults.colors(
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                             unfocusedTextColor = textColor,
                             focusedTextColor = textColor
-                        )
+                        ))
                     )
                     DropdownMenu(
                         expanded = expandedDropdown,
@@ -507,7 +513,7 @@ fun AddEditProveedorDialog(
                 enabled = !isSaving,
                 colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
             ) {
-                Text(if (isSaving) stringResource(R.string.admin_saving) else stringResource(R.string.admin_save))
+                Text( if (isSaving) stringResource(R.string.admin_saving) else stringResource(R.string.admin_save), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
             }
         },
         dismissButton = {

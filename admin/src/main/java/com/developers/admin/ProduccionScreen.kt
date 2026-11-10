@@ -1,5 +1,13 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
@@ -41,7 +49,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     var productosList by remember { mutableStateOf<List<Producto>>(emptyList()) }
@@ -76,7 +84,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
 
                 Producto(
                     id = doc.id,
-                    nombre = doc.getString("nombre") ?: "Sin nombre",
+                    nombre = doc.getString("nombre") ?: localizedText(TextR.string.pan_no_name),
                     categoria = doc.getString("categoria") ?: "Otros",
                     stock = stockReal,
                     statusLabel = statusL,
@@ -148,7 +156,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
 
                     if (insumoEncontrado == null || requerido > cantidadDisponible) {
                         unicoInsumoNombre = nombreInsumo
-                        val lineaError = "- $nombreInsumo: Necesaria ${requerido}${unidad} / Disponible ${cantidadDisponible}${unidad}"
+                        val lineaError = localizedText(TextR.string.pan_ingredient_shortage, nombreInsumo, requerido, unidad, cantidadDisponible)
                         listaFaltantesTemp.add(lineaError)
                     }
                 }
@@ -238,7 +246,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(stringResource(R.string.admin_daily_baking), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF1A237E))
-                        Text(stringResource(R.string.admin_prod_instruction), fontSize = 12.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                        Text(stringResource(R.string.admin_prod_instruction), fontSize = 12.sp, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                     }
                 }
             }
@@ -246,12 +254,12 @@ fun ProduccionScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             if (isLoading) {
-                CircularProgressIndicator(color = AdminPrimary, modifier = Modifier.padding(32.dp))
+                CircularProgressIndicator(color = contrastAccentColor(AdminPrimary), modifier = Modifier.padding(32.dp))
             } else {
                 // Selector de Producto
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
-                        value = productoSeleccionado?.nombre ?: "Seleccionar Producto...",
+                        value = productoSeleccionado?.nombre ?: localizedText(TextR.string.pan_select_product),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.admin_product_made)) },
@@ -263,10 +271,10 @@ fun ProduccionScreen(onBack: () -> Unit) {
                             .fillMaxWidth()
                             .clickable { expandedDropdown = true },
                         shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                             unfocusedTextColor = textColor,
                             focusedTextColor = textColor
-                        )
+                        ))
                     )
                     DropdownMenu(
                         expanded = expandedDropdown,
@@ -277,7 +285,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     ) {
                         if (productosList.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.admin_no_products_catalog), color = Color.Gray) },
+                                text = { Text(stringResource(R.string.admin_no_products_catalog), color = contrastTextColor(Color.Gray, secondary = true)) },
                                 onClick = { expandedDropdown = false }
                             )
                         } else {
@@ -306,10 +314,10 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -327,9 +335,9 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     if (isProcessing) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                     } else {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null)
+                        Icon( Icons.Default.CheckCircle, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.admin_confirm_deduct), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text( stringResource(R.string.admin_confirm_deduct), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                     }
                 }
             }
@@ -339,19 +347,19 @@ fun ProduccionScreen(onBack: () -> Unit) {
     // 4. UI DEL DIALOG DE ERROR DINÁMICO
     if (showFaltaStockDialog) {
         val tituloDinamico = if (faltantesList.size == 1) {
-            "Cantidad de $insumoUnicoNombre insuficiente"
+            localizedText(TextR.string.pan_insufficient_ingredient, insumoUnicoNombre)
         } else {
-            "Ingredientes insuficientes"
+            localizedText(TextR.string.pan_insufficient_ingredients)
         }
 
         AlertDialog(
             onDismissRequest = { showFaltaStockDialog = false },
             containerColor = cardColor,
-            icon = { Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color.Red, modifier = Modifier.size(40.dp)) },
-            title = { Text(tituloDinamico, fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 16.sp) },
+            icon = { Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = contrastErrorColor(Color.Red), modifier = Modifier.size(40.dp)) },
+            title = { Text(tituloDinamico, fontWeight = FontWeight.Bold, color = contrastErrorColor(Color.Red), fontSize = 16.sp) },
             text = {
                 Column {
-                    Text(stringResource(R.string.admin_insufficient_stock), fontSize = 13.sp, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                    Text(stringResource(R.string.admin_insufficient_stock), fontSize = 13.sp, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = faltantesList.joinToString("\n\n"),

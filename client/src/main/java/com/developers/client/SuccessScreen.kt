@@ -1,5 +1,11 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -51,19 +57,19 @@ fun SuccessScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "¡Pago Exitoso!",
+            text = localizedText(TextR.string.pan_payment_success),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isDarkMode) Color.White else Color.Black
+            color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Tu pedido ha sido confirmado y está siendo preparado. Recibirás una notificación cuando esté listo.",
+            text = localizedText(TextR.string.pan_payment_success_description),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
+            color = contrastTextColor(Color.Gray, secondary = true)
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -75,7 +81,7 @@ fun SuccessScreen(
             colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
         ) {
             Text(
-                "Volver al Inicio",
+                localizedText(TextR.string.pan_return_home),
                 modifier = Modifier.padding(vertical = 8.dp),
                 fontSize = 16.sp
             )
@@ -90,8 +96,8 @@ fun SuccessScreen(
             border = androidx.compose.foundation.BorderStroke(1.dp, PanAppPrimary)
         ) {
             Text(
-                "Ver Mis Pedidos",
-                color = PanAppPrimary,
+                localizedText(TextR.string.pan_view_orders),
+                color = contrastAccentColor(PanAppPrimary),
                 modifier = Modifier.padding(vertical = 8.dp),
                 fontSize = 16.sp
             )

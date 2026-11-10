@@ -1,5 +1,13 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.attendanceLabel
+
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
 import androidx.compose.foundation.background
@@ -49,7 +57,7 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     var filtroSeleccionado by remember { mutableStateOf("TODOS") } // "TODOS", "ENTRADA", "SALIDA"
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     LaunchedEffect(Unit) {
@@ -57,7 +65,7 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
         
         // Obtenemos todos los usuarios para mapear sus IDs a nombres
         db.collection("usuarios").get().addOnSuccessListener { userSnap ->
-            val userMap = userSnap.documents.associate { it.id to (it.getString("nombre") ?: "Empleado") }
+            val userMap = userSnap.documents.associate { it.id to (it.getString("nombre") ?: localizedText(TextR.string.pan_employee)) }
             
             // Usamos collectionGroup para traer todas las asistencias de todos los empleados
             db.collectionGroup("asistencias")
@@ -66,7 +74,7 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
                 .addOnSuccessListener { result ->
                     records = result.documents.mapNotNull { doc ->
                         val userId = doc.reference.parent.parent?.id ?: ""
-                        val name = userMap[userId] ?: "Desconocido"
+                        val name = userMap[userId] ?: localizedText(TextR.string.pan_unknown)
                         
                         AttendanceRecord(
                             id = doc.id,
@@ -154,15 +162,15 @@ fun AttendanceContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text(stringResource(R.string.admin_search_employee), color = Color.Gray) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+            placeholder = { Text(stringResource(R.string.admin_search_employee), color = contrastTextColor(Color.Gray, secondary = true)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true)) },
             shape = RoundedCornerShape(24.dp),
-            colors = OutlinedTextFieldDefaults.colors(
+            colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = cardColor,
                 focusedContainerColor = cardColor,
                 unfocusedTextColor = textColor,
                 focusedTextColor = textColor
-            )
+            ))
         )
 
         // ✨ FILTROS (PILLS)
@@ -173,19 +181,19 @@ fun AttendanceContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             AttendanceFilterPill(
-                text = "Todos",
+                text = localizedText(TextR.string.pan_all),
                 isSelected = filtroSeleccionado == "TODOS",
                 onClick = { onFiltroChange("TODOS") },
                 isDarkMode = isDarkMode
             )
             AttendanceFilterPill(
-                text = "Entradas",
+                text = localizedText(TextR.string.pan_entries),
                 isSelected = filtroSeleccionado == "ENTRADA",
                 onClick = { onFiltroChange("ENTRADA") },
                 isDarkMode = isDarkMode
             )
             AttendanceFilterPill(
-                text = "Salidas",
+                text = localizedText(TextR.string.pan_exits),
                 isSelected = filtroSeleccionado == "SALIDA",
                 onClick = { onFiltroChange("SALIDA") },
                 isDarkMode = isDarkMode
@@ -194,7 +202,7 @@ fun AttendanceContent(
 
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AdminPrimary)
+                CircularProgressIndicator(color = contrastAccentColor(AdminPrimary))
             }
         } else {
             LazyColumn(
@@ -204,7 +212,7 @@ fun AttendanceContent(
                 if (registrosFiltrados.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.admin_no_records), color = Color.Gray)
+                            Text(stringResource(R.string.admin_no_records), color = contrastTextColor(Color.Gray, secondary = true))
                         }
                     }
                 } else {
@@ -227,7 +235,7 @@ fun AttendanceFilterPill(
 ) {
     val selectedColor = AdminPrimary
     val unselectedColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE)
-    val contentColor = if (isSelected) Color.White else (if (isDarkMode) Color.LightGray else Color.Gray)
+    val contentColor = if (isSelected) Color.White else (contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode))
 
     Surface(
         onClick = onClick,
@@ -280,12 +288,12 @@ fun AttendanceItem(record: AttendanceRecord, isDarkMode: Boolean) {
                     text = record.employeeName,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Text(
-                    text = "${record.type} • ${record.dateFormatted}",
+                    text = localizedText(TextR.string.pan_attendance_date, attendanceLabel(record.type), record.dateFormatted),
                     fontSize = 12.sp,
-                    color = Color.Gray
+                    color = contrastTextColor(Color.Gray, secondary = true)
                 )
             }
             

@@ -1,5 +1,7 @@
 package com.developers.panapp
 
+import com.developers.core.ui.contrastFieldColors
+
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -215,10 +217,10 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                             focusedBorderColor = MaterialTheme.colorScheme.primary
-                        ),
+                        )),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true
                     )
@@ -257,10 +259,10 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
+                        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                             focusedBorderColor = MaterialTheme.colorScheme.primary
-                        ),
+                        )),
                         visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true
                     )
@@ -431,10 +433,10 @@ fun RegistrationField(
             leadingIcon = { Icon(leadingIcon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
+            colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 focusedBorderColor = MaterialTheme.colorScheme.primary
-            ),
+            )),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             singleLine = true
         )

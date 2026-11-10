@@ -1,5 +1,8 @@
 package com.developers.employee
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
@@ -8,7 +11,7 @@ import java.util.*
 
 // ✨ NUEVOS MODELOS PARA LOS PEDIDOS REALES
 data class PedidoItem(
-    val nombre: String = "Producto",
+    val nombre: String = localizedText(TextR.string.pan_product),
     val cantidad: Int = 1,
     val precio: Double = 0.0
 )
@@ -16,8 +19,8 @@ data class PedidoItem(
 data class PedidoFirebase(
     val id: String = "",
     val userId: String = "",
-    val clienteNombre: String = "Cliente",
-    val direccion: String = "Sin Dirección",
+    val clienteNombre: String = localizedText(TextR.string.pan_customer),
+    val direccion: String = localizedText(TextR.string.pan_no_address),
     val total: Double = 0.0,
     val estado: String = "PENDIENTE",
     val fecha: Long = 0L,
@@ -33,7 +36,15 @@ data class LogData(
 class EmployeeViewModel : ViewModel() {
     var currentUserId by mutableStateOf("INVITADO")
     var userEmail by mutableStateOf("")
-    var userName by mutableStateOf("Cargando...")
+    // Resolve local fallback text when read, so retained ViewModels follow locale changes.
+    private var userNameResource by mutableStateOf<Int?>(TextR.string.pan_loading)
+    private var userNameValue by mutableStateOf("")
+    var userName: String
+        get() = userNameResource?.let { localizedText(it) } ?: userNameValue
+        set(value) {
+            userNameResource = null
+            userNameValue = value
+        }
     var userImageUrl by mutableStateOf("") // ✨ AÑADIDO PARA FOTO DE PERFIL
     var logs by mutableStateOf<List<LogData>>(emptyList())
     var isLoading by mutableStateOf(false)
@@ -54,7 +65,9 @@ class EmployeeViewModel : ViewModel() {
             val db = FirebaseFirestore.getInstance()
             db.collection("usuarios").document(uid).get()
                 .addOnSuccessListener { doc ->
-                    userName = if (doc.exists()) doc.getString("nombre") ?: "Empleado" else "Empleado"
+                    val storedName = if (doc.exists()) doc.getString("nombre") else null
+                    if (storedName == null) userNameResource = TextR.string.pan_employee
+                    else userName = storedName
                     userImageUrl = doc.getString("imageUrl") ?: "" // ✨ CARGAMOS LA FOTO DE FIREBASE
                     fetchLogs()
                 }
@@ -71,7 +84,7 @@ class EmployeeViewModel : ViewModel() {
             // ✨ INICIAMOS LA ESCUCHA DE PEDIDOS GLOBALES
             fetchPedidosReales()
         } else {
-            userName = "Empleado Invitado"
+            userNameResource = TextR.string.pan_guest_employee
         }
     }
 
@@ -90,7 +103,7 @@ class EmployeeViewModel : ViewModel() {
                         val itemsRaw = doc.get("items") as? List<HashMap<String, Any>> ?: emptyList()
                         val parsedItems = itemsRaw.map { map ->
                             PedidoItem(
-                                nombre = map["nombre"]?.toString() ?: "Producto",
+                                nombre = map["nombre"]?.toString() ?: localizedText(TextR.string.pan_product),
                                 cantidad = (map["cantidad"] as? Number)?.toInt() ?: 1,
                                 precio = (map["precio"] as? Number)?.toDouble() ?: 0.0
                             )
@@ -100,8 +113,8 @@ class EmployeeViewModel : ViewModel() {
                         PedidoFirebase(
                             id = doc.id,
                             userId = clientUserId,
-                            clienteNombre = doc.getString("clienteNombre") ?: doc.getString("cliente") ?: "Cliente Anónimo",
-                            direccion = doc.getString("direccion") ?: "Recoger en sucursal",
+                            clienteNombre = doc.getString("clienteNombre") ?: doc.getString("cliente") ?: localizedText(TextR.string.pan_anonymous_customer),
+                            direccion = doc.getString("direccion") ?: localizedText(TextR.string.pan_pickup),
                             total = (doc.get("total") as? Number)?.toDouble() ?: 0.0,
                             estado = doc.getString("estado") ?: "PENDIENTE",
                             fecha = (doc.get("timestamp") as? Number)?.toLong() ?: (doc.get("fecha") as? Number)?.toLong() ?: 0L,
@@ -130,7 +143,7 @@ class EmployeeViewModel : ViewModel() {
         // 3. Limpiar variables en RAM
         currentUserId = "INVITADO"
         userEmail = ""
-        userName = "Cargando..."
+        userNameResource = TextR.string.pan_loading
         userImageUrl = ""
         logs = emptyList()
         claveEntrada = ""

@@ -1,5 +1,10 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastTextColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
@@ -51,15 +56,15 @@ val ColorSalida = Color(0xFFF44336) // Rojo
 @Composable
 fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     val isDarkMode = isSystemInDarkTheme()
-    var qrEntrada by remember { mutableStateOf("Cargando...") }
-    var qrSalida by remember { mutableStateOf("Cargando...") }
+    var qrEntrada by remember { mutableStateOf(localizedText(TextR.string.pan_loading)) }
+    var qrSalida by remember { mutableStateOf(localizedText(TextR.string.pan_loading)) }
     var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
-    val secondaryTextColor = if (isDarkMode) Color.LightGray else Color.Gray
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+    val secondaryTextColor = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode)
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Estado para el popup de QR ampliado
@@ -155,15 +160,15 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
             title = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.admin_qr_attendance), fontWeight = FontWeight.Bold, color = textColor)
-                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = secondaryTextColor) }
+                    IconButton(onClick = { mostrarQrGrande = false }, modifier = Modifier.background(if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Close, contentDescription = localizedText(TextR.string.pan_close), tint = secondaryTextColor) }
                 }
             },
             text = {
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     if (qrBitmapGrande != null) {
-                        Image(bitmap = qrBitmapGrande.asImageBitmap(), contentDescription = "QR Grande", modifier = Modifier.size(300.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).padding(16.dp))
+                        Image(bitmap = qrBitmapGrande.asImageBitmap(), contentDescription = localizedText(TextR.string.pan_qr_large), modifier = Modifier.size(300.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).padding(16.dp))
                     } else {
-                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(200.dp), tint = Color.LightGray)
+                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(200.dp), tint = contrastTextColor(Color.LightGray, secondary = true))
                     }
                     Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                         Text(contenido, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = color, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
@@ -183,7 +188,7 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = color)
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text("Guardar como Imagen", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Icon( Icons.Default.Save, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current)); Spacer(modifier = Modifier.width(8.dp)); Text( localizedText(TextR.string.pan_save_image), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             }
         )
@@ -209,12 +214,12 @@ fun QrGeneratorContent(
         Text(stringResource(R.string.admin_qr_instruction), textAlign = TextAlign.Center, color = secondaryTextColor)
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            QrCardView(modifier = Modifier.weight(1f), title = "Código de ENTRADA", color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { onQrClick(qrEntrada, ColorEntrada) })
-            QrCardView(modifier = Modifier.weight(1f), title = "Código de SALIDA", color = ColorSalida, qrContent = qrSalida, isDarkMode = isDarkMode, onClick = { onQrClick(qrSalida, ColorSalida) })
+            QrCardView(modifier = Modifier.weight(1f), title = localizedText(TextR.string.pan_qr_entry), color = ColorEntrada, qrContent = qrEntrada, isDarkMode = isDarkMode, onClick = { onQrClick(qrEntrada, ColorEntrada) })
+            QrCardView(modifier = Modifier.weight(1f), title = localizedText(TextR.string.pan_qr_exit), color = ColorSalida, qrContent = qrSalida, isDarkMode = isDarkMode, onClick = { onQrClick(qrSalida, ColorSalida) })
         }
 
         Button(onClick = onGenerarClick, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(12.dp), enabled = !isSaving, colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)) {
-            if (isSaving) { CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp)) } else { Icon(Icons.Default.Refresh, contentDescription = null); Spacer(modifier = Modifier.width(8.dp)); Text("Generar Nuevos Códigos QR Hoy", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+            if (isSaving) { CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp)) } else { Icon( Icons.Default.Refresh, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current)); Spacer(modifier = Modifier.width(8.dp)); Text( localizedText(TextR.string.pan_generate_qrs), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) }
         }
     }
 }
@@ -229,9 +234,9 @@ fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: Strin
             Text(title, fontWeight = FontWeight.Bold, color = color, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(16.dp))
             if (qrBitmap != null) {
-                Image(bitmap = qrBitmap.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(8.dp))
+                Image(bitmap = qrBitmap.asImageBitmap(), contentDescription = localizedText(TextR.string.pan_qr_code), modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(8.dp))
             } else {
-                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(100.dp), tint = Color.LightGray)
+                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(100.dp), tint = contrastTextColor(Color.LightGray, secondary = true))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {

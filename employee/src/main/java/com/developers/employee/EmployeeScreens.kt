@@ -1,10 +1,20 @@
 package com.developers.employee
 
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.ui.contrastTextColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.orderStatusLabel
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,7 +57,7 @@ import com.google.firebase.storage.FirebaseStorage
 @Composable
 fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_nav_home), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_nav_home), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, actions = { EmployeeProfileButton(viewModel, onClick = { onNavigate(AppScreen.PERFIL) }) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -70,20 +80,57 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
+    // These are the existing persisted states; filtering does not update orders.
+    var estadoSeleccionado by rememberSaveable { mutableStateOf("PENDIENTE") }
+    val filtros = listOf(
+        "PENDIENTE" to stringResource(R.string.emp_dispatch_filter_processed),
+        "ENVIADO" to stringResource(R.string.emp_dispatch_filter_on_the_way),
+        "ENTREGADO" to stringResource(R.string.emp_dispatch_filter_delivered)
+    )
+    val pedidosFiltrados = viewModel.pedidosActivos.filter { it.estado == estadoSeleccionado }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_dispatch_queue), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_dispatch_queue), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, actions = { EmployeeProfileButton(viewModel, onClick = { onNavigate(AppScreen.PERFIL) }) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        if (viewModel.pedidosActivos.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.emp_no_active_orders), color = Color.Gray)
-            }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(viewModel.pedidosActivos, key = { it.id }) { order ->
-                    OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                filtros.forEach { (estado, etiqueta) ->
+                    FilterChip(
+                        selected = estadoSeleccionado == estado,
+                        onClick = { estadoSeleccionado = estado },
+                        label = { Text(etiqueta) },
+                        leadingIcon = if (estadoSeleccionado == estado) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null
+                    )
                 }
-                item { Spacer(modifier = Modifier.height(60.dp)) }
+            }
+
+            if (pedidosFiltrados.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    Text(
+                        stringResource(R.string.emp_dispatch_empty_filter),
+                        color = contrastTextColor(Color.Gray, secondary = true),
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(pedidosFiltrados, key = { it.id }) { order ->
+                        OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
+                    }
+                    item { Spacer(modifier = Modifier.height(60.dp)) }
+                }
             }
         }
     }
@@ -104,7 +151,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
         else -> Color.Gray
     }
 
-    val dateFormateada = if (pedido.fecha > 0) SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(pedido.fecha)) else "Reciente"
+    val dateFormateada = if (pedido.fecha > 0) SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(pedido.fecha)) else localizedText(TextR.string.pan_recent)
 
     Card(
         modifier = Modifier.fillMaxWidth().border(if (isEntregado) 2.dp else 0.dp, if (isEntregado) statusColor else Color.Transparent, RoundedCornerShape(12.dp)),
@@ -131,7 +178,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
                         color = if (isEntregado) statusColor.copy(alpha = 0.2f) else statusColor
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-                            Text(if (isEntregado) stringResource(R.string.emp_closed_delivered) else pedido.estado, color = if (isEntregado) statusColor else Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(if (isEntregado) stringResource(R.string.emp_closed_delivered) else orderStatusLabel(pedido.estado), color = if (isEntregado) statusColor else Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             if (!isEntregado) {
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp).padding(start = 4.dp))
                             }
@@ -141,7 +188,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
                     DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                         opcionesEstado.forEach { estadoItem ->
                             DropdownMenuItem(
-                                text = { Text(estadoItem, fontWeight = FontWeight.Bold) },
+                                text = { Text(orderStatusLabel(estadoItem), fontWeight = FontWeight.Bold) },
                                 onClick = {
                                     expandedDropdown = false
                                     viewModel.actualizarEstadoPedido(pedido.path, estadoItem) // Guarda en Firestore
@@ -244,12 +291,12 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
                         storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
                             viewModel.updateProfileImage(downloadUrl.toString())
                             isUploadingImage = false
-                            Toast.makeText(context, "Foto actualizada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, localizedText(TextR.string.pan_photo_updated), Toast.LENGTH_SHORT).show()
                         }
                     }
                     .addOnFailureListener {
                         isUploadingImage = false
-                        Toast.makeText(context, "Error al subir la foto", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, localizedText(TextR.string.pan_photo_error), Toast.LENGTH_SHORT).show()
                     }
             }
         }
@@ -275,7 +322,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
                                         )
                                     )
                                 } else if (viewModel.currentUserId == "INVITADO") {
-                                    Toast.makeText(context, "Inicia sesión para subir una foto", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, localizedText(TextR.string.pan_photo_login), Toast.LENGTH_SHORT).show()
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -325,7 +372,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
                             ) {
                                 Icon(
                                     Icons.Default.CameraAlt,
-                                    contentDescription = "Cambiar foto",
+                                    contentDescription = localizedText(TextR.string.pan_photo_change),
                                     tint = Color.White,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -335,7 +382,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
 
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(viewModel.userName, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
-                    Text(viewModel.userEmail, color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(viewModel.userEmail, color = contrastAccentColor(PrimaryBlue), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
             }
             // Text(stringResource(R.string.emp_account_settings), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))

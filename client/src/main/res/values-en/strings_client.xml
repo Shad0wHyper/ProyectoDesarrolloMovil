@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Client Module: Texts in English (Default) -->
+    <string name="client_hello">Hello</string>
+    <string name="client_what_fancy">What do you fancy today?</string>
+    <string name="client_search_placeholder">Search your favorite bread&#8230;</string>
+    <string name="client_categories_label">CATEGORIES</string>
+    <string name="client_cat_all">ALL</string>
+    <string name="client_cat_breads">BREADS</string>
+    <string name="client_cat_coffee">COFFEE</string>
+    <string name="client_cat_others">OTHERS</string>
+    <string name="client_products">Our Products</string>
+    <string name="client_settings">Settings</string>
+    <string name="client_my_orders">My Orders</string>
+    <string name="client_profile">My Profile</string>
+    <string name="client_logout">Logout</string>
+    <string name="client_dark_mode">Dark Mode</string>
+    <string name="client_language">Language</string>
+    <string name="client_notifications">Notifications</string>
+    <string name="client_save_changes">Save Changes</string>
+    <string name="client_cart">My Cart</string>
+    <string name="client_total">Total to pay</string>
+    <string name="client_confirm_order">Confirm Order</string>
+    <string name="client_history">History</string>
+    <string name="client_your_order">Your Order</string>
+    <string name="client_items">items</string>
+    <string name="client_view_details">View details</string>
+    <string name="client_buy_again">Buy Again</string>
+    <string name="client_order_details">Order Details</string>
+    <string name="client_date">Date</string>
+    <string name="client_close">Close</string>
+    <string name="client_payment_method">Payment Method</string>
+    <string name="client_pay_now">Pay Now</string>
+    <string name="client_card">Card</string>
+    <string name="client_transfer">Transfer</string>
+    <string name="client_cash">Cash</string>
+    <string name="client_local_pay">Local Pay</string>
+    <string name="client_preferences">Preferences</string>
+    <string name="client_account">Account</string>
+    <string name="client_dark_mode_desc">Save battery and rest your eyes</string>
+    <string name="client_profile_desc">Edit your personal info</string>
+    <string name="client_notif_desc">Manage your alerts</string>
+    <string name="client_full_name">Full Name</string>
+    <string name="client_email_label">Email Address</string>
+    <string name="client_phone_label">Phone Number</string>
+    <string name="client_pendiente">Pending</string>
+    <string name="client_en_camino">On the way</string>
+    <string name="client_entregado">Delivered</string>
+    <string name="client_payment_form">Payment form for</string>
+    <string name="client_empty_cart">Your cart is empty</string>
+    <string name="client_subtotal">Subtotal</string>
+    <string name="client_delivery">Delivery</string>
+    <string name="client_taxes">Taxes</string>
+
+    <!-- New Strings added for thoroughness -->
+    <string name="client_delivery_address">Delivery Address</string>
+    <string name="client_add_address_or_select">Add or select address</string>
+    <string name="client_shipping_addresses">Shipping Addresses</string>
+    <string name="client_manage_addresses">Manage addresses</string>
+    <string name="client_payment_methods">Payment Methods</string>
+    <string name="client_add_card">Add card</string>
+    <string name="client_nav_home">Home</string>
+    <string name="client_nav_orders">Orders</string>
+    <string name="client_nav_search">Search</string>
+    <string name="client_logout_desc">Securely log out</string>
+    <string name="client_search_hint_empty">Search for your favorite\nbreads, desserts, or drinks</string>
+    <string name="client_search_not_found">We couldn\'t find</string>
+    <string name="client_search_try_again">Try another keyword.</string>
+    <string name="client_clear">Clear</string>
+    <string name="client_missing_address_title">Missing Shipping Address</string>
+    <string name="client_missing_address_desc">A delivery address is required to make a purchase.</string>
+    <string name="client_please_fill_address">Please fill in your name and address</string>
+    <string name="client_main_address">Main address</string>
+    <string name="client_new_address">New Address</string>
+    <string name="client_saved_addresses">My Saved Addresses</string>
+    <string name="client_address_placeholder">Street, Number, Neighborhood...</string>
+</resources>

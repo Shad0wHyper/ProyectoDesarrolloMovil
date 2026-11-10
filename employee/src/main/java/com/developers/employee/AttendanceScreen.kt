@@ -1,5 +1,9 @@
 package com.developers.employee
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.attendanceLabel
+
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -39,6 +43,7 @@ fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Un
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.emp_attendance_control), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                actions = { EmployeeProfileButton(viewModel, onClick = { onNavigate(AppScreen.PERFIL) }) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
@@ -70,28 +75,28 @@ fun AttendanceScannerControl(viewModel: EmployeeViewModel) {
 
                 if (codigoLeido == claveCorrecta && claveCorrecta.isNotEmpty()) {
                     viewModel.registerAttendance(tipoAsistencia) {
-                        Toast.makeText(context, "$tipoAsistencia Registrada Exitosamente", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, localizedText(TextR.string.pan_attendance_recorded, attendanceLabel(tipoAsistencia)), Toast.LENGTH_LONG).show()
                     }
                 } else {
-                    Toast.makeText(context, "❌ Código QR Inválido o Caducado.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, localizedText(TextR.string.pan_invalid_qr), Toast.LENGTH_LONG).show()
                 }
             }
-            .addOnFailureListener { Toast.makeText(context, "Error al abrir cámara", Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(context, localizedText(TextR.string.pan_camera_error), Toast.LENGTH_SHORT).show() }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Escáner de Sucursal", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(localizedText(TextR.string.pan_branch_scanner), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), onClick = { procesarEscaneo("ENTRADA") }) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.ArrowOutward, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Marcar Entrada", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    Text(localizedText(TextR.string.pan_clock_in), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
             }
             Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = CardPink), onClick = { procesarEscaneo("SALIDA") }) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.ArrowDownward, null, tint = Color.White)
-                    Text("Marcar Salida", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                    Text(localizedText(TextR.string.pan_clock_out), fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
                 }
             }
         }
@@ -148,7 +153,7 @@ fun RenderLogItem(log: LogData) {
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(log.type, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(attendanceLabel(log.type), fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(log.dateFormatted, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
             Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.background).padding(horizontal = 12.dp, vertical = 4.dp)) {

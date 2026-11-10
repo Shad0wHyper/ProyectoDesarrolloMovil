@@ -41,7 +41,7 @@
     <string name="register_email">Correo electrónico</string>
     <string name="register_email_placeholder">tu@ejemplo.com</string>
     <string name="register_phone">Teléfono (opcional)</string>
-    <string name="register_phone_placeholder">+34 000 000 000</string>
+    <string name="register_phone_placeholder">+52 000 000 0000</string>
     <string name="register_password">Contraseña</string>
     <string name="register_password_placeholder">••••••••</string>
     <string name="register_password_hint">Mínimo 8 caracteres con números y símbolos.</string>

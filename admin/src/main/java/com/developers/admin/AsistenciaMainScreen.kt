@@ -1,5 +1,7 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastTextColor
+
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
 import androidx.compose.foundation.BorderStroke
@@ -23,7 +25,7 @@ fun AsistenciaMainScreen() {
     var tabIndex by remember { mutableIntStateOf(0) } // 0: Historial, 1: Generar QR
 
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Column(
         modifier = Modifier
@@ -62,7 +64,7 @@ fun AsistenciaMainScreen() {
             ) {
                 Text(
                     text = stringResource(R.string.admin_attendance_history),
-                    color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
+                    color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
@@ -77,7 +79,7 @@ fun AsistenciaMainScreen() {
             ) {
                 Text(
                     text = stringResource(R.string.admin_qr_attendance),
-                    color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else Color.Gray,
+                    color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )

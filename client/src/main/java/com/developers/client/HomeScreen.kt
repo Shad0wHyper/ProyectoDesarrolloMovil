@@ -1,5 +1,12 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -79,7 +86,7 @@ fun HomeScreen(
 
     // ✨ MEMORIZAR NOMBRE DE USUARIO PARA EVITAR .split() EN CADA FRAME DE SCROLL (120Hz)
     val userFirstName = remember(appViewModel.userName) {
-        appViewModel.userName.split(" ").firstOrNull() ?: "Cliente"
+        appViewModel.userName.split(" ").firstOrNull() ?: localizedText(TextR.string.pan_customer)
     }
 
     val catBreads = appViewModel.getString("cat_breads")
@@ -128,7 +135,7 @@ fun HomeScreen(
                 // LOGO OFICIAL
                 Image(
                     painter = painterResource(id = com.developers.client.R.drawable.icon),
-                    contentDescription = "Logo Oficial",
+                    contentDescription = localizedText(TextR.string.pan_official_logo),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(45.dp)
@@ -150,8 +157,8 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 Icons.Outlined.ShoppingCart,
-                                contentDescription = "Carrito",
-                                tint = if (isDarkMode) Color.White else Color.Black
+                                contentDescription = localizedText(TextR.string.pan_cart),
+                                tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                             )
                         }
                     }
@@ -160,7 +167,7 @@ fun HomeScreen(
                             if (appViewModel.userImageUrl.isNotEmpty()) {
                                 AsyncImage(
                                     model = appViewModel.userImageUrl,
-                                    contentDescription = "Perfil",
+                                    contentDescription = localizedText(TextR.string.pan_profile),
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(36.dp)
@@ -169,9 +176,9 @@ fun HomeScreen(
                             } else {
                                 Icon(
                                     Icons.Default.AccountCircle,
-                                    contentDescription = "Perfil",
+                                    contentDescription = localizedText(TextR.string.pan_profile),
                                     modifier = Modifier.size(32.dp),
-                                    tint = if (isDarkMode) Color.White else Color.Black
+                                    tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                                 )
                             }
                         }
@@ -181,29 +188,29 @@ fun HomeScreen(
                             modifier = Modifier.background(if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
                         ) {
                             DropdownMenuItem(
-                                text = { Text(appViewModel.getString("profile"), color = if (isDarkMode) Color.White else Color.Black) },
+                                text = { Text(appViewModel.getString("profile"), color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToProfile()
                                 },
-                                leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = if (isDarkMode) Color.White else Color.Black) }
+                                leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
                             )
                             DropdownMenuItem(
-                                text = { Text(appViewModel.getString("settings"), color = if (isDarkMode) Color.White else Color.Black) },
+                                text = { Text(appViewModel.getString("settings"), color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSettings()
                                 },
-                                leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = if (isDarkMode) Color.White else Color.Black) }
+                                leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
                             )
                             HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color.LightGray)
                             DropdownMenuItem(
-                                text = { Text(appViewModel.getString("logout"), color = Color.Red) },
+                                text = { Text(appViewModel.getString("logout"), color = contrastErrorColor(Color.Red)) },
                                 onClick = {
                                     showMenu = false
                                     appViewModel.limpiarDatosDeSesion { onLogoutClick() }
                                 },
-                                leadingIcon = { Icon(Icons.Outlined.Logout, contentDescription = null, tint = Color.Red) }
+                                leadingIcon = { Icon(Icons.Outlined.Logout, contentDescription = null, tint = contrastErrorColor(Color.Red)) }
                             )
                         }
                     }
@@ -219,12 +226,12 @@ fun HomeScreen(
                     text = "${appViewModel.getString("hello")}, $userFirstName! 👋",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Text(
                     text = appViewModel.getString("what_fancy"),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray
+                    color = contrastTextColor(Color.Gray, secondary = true)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -278,18 +285,18 @@ fun HomeScreen(
                         text = if (currentCat == "TODO") appViewModel.getString("products") else "${appViewModel.getString("categories_label")}: $currentCategoryDisplayName",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = PanAppPrimary)
+                            CircularProgressIndicator(color = contrastAccentColor(PanAppPrimary))
                         }
                     } else if (filteredProducts.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No hay productos en esta categoría.", color = Color.Gray)
+                            Text(localizedText(TextR.string.pan_empty_category), color = contrastTextColor(Color.Gray, secondary = true))
                         }
                     } else {
                         LazyVerticalGrid(
@@ -358,7 +365,7 @@ fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, isDarkMod
                 Icon(
                     imageVector = icon,
                     contentDescription = name,
-                    tint = if (isSelected) Color.White else Color.Gray
+                    tint = if (isSelected) Color.White else contrastTextColor(Color.Gray, secondary = true)
                 )
             }
         }
@@ -367,7 +374,7 @@ fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, isDarkMod
             text = name,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) PanAppPrimary else Color.Gray
+            color = if (isSelected) PanAppPrimary else contrastTextColor(Color.Gray, secondary = true)
         )
     }
 }
@@ -422,7 +429,7 @@ fun ProductCard(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "Nuevo",
+                            text = localizedText(TextR.string.pan_new),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             color = Color.White,
                             style = MaterialTheme.typography.labelSmall
@@ -451,7 +458,7 @@ fun ProductCard(
                         Text(
                             text = product.calificacion.toString(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isDarkMode) Color.White else Color.Black
+                            color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                         )
                     }
                 }
@@ -461,7 +468,7 @@ fun ProductCard(
                     text = product.nombre,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isDarkMode) Color.White else Color.Black,
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     maxLines = 1
                 )
                 Row(
@@ -471,7 +478,7 @@ fun ProductCard(
                 ) {
                     Text(
                         text = formattedPrice,
-                        color = PanAppPrimary,
+                        color = contrastAccentColor(PanAppPrimary),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -483,7 +490,7 @@ fun ProductCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Agregar al carrito",
+                            contentDescription = localizedText(TextR.string.pan_add_cart),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
@@ -544,7 +551,7 @@ fun ProductDetailBottomSheetContent(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "NUEVO",
+                        text = localizedText(TextR.string.pan_new_upper),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         color = Color.White,
                         style = MaterialTheme.typography.labelSmall,
@@ -575,7 +582,7 @@ fun ProductDetailBottomSheetContent(
                         text = product.calificacion.toString(),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
                 }
             }
@@ -591,7 +598,7 @@ fun ProductDetailBottomSheetContent(
             ) {
                 Text(
                     text = product.categoria.uppercase(),
-                    color = PanAppPrimary,
+                    color = contrastAccentColor(PanAppPrimary),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -604,7 +611,7 @@ fun ProductDetailBottomSheetContent(
             text = product.nombre,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isDarkMode) Color.White else Color.Black
+            color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -617,15 +624,15 @@ fun ProductDetailBottomSheetContent(
         ) {
             Column {
                 Text(
-                    text = "Precio",
+                    text = localizedText(TextR.string.pan_price),
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.Gray
+                    color = contrastTextColor(Color.Gray, secondary = true)
                 )
                 Text(
                     text = formattedPrice,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = PanAppPrimary
+                    color = contrastAccentColor(PanAppPrimary)
                 )
             }
         }
@@ -649,7 +656,7 @@ fun ProductDetailBottomSheetContent(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Agregar al Carrito",
+                text = localizedText(TextR.string.pan_add_cart_title),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White

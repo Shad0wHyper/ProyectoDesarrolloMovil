@@ -1,5 +1,9 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -115,13 +119,13 @@ fun SearchScreen(
                             }
                         },
                         shape = RoundedCornerShape(24.dp),
-                        colors = TextFieldDefaults.colors(
+                        colors = contrastFieldColors(TextFieldDefaults.colors(
                             focusedContainerColor = if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF3F4F6),
                             unfocusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF3F4F6),
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                             disabledIndicatorColor = Color.Transparent
-                        ),
+                        )),
                         singleLine = true
                     )
                     
@@ -139,7 +143,7 @@ fun SearchScreen(
                                 Icons.Default.ShoppingCart,
                                 contentDescription = appViewModel.getString("cart"),
                                 modifier = Modifier.padding(12.dp),
-                                tint = if (isDarkMode) Color.White else Color.Black
+                                tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                             )
                         }
                         if (appViewModel.cartUniqueItems > 0) {
@@ -176,7 +180,7 @@ fun SearchScreen(
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = PanAppPrimary
+                    color = contrastAccentColor(PanAppPrimary)
                 )
             } else if (query.isBlank()) {
                 // Sugerencias o estado inicial
@@ -189,13 +193,13 @@ fun SearchScreen(
                         Icons.Default.Search,
                         contentDescription = null,
                         modifier = Modifier.size(80.dp),
-                        tint = if (isDarkMode) Color.DarkGray else Color.LightGray
+                        tint = contrastTextColor(Color.LightGray, secondary = true, darkBackground = isDarkMode)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         appViewModel.getString("search_hint_empty"),
                         textAlign = TextAlign.Center,
-                        color = if (isDarkMode) Color.Gray else Color.DarkGray,
+                        color = if (isDarkMode) contrastTextColor(Color.Gray, secondary = true) else Color.DarkGray,
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -215,11 +219,11 @@ fun SearchScreen(
                         "${appViewModel.getString("search_not_found")} '$query'",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
                     Text(
                         appViewModel.getString("search_try_again"),
-                        color = Color.Gray
+                        color = contrastTextColor(Color.Gray, secondary = true)
                     )
                 }
             } else {
@@ -307,12 +311,12 @@ fun SearchProductCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     maxLines = 1,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = String.format(Locale.getDefault(), "$%.2f", product.precio),
-                    color = PanAppPrimary,
+                    color = contrastAccentColor(PanAppPrimary),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )

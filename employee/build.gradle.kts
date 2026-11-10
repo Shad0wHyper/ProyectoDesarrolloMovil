@@ -8,6 +8,9 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        // Match the existing minimum required by :app and the :core dependency.
+        minSdk = 30
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

@@ -1,10 +1,15 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastFieldColors
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -28,7 +33,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
-class PaymentActivity : ComponentActivity() {
+class PaymentActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -74,7 +79,7 @@ class PaymentActivity : ComponentActivity() {
         db.collection("usuarios").document(uid).collection("historial_pagos")
             .add(pago)
             .addOnSuccessListener {
-                Toast.makeText(this, "Pago registrado en el historial", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, localizedText(TextR.string.pan_payment_registered), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -105,13 +110,13 @@ fun PaymentDialogUI(total: String, merchant: String, onSuccess: (String) -> Unit
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 if (step == 1) {
-                    Text("Confirmar Pago", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(localizedText(TextR.string.pan_confirm_payment), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text(merchant, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Total a pagar:", fontWeight = FontWeight.Medium)
+                        Text(localizedText(TextR.string.pan_total_due), fontWeight = FontWeight.Medium)
                         Text("$total", fontWeight = FontWeight.Bold, color = PanAppPrimary, fontSize = 20.sp)
                     }
                     
@@ -123,23 +128,24 @@ fun PaymentDialogUI(total: String, merchant: String, onSuccess: (String) -> Unit
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                     ) {
-                        Text("Pagar con Tarjeta")
+                        Text(localizedText(TextR.string.pan_pay_card))
                     }
                     
                     TextButton(onClick = onCancel) {
-                        Text("Cancelar", color = Color.Gray)
+                        Text(localizedText(TextR.string.pan_cancel), color = Color.Gray)
                     }
                 } else {
-                    Text("Detalles de Tarjeta", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(localizedText(TextR.string.pan_card_details), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     OutlinedTextField(
+                        colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors(), darkBackground = false),
                         value = cardNumber, 
                         onValueChange = { if (it.length <= 16) cardNumber = it }, 
-                        label = { Text("Número de Tarjeta") }, 
+                        label = { Text(localizedText(TextR.string.pan_card_number_title)) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("XXXX XXXX XXXX XXXX") },
+                        placeholder = { Text(localizedText(TextR.string.pan_card_mask)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     
@@ -147,17 +153,19 @@ fun PaymentDialogUI(total: String, merchant: String, onSuccess: (String) -> Unit
                     
                     Row(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
+                            colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors(), darkBackground = false),
                             value = expiry, 
                             onValueChange = { if (it.length <= 5) expiry = it }, 
-                            label = { Text("MM/YY") }, 
+                            label = { Text(localizedText(TextR.string.pan_card_expiry_hint)) },
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         OutlinedTextField(
+                            colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors(), darkBackground = false),
                             value = cvc, 
                             onValueChange = { if (it.length <= 3) cvc = it }, 
-                            label = { Text("CVC") }, 
+                            label = { Text(localizedText(TextR.string.pan_card_cvc)) },
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
@@ -172,11 +180,11 @@ fun PaymentDialogUI(total: String, merchant: String, onSuccess: (String) -> Unit
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                     ) {
-                        Text("Confirmar $total")
+                        Text(localizedText(TextR.string.pan_confirm_total, total))
                     }
                     
                     TextButton(onClick = { step = 1 }) {
-                        Text("Volver", color = Color.Gray)
+                        Text(localizedText(TextR.string.pan_back_alt), color = Color.Gray)
                     }
                 }
             }

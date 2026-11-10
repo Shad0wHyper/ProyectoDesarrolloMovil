@@ -1,5 +1,11 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,8 +49,8 @@ fun SettingsScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (appViewModel.isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (appViewModel.isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (appViewModel.isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = appViewModel.isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = appViewModel.isDarkMode)
                 )
             )
         }
@@ -81,7 +87,7 @@ fun SettingsScreen(
                     icon = Icons.AutoMirrored.Filled.Logout,
                     onClick = {
                         appViewModel.limpiarDatosDeSesion {
-                            Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, localizedText(TextR.string.pan_logout_success), Toast.LENGTH_SHORT).show()
                             onLogoutClick()
                         }
                     },
@@ -98,7 +104,7 @@ fun SettingsSectionTitle(title: String) {
         text = title,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         style = MaterialTheme.typography.labelLarge,
-        color = PanAppPrimary,
+        color = contrastAccentColor(PanAppPrimary),
         fontWeight = FontWeight.Bold
     )
 }
@@ -122,11 +128,11 @@ fun SettingsToggleItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = if (isDarkMode) Color.LightGray else Color.Gray)
+            Icon(icon, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.SemiBold, color = if (isDarkMode) Color.White else Color.Black)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(title, fontWeight = FontWeight.SemiBold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.Gray, secondary = true))
             }
             Switch(
                 checked = checked,
@@ -156,13 +162,13 @@ fun SettingsClickableItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = if (isDarkMode) Color.LightGray else Color.Gray)
+            Icon(icon, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.SemiBold, color = if (isDarkMode) Color.White else Color.Black)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(title, fontWeight = FontWeight.SemiBold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.Gray, secondary = true))
             }
-            Icon(Icons.Default.Person, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Person, contentDescription = null, tint = contrastTextColor(Color.LightGray, secondary = true), modifier = Modifier.size(20.dp))
         }
     }
 }
