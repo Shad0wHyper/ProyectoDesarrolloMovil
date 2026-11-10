@@ -1,5 +1,12 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,16 +44,16 @@ fun ManageAddressesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis Direcciones", fontWeight = FontWeight.Bold) },
+                title = { Text(localizedText(TextR.string.pan_my_addresses), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedText(TextR.string.pan_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         },
@@ -56,7 +63,7 @@ fun ManageAddressesScreen(
                 containerColor = PanAppPrimary,
                 contentColor = Color.White
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Dirección")
+                Icon(Icons.Default.Add, contentDescription = localizedText(TextR.string.pan_add_address))
             }
         }
     ) { padding ->
@@ -70,9 +77,9 @@ fun ManageAddressesScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    "Gestiona tus lugares de entrega",
+                    localizedText(TextR.string.pan_manage_addresses),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = contrastTextColor(Color.Gray, secondary = true)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -81,9 +88,9 @@ fun ManageAddressesScreen(
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.Gray.copy(alpha = 0.3f))
+                            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(64.dp), tint = contrastTextColor(Color.Gray.copy(alpha = 0.3f), secondary = true))
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("No tienes direcciones guardadas", color = Color.Gray)
+                            Text(localizedText(TextR.string.pan_no_addresses), color = contrastTextColor(Color.Gray, secondary = true))
                         }
                     }
                 }
@@ -118,12 +125,13 @@ fun ManageAddressesScreen(
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Nueva Dirección") },
+            title = { Text(localizedText(TextR.string.pan_new_address)) },
             text = {
                 OutlinedTextField(
+                    colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                     value = newAddress,
                     onValueChange = { newAddress = it },
-                    placeholder = { Text("Ej. Av. Reforma #456, Col. Juárez") },
+                    placeholder = { Text(localizedText(TextR.string.pan_address_example_alt)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -139,11 +147,11 @@ fun ManageAddressesScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                 ) {
-                    Text("Guardar")
+                    Text(localizedText(TextR.string.pan_save))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showAddDialog = false }) { Text(localizedText(TextR.string.pan_cancel)) }
             }
         )
     }
@@ -180,7 +188,7 @@ fun AddressItem(
                 Icon(
                     Icons.Default.Home,
                     contentDescription = null,
-                    tint = if (isSelected) PanAppPrimary else Color.Gray,
+                    tint = if (isSelected) PanAppPrimary else contrastTextColor(Color.Gray, secondary = true),
                     modifier = Modifier.padding(8.dp)
                 )
             }
@@ -190,14 +198,14 @@ fun AddressItem(
                     text = address,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 if (isSelected) {
-                    Text("Dirección principal", fontSize = 11.sp, color = PanAppPrimary, fontWeight = FontWeight.Bold)
+                    Text(localizedText(TextR.string.pan_main_address), fontSize = 11.sp, color = contrastAccentColor(PanAppPrimary), fontWeight = FontWeight.Bold)
                 }
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Delete, contentDescription = localizedText(TextR.string.pan_delete), tint = Color.Red.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
             }
         }
     }

@@ -1,5 +1,11 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -81,7 +87,7 @@ fun AIReportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Variables de estado para la red
@@ -107,7 +113,7 @@ fun AIReportScreen(onBack: () -> Unit) {
             val response = RetrofitClient.api.obtenerPrediccion(request)
             prediccion = response.datos
         } catch (e: Exception) {
-            errorRed = "Error de conexión: ${e.localizedMessage}"
+            errorRed = localizedText(TextR.string.pan_connection_error, e.localizedMessage.orEmpty())
         } finally {
             isLoading = false
         }
@@ -136,7 +142,7 @@ fun AIReportScreen(onBack: () -> Unit) {
         } else if (errorRed != null) {
             // Si algo falla, mostramos el error
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(errorRed!!, color = Color.Red, modifier = Modifier.padding(16.dp))
+                Text(errorRed!!, color = contrastErrorColor(Color.Red), modifier = Modifier.padding(16.dp))
             }
         } else {
             // ¡Ya tenemos los datos del servidor!
@@ -151,7 +157,7 @@ fun AIReportScreen(onBack: () -> Unit) {
             ) {
                 item {
                     Text(
-                        "Análisis Basado en Red Neuronal",
+                        localizedText(TextR.string.pan_neural_analysis),
                         style = MaterialTheme.typography.titleMedium,
                         color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7),
                         fontWeight = FontWeight.Bold
@@ -160,9 +166,9 @@ fun AIReportScreen(onBack: () -> Unit) {
 
                 item {
                     PredictionCard(
-                        title = "Ventas Estimadas (${datosIA.tipo_pan})",
-                        value = "${datosIA.prediccion_ventas} piezas", // Viene de FastAPI
-                        description = "Simulación climática de fecha: ${datosIA.fecha}",
+                        title = localizedText(TextR.string.pan_estimated_sales, datosIA.tipo_pan),
+                        value = localizedText(TextR.string.pan_pieces, datosIA.prediccion_ventas), // Viene de FastAPI
+                        description = localizedText(TextR.string.pan_weather_date, datosIA.fecha),
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
                         color = Color(0xFF4CAF50),
                         isDarkMode = isDarkMode
@@ -171,16 +177,16 @@ fun AIReportScreen(onBack: () -> Unit) {
 
                 item {
                     PredictionCard(
-                        title = "Stock a Solicitar",
-                        value = "Harina: ${datosIA.harina_necesaria_kg} kg", // Viene de FastAPI
-                        description = "Basado en la predicción del motor: ${datosIA.origen_motor}",
+                        title = localizedText(TextR.string.pan_stock_request),
+                        value = localizedText(TextR.string.pan_flour_kg, datosIA.harina_necesaria_kg), // Viene de FastAPI
+                        description = localizedText(TextR.string.pan_prediction_engine, datosIA.origen_motor),
                         icon = Icons.Default.ShoppingCart,
                         color = Color(0xFF2196F3),
                         isDarkMode = isDarkMode,
                         action = {
                             Button(
                                 onClick = {
-                                    val mensaje = "Hola, pedido para ${datosIA.tipo_pan}:\n- Harina: ${datosIA.harina_necesaria_kg}kg"
+                                    val mensaje = localizedText(TextR.string.pan_ai_order_message, datosIA.tipo_pan, datosIA.harina_necesaria_kg)
                                     val uri = Uri.parse("whatsapp://send?text=${Uri.encode(mensaje)}")
                                     val intent = Intent(Intent.ACTION_VIEW, uri)
                                     try {
@@ -193,9 +199,9 @@ fun AIReportScreen(onBack: () -> Unit) {
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon( Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.admin_order_via_whatsapp))
+                                Text( stringResource(R.string.admin_order_via_whatsapp), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                             }
                         }
                     )
@@ -203,9 +209,9 @@ fun AIReportScreen(onBack: () -> Unit) {
 
                 item {
                     PredictionCard(
-                        title = "Producción Sugerida",
-                        value = "${datosIA.orden_produccion} piezas", // Viene de FastAPI
-                        description = "Optimización para reducir desperdicios al mínimo.",
+                        title = localizedText(TextR.string.pan_suggested_production),
+                        value = localizedText(TextR.string.pan_pieces, datosIA.orden_produccion), // Viene de FastAPI
+                        description = localizedText(TextR.string.pan_waste_optimization),
                         icon = Icons.Default.PrecisionManufacturing,
                         color = Color(0xFFFFA000),
                         isDarkMode = isDarkMode
@@ -225,9 +231,9 @@ fun AIReportScreen(onBack: () -> Unit) {
                                 Text(stringResource(R.string.admin_cloud_connection), fontWeight = FontWeight.Bold, color = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF673AB7))
                             }
                             Text(
-                                "Datos servidos desde Render (FastAPI)",
+                                localizedText(TextR.string.pan_render_source),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
+                                color = contrastTextColor(Color.Gray, secondary = true)
                             )
                         }
                     }
@@ -248,7 +254,7 @@ fun PredictionCard(
     action: @Composable (() -> Unit)? = null
 ) {
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -268,9 +274,9 @@ fun PredictionCard(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(text = title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text(text = title, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.Gray, secondary = true))
                     Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = textColor)
-                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                    Text(text = description, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                 }
             }
             action?.invoke()

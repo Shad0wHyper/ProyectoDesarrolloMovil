@@ -96,4 +96,8 @@
     <string name="emp_stock_label">Stock: %1$s %2$s</string>
     <string name="emp_codes_label">Codes: %1$s</string>
     <string name="emp_code_label">Code: %1$s</string>
+    <string name="emp_dispatch_filter_processed">Processed</string>
+    <string name="emp_dispatch_filter_on_the_way">On the way</string>
+    <string name="emp_dispatch_filter_delivered">Delivered</string>
+    <string name="emp_dispatch_empty_filter">No orders in this filter.</string>
 </resources>

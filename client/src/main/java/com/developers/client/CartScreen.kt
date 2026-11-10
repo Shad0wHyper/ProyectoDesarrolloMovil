@@ -1,5 +1,14 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.paymentMethodLabel
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -96,8 +105,8 @@ fun CartScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         },
@@ -112,8 +121,8 @@ fun CartScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(appViewModel.getString("total"), style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-                        Text(String.format("$%.2f", finalTotal), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PanAppPrimary)
+                        Text(appViewModel.getString("total"), style = MaterialTheme.typography.bodyMedium, color = contrastTextColor(Color.Gray, secondary = true))
+                        Text(String.format("$%.2f", finalTotal), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
@@ -146,7 +155,7 @@ fun CartScreen(
                         appViewModel.getString("your_order"),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
                     Surface(
                         color = PanAppPrimary.copy(alpha = 0.1f),
@@ -155,7 +164,7 @@ fun CartScreen(
                         Text(
                             "${appViewModel.cartTotalQuantity} ${appViewModel.getString("items")}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = PanAppPrimary,
+                            color = contrastAccentColor(PanAppPrimary),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -166,7 +175,7 @@ fun CartScreen(
             if (appViewModel.cartItems.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
-                        Text(appViewModel.getString("empty_cart"), color = Color.Gray, fontSize = 16.sp)
+                        Text(appViewModel.getString("empty_cart"), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 16.sp)
                     }
                 }
             } else {
@@ -188,7 +197,7 @@ fun CartScreen(
                     appViewModel.getString("delivery_address"),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -204,13 +213,13 @@ fun CartScreen(
                     ) {
                         Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Seleccionar de mis direcciones", fontSize = 13.sp)
+                        Text(localizedText(TextR.string.pan_choose_address), fontSize = 13.sp)
                     }
 
                     if (showAddressDialog) {
                         AlertDialog(
                             onDismissRequest = { showAddressDialog = false },
-                            title = { Text("Mis Direcciones") },
+                            title = { Text(localizedText(TextR.string.pan_my_addresses)) },
                             text = {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     appViewModel.userAddressesList.forEach { addr ->
@@ -226,7 +235,7 @@ fun CartScreen(
                                 }
                             },
                             confirmButton = {
-                                TextButton(onClick = { showAddressDialog = false }) { Text("Cerrar") }
+                                TextButton(onClick = { showAddressDialog = false }) { Text(localizedText(TextR.string.pan_close)) }
                             }
                         )
                     }
@@ -238,17 +247,17 @@ fun CartScreen(
                     onValueChange = { editableAddress = it },
                     label = { Text(appViewModel.getString("add_address_or_select")) },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Ej. Calle Principal #123, Colonia Centro") },
-                    leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary) },
+                    placeholder = { Text(localizedText(TextR.string.pan_address_example)) },
+                    leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = contrastAccentColor(PanAppPrimary)) },
                     shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PanAppPrimary,
                         unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f),
                         focusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
                         unfocusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
                         focusedTextColor = if (isDarkMode) Color.White else Color.Black,
                         unfocusedTextColor = if (isDarkMode) Color.White else Color.Black
-                    ),
+                    )),
                     singleLine = true
                 )
 
@@ -261,7 +270,7 @@ fun CartScreen(
                     appViewModel.getString("payment_method"),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -301,9 +310,9 @@ fun CartScreen(
     if (showAddressErrorDialog) {
         AlertDialog(
             onDismissRequest = { showAddressErrorDialog = false },
-            title = { Text(appViewModel.getString("missing_address_title"), fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black) },
-            text = { Text(appViewModel.getString("missing_address_desc"), color = if (isDarkMode) Color.LightGray else Color.DarkGray) },
-            confirmButton = { Button(onClick = { showAddressErrorDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)) { Text("Entendido", color = Color.White) } },
+            title = { Text(appViewModel.getString("missing_address_title"), fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
+            text = { Text(appViewModel.getString("missing_address_desc"), color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode)) },
+            confirmButton = { Button(onClick = { showAddressErrorDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)) { Text(localizedText(TextR.string.pan_understood), color = Color.White) } },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
         )
     }
@@ -365,7 +374,7 @@ fun CartScreen(
             )
             
             paymentErrorMessage?.let { msg ->
-                Text(msg, color = Color.Red, modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text(msg, color = contrastErrorColor(Color.Red), modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -437,8 +446,8 @@ fun OrderSummaryWidget(subtotal: Double, delivery: Double, taxes: Double, total:
             SummaryRow(appViewModel.getString("taxes"), String.format("$%.2f", taxes), isDarkMode)
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray.copy(alpha = 0.2f))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = if (isDarkMode) Color.White else Color.Black)
-                Text(String.format("$%.2f", total), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = PanAppPrimary)
+                Text(localizedText(TextR.string.pan_total), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
+                Text(String.format("$%.2f", total), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = contrastAccentColor(PanAppPrimary))
             }
         }
     }
@@ -447,8 +456,8 @@ fun OrderSummaryWidget(subtotal: Double, delivery: Double, taxes: Double, total:
 @Composable
 fun SummaryRow(label: String, value: String, isDarkMode: Boolean) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-        Text(value, color = if (isDarkMode) Color.White else Color.Black, fontWeight = FontWeight.Medium)
+        Text(label, color = contrastTextColor(Color.Gray, secondary = true), style = MaterialTheme.typography.bodyMedium)
+        Text(value, color = contrastTextColor(Color.Black, darkBackground = isDarkMode), fontWeight = FontWeight.Medium)
     }
 }
 
@@ -486,33 +495,33 @@ fun PaymentGatewayContent(
     }
 
     Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(imageVector = when(method) { "Tarjeta" -> Icons.Outlined.CreditCard; "Transferencia" -> Icons.Outlined.AccountBalance; "Efectivo" -> Icons.Outlined.Payments; else -> Icons.Outlined.Storefront }, contentDescription = null, modifier = Modifier.size(48.dp), tint = PanAppPrimary)
+        Icon(imageVector = when(method) { "Tarjeta" -> Icons.Outlined.CreditCard; "Transferencia" -> Icons.Outlined.AccountBalance; "Efectivo" -> Icons.Outlined.Payments; else -> Icons.Outlined.Storefront }, contentDescription = null, modifier = Modifier.size(48.dp), tint = contrastAccentColor(PanAppPrimary))
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
             text = if (method == "Efectivo") "OXXO Pay" 
-                   else if (isUsingSavedCard) "Confirmar Tarjeta Guardada" 
-                   else "Completar Pago", 
+                   else if (isUsingSavedCard) localizedText(TextR.string.pan_confirm_saved_card)
+                   else localizedText(TextR.string.pan_complete_payment),
             style = MaterialTheme.typography.headlineSmall, 
             fontWeight = FontWeight.Bold, 
-            color = if (isDarkMode) Color.White else Color.Black
+            color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
         )
         
-        Text(text = "Método seleccionado: $method", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(text = localizedText(TextR.string.pan_selected_method, paymentMethodLabel(method)), style = MaterialTheme.typography.bodyMedium, color = contrastTextColor(Color.Gray, secondary = true))
         
         if (method != "Efectivo") {
-            Text(text = "Tu saldo: ${String.format("$%.2f", appViewModel.userBalance)}", style = MaterialTheme.typography.labelLarge, color = if (appViewModel.userBalance < (appViewModel.cartSubtotal + 5.5)) Color.Red else Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+            Text(text = localizedText(TextR.string.pan_your_balance, String.format("$%.2f", appViewModel.userBalance)), style = MaterialTheme.typography.labelLarge, color = if (appViewModel.userBalance < (appViewModel.cartSubtotal + 5.5)) Color.Red else Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
         Surface(modifier = Modifier.fillMaxWidth(), color = if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5), shape = RoundedCornerShape(12.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = when(method) { 
-                    "Transferencia" -> "CLABE: 7229 6901 3635 3659 79\nBanco: PanApp Official\nReferencia: #ORD-${System.currentTimeMillis().toString().takeLast(6)}"
-                    "Efectivo" -> "Presenta este código en cualquier OXXO para pagar tu pedido."
-                    "Tarjeta" -> if (isUsingSavedCard) "Confirma el CVC de tu tarjeta guardada para proceder." else "Introduce los datos de tu tarjeta. Los fondos se liquidarán a la cuenta terminada en ...5979.\n(Conexión SSL Segura)"
-                    else -> "Ingresa los detalles de tu $method para continuar con la transacción segura." 
-                }, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    "Transferencia" -> localizedText(TextR.string.pan_transfer_instructions, System.currentTimeMillis().toString().takeLast(6))
+                    "Efectivo" -> localizedText(TextR.string.pan_oxxo_instructions)
+                    "Tarjeta" -> if (isUsingSavedCard) localizedText(TextR.string.pan_saved_cvc) else localizedText(TextR.string.pan_card_secure_instructions)
+                    else -> localizedText(TextR.string.pan_method_instructions, paymentMethodLabel(method))
+                }, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 
                 if (method == "Efectivo") {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -531,7 +540,7 @@ fun PaymentGatewayContent(
                             text = oxxoReference.chunked(4).joinToString(" "),
                             letterSpacing = 2.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = if (isDarkMode) Color.White else Color.Black,
+                            color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
@@ -543,20 +552,20 @@ fun PaymentGatewayContent(
                             value = displayCardValue, 
                             onValueChange = { if (it.length <= 16 && it.all { c -> c.isDigit() }) { appViewModel.tempCardNumber = it } }, 
                             modifier = Modifier.fillMaxWidth(), 
-                            label = { Text("Número de Tarjeta") }, 
+                            label = { Text(localizedText(TextR.string.pan_card_number_title)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
                             placeholder = { Text("0000 0000 0000 0000") }, 
                             leadingIcon = { Icon(Icons.Outlined.CreditCard, contentDescription = null) }, 
                             trailingIcon = { 
                                 if (isUsingSavedCard) { 
                                     TextButton(onClick = { appViewModel.resetTempPaymentData(); appViewModel.hasSavedCard = false }) { 
-                                        Text("Cambiar", fontSize = 12.sp) 
+                                        Text(localizedText(TextR.string.pan_change), fontSize = 12.sp)
                                     } 
                                 } 
                             }, 
                             singleLine = true, 
                             enabled = !isProcessing && !isUsingSavedCard, 
-                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                            colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent))
                         )
                         
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -564,35 +573,35 @@ fun PaymentGatewayContent(
                                 value = expiryDate, 
                                 onValueChange = { if (it.length <= 5) appViewModel.tempExpiryDate = it }, 
                                 modifier = Modifier.weight(1f), 
-                                label = { Text("MM/YY") }, 
+                                label = { Text(localizedText(TextR.string.pan_card_expiry_hint)) },
                                 placeholder = { Text("12/28") }, 
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
                                 singleLine = true, 
                                 enabled = !isProcessing && !isUsingSavedCard, 
-                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent))
                             )
                             OutlinedTextField(
                                 value = cvc, 
                                 onValueChange = { if (it.length <= 3 && it.all { c -> c.isDigit() }) appViewModel.tempCVC = it }, 
                                 modifier = Modifier.weight(1f), 
-                                label = { Text("CVC") }, 
+                                label = { Text(localizedText(TextR.string.pan_card_cvc)) },
                                 placeholder = { Text("123") }, 
                                 visualTransformation = PasswordVisualTransformation(), 
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), 
                                 singleLine = true, 
                                 enabled = !isProcessing, 
-                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent))
                             )
                         }
                         
                         if (!appViewModel.hasSavedCard || !isUsingSavedCard) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !isProcessing) { appViewModel.tempSaveCard = !saveCard }) { 
                                 Checkbox(checked = saveCard, onCheckedChange = { appViewModel.tempSaveCard = it }, enabled = !isProcessing)
-                                Text("Guardar tarjeta para futuras compras", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray) 
+                                Text(localizedText(TextR.string.pan_save_card_future), style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                             }
                         }
                         
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF4CAF50)); Spacer(modifier = Modifier.width(6.dp)); Text("Tus datos están encriptados y protegidos.", style = MaterialTheme.typography.labelSmall, color = Color(0xFF4CAF50)) }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF4CAF50)); Spacer(modifier = Modifier.width(6.dp)); Text(localizedText(TextR.string.pan_data_protected), style = MaterialTheme.typography.labelSmall, color = Color(0xFF4CAF50)) }
                     }
                 }
             }
@@ -619,7 +628,7 @@ fun PaymentGatewayContent(
                 Text(if (method == "Tarjeta") appViewModel.getString("pay_now") else if (method == "Efectivo") "Generar Código OXXO" else "Confirmar Pedido", modifier = Modifier.padding(vertical = 4.dp)) 
             }
         }
-        TextButton(onClick = onCancel, enabled = !isProcessing) { Text(appViewModel.getString("close"), color = Color.Gray) }
+        TextButton(onClick = onCancel, enabled = !isProcessing) { Text(appViewModel.getString("close"), color = contrastTextColor(Color.Gray, secondary = true)) }
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
@@ -631,14 +640,14 @@ fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, 
             AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(item.imageUrl).crossfade(true).build(), contentDescription = item.name, contentScale = ContentScale.Crop, modifier = Modifier.size(70.dp).clip(RoundedCornerShape(12.dp)).background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.name, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
-                Text(item.desc, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(item.name, fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
+                Text(item.desc, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.Gray, secondary = true))
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(String.format("$%.2f", item.price), color = PanAppPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(String.format("$%.2f", item.price), color = contrastAccentColor(PanAppPrimary), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onDecrease, modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Remove, contentDescription = "Menos", modifier = Modifier.size(16.dp), tint = if (isDarkMode) Color.White else Color.Black) }
-                        Text(text = "${item.quantity}", modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold, color = if (isDarkMode) Color.White else Color.Black)
+                        IconButton(onClick = onDecrease, modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Remove, contentDescription = localizedText(TextR.string.pan_less), modifier = Modifier.size(16.dp), tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
+                        Text(text = "${item.quantity}", modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
                         IconButton(onClick = { onIncrease() }, modifier = Modifier.size(28.dp).background(PanAppPrimary, CircleShape)) { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
                     }
                 }
@@ -651,7 +660,7 @@ fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, 
 fun PaymentMethodItem(title: String, subtitle: String, icon: ImageVector, isSelected: Boolean, isDarkMode: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Surface(modifier = modifier.height(100.dp), shape = RoundedCornerShape(16.dp), color = if (isSelected) Color(0xFF32324D) else if (isDarkMode) Color(0xFF1E1E1E) else Color.White, border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)), onClick = onClick) {
         Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(icon, contentDescription = null, tint = if (isSelected) Color.White else Color.Gray)
+            Icon(icon, contentDescription = null, tint = if (isSelected) Color.White else contrastTextColor(Color.Gray, secondary = true))
             Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode || isSelected) Color.White else Color.Black)
         }
     }

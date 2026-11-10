@@ -1,5 +1,12 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
@@ -109,10 +116,10 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.admin_my_profile), fontWeight = FontWeight.Bold) },
+                title = { Text( stringResource(R.string.admin_my_profile), fontWeight = FontWeight.Bold, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back))
+                        Icon( Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -169,7 +176,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(65.dp), tint = Color.Gray)
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(65.dp), tint = contrastTextColor(Color.Gray, secondary = true))
                     }
 
                     if (isUploadingImage) {
@@ -216,17 +223,18 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF6200EE),
                     focusedLabelColor = Color(0xFF6200EE)
-                )
+                ))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // CORREO (BLOQUEADO)
             OutlinedTextField(
-                value = viewModel.userEmail.ifEmpty { "Sin Correo" },
+                colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
+                value = viewModel.userEmail.ifEmpty { localizedText(TextR.string.pan_no_email) },
                 onValueChange = { },
                 readOnly = true,
                 enabled = false,
@@ -247,10 +255,10 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF6200EE),
                     focusedLabelColor = Color(0xFF6200EE)
-                )
+                ))
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -285,7 +293,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(stringResource(R.string.admin_save_changes), modifier = Modifier.padding(vertical = 8.dp))
+                    Text( stringResource(R.string.admin_save_changes), modifier = Modifier.padding(vertical = 8.dp), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             }
 
@@ -301,9 +309,9 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
             ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red)
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = contrastErrorColor(Color.Red))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.admin_logout), fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+                Text( stringResource(R.string.admin_logout), fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
             }
         }
     }

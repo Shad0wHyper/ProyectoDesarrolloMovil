@@ -1,5 +1,8 @@
 package com.developers.panapp
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.animation.core.tween
 import android.Manifest
 import android.content.pm.PackageManager
@@ -48,7 +51,7 @@ fun AppNavigation() {
 
     // Función de Logout Global Segura (Regla 4)
     val logoutUser = {
-        Toast.makeText(context, "Sesión cerrada con éxito", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, localizedText(TextR.string.pan_logout_success_alt), Toast.LENGTH_SHORT).show()
         // 1. Cierra sesión en Firebase
         auth.signOut()
 
@@ -178,7 +181,7 @@ fun AppNavigation() {
             LaunchedEffect(Unit) {
                 val user = auth.currentUser
                 if (user != null) {
-                    clientViewModel.setSessionUser(user.uid, user.email ?: "Sin correo")
+                    clientViewModel.setSessionUser(user.uid, user.email ?: localizedText(TextR.string.pan_no_email_lower))
                 }
                 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -210,7 +213,7 @@ fun AppNavigation() {
             LaunchedEffect(Unit) {
                 val user = auth.currentUser
                 if (user != null) {
-                    employeeViewModel.setSessionUser(user.uid, user.email ?: "Sin correo")
+                    employeeViewModel.setSessionUser(user.uid, user.email ?: localizedText(TextR.string.pan_no_email_lower))
                 }
             }
 
@@ -227,7 +230,7 @@ fun AppNavigation() {
             LaunchedEffect(Unit) {
                 val user = auth.currentUser
                 if (user != null) {
-                    adminViewModel.setSessionUser(user.uid, user.email ?: "Sin correo")
+                    adminViewModel.setSessionUser(user.uid, user.email ?: localizedText(TextR.string.pan_no_email_lower))
                 }
             }
 

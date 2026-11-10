@@ -1,5 +1,10 @@
 package com.developers.panapp
 
+import com.developers.core.ui.contrastFieldColors
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -112,30 +117,30 @@ fun LoginScreen(
                                                         intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
                                                         context.startActivity(intent)
                                                     } else {
-                                                        Toast.makeText(context, "La app de $rol no está instalada en este dispositivo", Toast.LENGTH_LONG).show()
+                                                        Toast.makeText(context, localizedText(TextR.string.pan_role_app_missing, rol), Toast.LENGTH_LONG).show()
                                                     }
                                                 } else {
-                                                    Toast.makeText(context, "Rol no reconocido", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, localizedText(TextR.string.pan_unknown_role), Toast.LENGTH_SHORT).show()
                                                 }
                                     } else {
                                         // Si no existe el usuario en firestore, podemos crearlo o dar error
                                         // Aquí asumo que no tiene rol, o puedes guardarlo como cliente por defecto.
-                                        Toast.makeText(context, "No tienes rol asignado. Contacta a soporte.", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, localizedText(TextR.string.pan_missing_role), Toast.LENGTH_SHORT).show()
                                     }
                                 }
                                 .addOnFailureListener {
                                     isLoading = false
-                                    Toast.makeText(context, "Error al obtener datos de Firestore", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, localizedText(TextR.string.pan_user_data_error), Toast.LENGTH_SHORT).show()
                                 }
                         }
                     }
                     .addOnFailureListener { error ->
                         isLoading = false
-                        Toast.makeText(context, "Autenticación fallida: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, localizedText(TextR.string.pan_authentication_failed, error.localizedMessage.orEmpty()), Toast.LENGTH_LONG).show()
                     }
             }
         } catch (e: ApiException) {
-            Toast.makeText(context, "Google Sign-In falló", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, localizedText(TextR.string.pan_google_error), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -209,6 +214,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 OutlinedTextField(
+                    colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                     value = correo,
                     onValueChange = { correo = it },
                     placeholder = { Text(stringResource(id = R.string.login_email_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
@@ -247,6 +253,7 @@ fun LoginScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
+                    colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                     value = password,
                     onValueChange = { password = it },
                     placeholder = { Text(stringResource(id = R.string.login_password_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
@@ -257,7 +264,7 @@ fun LoginScreen(
                         IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                             Icon(
                                 imageVector = if (isPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                                contentDescription = if (isPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                contentDescription = if (isPasswordVisible) localizedText(TextR.string.pan_hide_password) else localizedText(TextR.string.pan_show_password),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -309,7 +316,7 @@ fun LoginScreen(
                                                         intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
                                                         context.startActivity(intent)
                                                     } else {
-                                                        Toast.makeText(context, "La app de $rol no está instalada en este dispositivo", Toast.LENGTH_LONG).show()
+                                                        Toast.makeText(context, localizedText(TextR.string.pan_role_app_missing, rol), Toast.LENGTH_LONG).show()
                                                     }
                                                 } else {
                                                     Toast.makeText(context, R.string.login_error_unknown_rol, Toast.LENGTH_SHORT).show()
@@ -387,7 +394,7 @@ fun LoginScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_google),
-                        contentDescription = "Google Icon",
+                        contentDescription = localizedText(TextR.string.pan_google_icon),
                         tint = Color.Unspecified
                     )
                     Spacer(modifier = Modifier.width(12.dp))

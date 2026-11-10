@@ -1,5 +1,9 @@
 package com.developers.client.ui
 
+import com.developers.core.ui.contrastTextColor
+
+import com.developers.core.ui.contrastAccentColor
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -265,7 +269,7 @@ fun FloatingNavItem(
 ) {
     // ✨ 4. PALETA DE COLORES Y ESTADOS
     val activeBackgroundColor = PanAppPrimary.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) PanAppPrimary else Color.Gray
+    val contentColor = if (isSelected) contrastAccentColor(PanAppPrimary) else contrastTextColor(Color.Gray, secondary = true)
 
     Surface(
         onClick = onClick,
@@ -284,7 +288,7 @@ fun FloatingNavItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = PanAppPrimary,
+                    tint = contrastAccentColor(PanAppPrimary),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))

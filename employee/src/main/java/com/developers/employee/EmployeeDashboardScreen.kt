@@ -1,5 +1,9 @@
 package com.developers.employee
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.attendanceLabel
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -49,7 +53,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.emp_portal_title), fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.emp_portal_title), fontWeight = FontWeight.Bold, color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current) },
                 actions = {
                     Box(
                         modifier = Modifier
@@ -59,7 +63,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                             .background(Color(0xFFEEEEEE)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.Gray)
+                        Icon(Icons.Default.Person, contentDescription = localizedText(TextR.string.pan_profile), tint = Color.Gray)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -99,7 +103,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 ) {
                     Icon(
                         Icons.Default.QrCodeScanner,
-                        contentDescription = "Escanear QR",
+                        contentDescription = localizedText(TextR.string.pan_scan_qr),
                         modifier = Modifier.size(64.dp),
                         tint = Color.White
                     )
@@ -119,7 +123,8 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 text = stringResource(R.string.emp_history_today),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 12.dp),
+                color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current
             )
 
             if (viewModel.isLoading) {
@@ -198,10 +203,10 @@ fun LogCard(log: LogData) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(log.type, fontWeight = FontWeight.Bold)
+                Text(attendanceLabel(log.type), fontWeight = FontWeight.Bold, color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current)
                 Text(log.dateFormatted, color = Color.Gray, fontSize = 12.sp)
             }
-            Text(log.timeFormatted, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+            Text(log.timeFormatted, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current)
         }
     }
 }

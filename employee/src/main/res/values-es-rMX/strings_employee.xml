@@ -95,4 +95,8 @@
     <string name="emp_stock_label">Stock: %1$s %2$s</string>
     <string name="emp_codes_label">Códigos: %1$s</string>
     <string name="emp_code_label">Cód: %1$s</string>
+    <string name="emp_dispatch_filter_processed">Procesados</string>
+    <string name="emp_dispatch_filter_on_the_way">En camino</string>
+    <string name="emp_dispatch_filter_delivered">Entregados</string>
+    <string name="emp_dispatch_empty_filter">No hay pedidos en este filtro.</string>
 </resources>

@@ -1,5 +1,8 @@
 package com.developers.client
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -54,10 +57,10 @@ class PanAppMessagingService : FirebaseMessagingService() {
         // Crear Canal de Notificación
         val channel = NotificationChannel(
             channelId,
-            "Notificaciones de PanApp Cliente",
+            localizedText(TextR.string.pan_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Canal para avisos sobre pedidos, ofertas y actualizaciones de cuenta."
+            description = localizedText(TextR.string.pan_channel_description)
         }
         notificationManager.createNotificationChannel(channel)
 

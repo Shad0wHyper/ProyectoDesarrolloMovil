@@ -1,5 +1,14 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.categoryLabel
+
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.res.stringResource
@@ -52,7 +61,7 @@ fun AddProductScreen(
     val isDarkMode = isSystemInDarkTheme()
     val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     // Relleno de campos iniciales
@@ -162,9 +171,9 @@ fun AddProductScreen(
                     AsyncImage(model = imageUrlGuardada, contentDescription = stringResource(R.string.admin_saved_photo), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(48.dp), tint = AdminPrimary)
+                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(48.dp), tint = contrastAccentColor(AdminPrimary))
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(stringResource(R.string.admin_tap_to_add_photo), color = Color.Gray, fontSize = 14.sp)
+                        Text(stringResource(R.string.admin_tap_to_add_photo), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 14.sp)
                     }
                 }
             }
@@ -180,10 +189,10 @@ fun AddProductScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                     unfocusedTextColor = textColor,
                     focusedTextColor = textColor
-                )
+                ))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -191,7 +200,7 @@ fun AddProductScreen(
             // CATEGORÍA
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = categoriaSeleccionada,
+                    value = categoryLabel(categoriaSeleccionada),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text(stringResource(R.string.admin_category)) },
@@ -201,14 +210,14 @@ fun AddProductScreen(
                     },
                     modifier = Modifier.fillMaxWidth().clickable { expandedDropdown = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
                 DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f).background(cardColor)) {
                     categoriasDisponibles.forEach { cat ->
-                        DropdownMenuItem(text = { Text(cat, fontWeight = FontWeight.Medium, color = textColor) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
+                        DropdownMenuItem(text = { Text(categoryLabel(cat), fontWeight = FontWeight.Medium, color = textColor) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
                     }
                 }
             }
@@ -222,20 +231,20 @@ fun AddProductScreen(
                     leadingIcon = { Icon(Icons.Default.CurrencyExchange, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
                 OutlinedTextField(
                     value = calificacion, onValueChange = { calificacion = it }, label = { Text(stringResource(R.string.admin_rating_label)) },
                     leadingIcon = { Icon(Icons.Default.StarBorder, contentDescription = null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                         unfocusedTextColor = textColor,
                         focusedTextColor = textColor
-                    )
+                    ))
                 )
             }
 
@@ -249,14 +258,14 @@ fun AddProductScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.admin_recipe_title), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
-                    Text(stringResource(R.string.admin_recipe_instruction), fontSize = 12.sp, color = Color.Gray)
+                    Text(stringResource(R.string.admin_recipe_instruction), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Selector de Materia Prima
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
-                            value = insumoSeleccionado?.let { "${it.nombre} (${it.unidadMedida})" } ?: "Seleccionar Insumo...",
+                            value = insumoSeleccionado?.let { "${it.nombre} (${it.unidadMedida})" } ?: localizedText(TextR.string.pan_select_supply),
                             onValueChange = {},
                             readOnly = true,
                             label = { Text(stringResource(R.string.admin_raw_material)) },
@@ -268,10 +277,10 @@ fun AddProductScreen(
                                 .fillMaxWidth()
                                 .clickable { expandedInsumoDropdown = true },
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                                 unfocusedTextColor = textColor,
                                 focusedTextColor = textColor
-                            )
+                            ))
                         )
                         DropdownMenu(
                             expanded = expandedInsumoDropdown,
@@ -280,7 +289,7 @@ fun AddProductScreen(
                         ) {
                             if (insumosDisponibles.isEmpty()) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.admin_no_supplies_wh), color = Color.Gray) },
+                                    text = { Text(stringResource(R.string.admin_no_supplies_wh), color = contrastTextColor(Color.Gray, secondary = true)) },
                                     onClick = { expandedInsumoDropdown = false }
                                 )
                             } else {
@@ -313,10 +322,10 @@ fun AddProductScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                                 unfocusedTextColor = textColor,
                                 focusedTextColor = textColor
-                            )
+                            ))
                         )
 
                         Button(
@@ -340,9 +349,9 @@ fun AddProductScreen(
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supply))
+                            Icon( Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supply), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.admin_add_btn))
+                            Text( stringResource(R.string.admin_add_btn), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                         }
                     }
 
@@ -378,7 +387,7 @@ fun AddProductScreen(
                                         },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.admin_delete), tint = Color.Red, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.admin_delete), tint = contrastErrorColor(Color.Red), modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }
@@ -394,7 +403,7 @@ fun AddProductScreen(
                 Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         Text(stringResource(R.string.admin_mark_as_new), fontWeight = FontWeight.Bold, color = textColor)
-                        Text(stringResource(R.string.admin_new_tag_desc), fontSize = 12.sp, color = Color.Gray)
+                        Text(stringResource(R.string.admin_new_tag_desc), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
                     }
                     Switch(checked = isNuevo, onCheckedChange = { isNuevo = it }, colors = SwitchDefaults.colors(checkedThumbColor = AdminPrimary))
                 }
@@ -495,7 +504,7 @@ fun AddProductScreen(
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(if (productoAEditar != null) stringResource(R.string.admin_update_product_recipe) else stringResource(R.string.admin_create_product_recipe), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text( if (productoAEditar != null) stringResource(R.string.admin_update_product_recipe) else stringResource(R.string.admin_create_product_recipe), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             }
             Spacer(modifier = Modifier.height(30.dp))

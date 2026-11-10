@@ -1,5 +1,14 @@
 package com.developers.admin
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+import com.developers.core.text.stockStatusLabel
+
 import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
@@ -113,7 +122,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
 
                     Producto(
                         id = doc.id,
-                        nombre = doc.getString("nombre") ?: "Sin nombre",
+                        nombre = doc.getString("nombre") ?: localizedText(TextR.string.pan_no_name),
                         categoria = doc.getString("categoria") ?: "Otros",
                         stock = stockReal,
                         statusLabel = statusL,
@@ -163,7 +172,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 composable(AdminScreen.Dashboard.route) {
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = AdminPrimary)
+                            CircularProgressIndicator(color = contrastAccentColor(AdminPrimary))
                         }
                     } else {
                         DashboardContent(
@@ -239,9 +248,9 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Notificaciones",
+                        text = localizedText(TextR.string.pan_notifications),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = if (isDarkMode) Color.White else Color.Black
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -250,23 +259,23 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                                 NotificationItem(
                                     icon = Icons.Default.Warning,
                                     iconColor = Color.Red,
-                                    text = "Stock Bajo: Tienes $globalCriticosCount materias primas por agotarse. Recomendación: Pedir a proveedores.",
-                                    textColor = if (isDarkMode) Color.White else Color.Black
+                                    text = localizedText(TextR.string.pan_low_stock_alert, globalCriticosCount),
+                                    textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                                 )
                             }
                             item {
                                 NotificationItem(
                                     icon = Icons.Default.Info,
                                     iconColor = Color(0xFF2196F3),
-                                    text = "Pedidos Pendientes: Tienes $globalCriticosCount órdenes de WhatsApp por gestionar.",
-                                    textColor = if (isDarkMode) Color.White else Color.Black
+                                    text = localizedText(TextR.string.pan_pending_orders_alert, globalCriticosCount),
+                                    textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                                 )
                             }
                         } else {
                             item {
                                 Text(
-                                    text = "Todo al día, no hay alertas.",
-                                    color = Color.Gray,
+                                    text = localizedText(TextR.string.pan_no_alerts),
+                                    color = contrastTextColor(Color.Gray, secondary = true),
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
@@ -366,9 +375,9 @@ fun DashboardContent(
 
         item {
             Text(
-                text = "CATÁLOGO DE PRODUCTOS ACTIVOS",
+                text = localizedText(TextR.string.pan_catalog),
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray,
+                color = contrastTextColor(Color.Gray, secondary = true),
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
@@ -376,7 +385,7 @@ fun DashboardContent(
         if (productosFiltrados.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.admin_no_products), color = Color.Gray)
+                    Text(stringResource(R.string.admin_no_products), color = contrastTextColor(Color.Gray, secondary = true))
                 }
             }
         } else {
@@ -415,7 +424,7 @@ fun AdminTopBar(
 ) { // ✨ Recibe el evento del QR, Historial, Notificaciones y Perfil
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F9FA)
 
     val photoUrl = viewModel.userImageUrl
@@ -424,7 +433,7 @@ fun AdminTopBar(
         modifier = Modifier.statusBarsPadding(), // ✨ Añadido para evitar empalme en el Dashboard
         title = {
             Text(
-                text = "Administración",
+                text = localizedText(TextR.string.pan_administration),
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = textColor
             )
@@ -513,13 +522,13 @@ fun AIPredictionsSection(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Predicciones Inteligentes (Beta)",
+                    text = localizedText(TextR.string.pan_predictions),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Ventas hoy, Stock y Producción",
+                    text = localizedText(TextR.string.pan_predictions_description),
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 12.sp
                 )
@@ -566,13 +575,13 @@ fun ProduccionDiariaCard(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Gestor de Producción ERP",
+                    text = localizedText(TextR.string.pan_production_manager),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Registrar horneados y produccion del dia",
+                    text = localizedText(TextR.string.pan_production_description),
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 12.sp
                 )
@@ -592,9 +601,9 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
     val isDarkMode = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Actualizado 10:30 AM",
+            text = localizedText(TextR.string.pan_updated_time),
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
+            color = contrastTextColor(Color.Gray, secondary = true),
             modifier = Modifier.align(Alignment.End)
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -606,9 +615,9 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
                 modifier = Modifier.weight(1f),
                 icon = Icons.AutoMirrored.Filled.TrendingUp,
                 iconColor = Color(0xFF2196F3),
-                label = "Ventas Totales",
+                label = localizedText(TextR.string.pan_total_sales),
                 value = "$1,240.50",
-                trendText = "+12% vs ayer",
+                trendText = localizedText(TextR.string.pan_sales_trend),
                 trendColor = Color(0xFF4CAF50),
                 isDarkMode = isDarkMode
             )
@@ -617,13 +626,13 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
             val insumosCriticosCount = insumosCriticosNombres.size
             val icon = if (insumosCriticosCount > 0) Icons.Default.ErrorOutline else Icons.Default.CheckCircle
             val color = if (insumosCriticosCount > 0) Color.Red else Color(0xFF4CAF50)
-            val valueText = if (insumosCriticosCount > 0) "$insumosCriticosCount items" else "Óptimo"
+            val valueText = if (insumosCriticosCount > 0) localizedText(TextR.string.pan_items_count, insumosCriticosCount) else localizedText(TextR.string.pan_status_optimal)
             
             ResumenCard(
                 modifier = Modifier.weight(1f),
                 icon = icon,
                 iconColor = color,
-                label = "Estado de Almacén",
+                label = localizedText(TextR.string.pan_warehouse_status),
                 value = valueText,
                 isAlert = insumosCriticosCount > 0,
                 isDarkMode = isDarkMode
@@ -640,13 +649,13 @@ fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosCl
             ),
             contentPadding = PaddingValues(16.dp)
         ) {
-            Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
+            Icon( Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.admin_manage_orders), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(stringResource(R.string.admin_send_whatsapp), fontSize = 12.sp)
+                Text( stringResource(R.string.admin_manage_orders), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
+                Text( stringResource(R.string.admin_send_whatsapp), fontSize = 12.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null)
+            Icon( Icons.Default.ChevronRight, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
         }
     }
 }
@@ -664,7 +673,7 @@ fun ResumenCard(
     isDarkMode: Boolean
 ) {
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Card(
         modifier = modifier,
@@ -674,12 +683,12 @@ fun ResumenCard(
         Column(modifier = Modifier.padding(12.dp)) {
             Icon(icon, contentDescription = null, tint = iconColor)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.Gray, secondary = true))
             Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = textColor)
             if (trendText != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = trendColor, modifier = Modifier.size(14.dp))
-                    Text(trendText, style = MaterialTheme.typography.labelSmall, color = trendColor)
+                    Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = if (trendColor == Color.Black) contrastTextColor(trendColor) else trendColor, modifier = Modifier.size(14.dp))
+                    Text(trendText, style = MaterialTheme.typography.labelSmall, color = if (trendColor == Color.Black) contrastTextColor(trendColor) else trendColor)
                 }
             }
         }
@@ -693,7 +702,7 @@ fun GestionProductosSection(
     onAddClick: () -> Unit
 ) {
     val isDarkMode = isSystemInDarkTheme()
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val fieldColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -710,9 +719,9 @@ fun GestionProductosSection(
                     contentPadding = PaddingValues(horizontal = 8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.Gray)
                 ) {
-                    Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon( Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.admin_filter))
+                    Text( stringResource(R.string.admin_filter), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
@@ -721,7 +730,7 @@ fun GestionProductosSection(
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
-                    Text(stringResource(R.string.admin_new_btn))
+                    Text( stringResource(R.string.admin_new_btn), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             }
         }
@@ -733,12 +742,12 @@ fun GestionProductosSection(
             placeholder = { Text(stringResource(R.string.admin_search_prod)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             shape = RoundedCornerShape(24.dp),
-            colors = OutlinedTextFieldDefaults.colors(
+            colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = fieldColor,
                 focusedContainerColor = fieldColor,
                 unfocusedTextColor = textColor,
                 focusedTextColor = textColor
-            )
+            ))
         )
     }
 }
@@ -752,7 +761,7 @@ fun ProductoCard(
 ) {
     val isDarkMode = isSystemInDarkTheme()
     val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
-    val textColor = if (isDarkMode) Color.White else Color.Black
+    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -784,7 +793,7 @@ fun ProductoCard(
                             .background(if (isDarkMode) Color(0xFF333333) else Color(0xFFF0F0F0)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.Default.Restaurant, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true))
                     }
                 }
 
@@ -795,17 +804,17 @@ fun ProductoCard(
                         if (producto.isNuevo) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Surface(color = Color.Red.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp)) {
-                                Text(stringResource(R.string.admin_new_badge), fontSize = 9.sp, color = Color.Red, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                Text(stringResource(R.string.admin_new_badge), fontSize = 9.sp, color = contrastErrorColor(Color.Red), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                             }
                         }
                     }
-                    Text(producto.categoria, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text(producto.categoria, color = contrastTextColor(Color.Gray, secondary = true), style = MaterialTheme.typography.bodySmall)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.admin_stock_label, producto.stock), style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                        Text(stringResource(R.string.admin_stock_label, producto.stock), style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
-                        Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall, color = if (isDarkMode) Color.LightGray else Color.DarkGray)
+                        Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -814,8 +823,8 @@ fun ProductoCard(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = producto.statusLabel,
-                            color = producto.statusColor,
+                            text = stockStatusLabel(producto.statusLabel),
+                            color = contrastTextColor(producto.statusColor),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold
@@ -826,7 +835,7 @@ fun ProductoCard(
                         Text(stringResource(R.string.admin_price_format, producto.precio), fontWeight = FontWeight.Bold, color = textColor)
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = contrastTextColor(Color.Gray, secondary = true))
                         }
                     }
                 }
@@ -844,13 +853,13 @@ fun ProductoCard(
                     Text(stringResource(R.string.admin_inventory_btn), color = Color(0xFF2196F3))
                 }
                 TextButton(onClick = onDarDeBajaClick) {
-                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp), tint = contrastTextColor(Color.Gray, secondary = true))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.admin_reduce_stock_btn), color = Color.Gray)
+                    Text(stringResource(R.string.admin_reduce_stock_btn), color = contrastTextColor(Color.Gray, secondary = true))
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = { /* TODO */ }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = contrastTextColor(Color.Gray, secondary = true))
                 }
             }
         }
@@ -863,10 +872,10 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
     val nombresTexto = if (insumosCriticosNombres.size == 1) {
         insumosCriticosNombres.first()
     } else {
-        "${insumosCriticosNombres.dropLast(1).joinToString(", ")} y ${insumosCriticosNombres.last()}"
+        localizedText(TextR.string.pan_list_and, insumosCriticosNombres.dropLast(1).joinToString(", "), insumosCriticosNombres.last())
     }
     
-    val verbo = if (insumosCriticosNombres.size == 1) "está" else "están"
+    val verbo = if (insumosCriticosNombres.size == 1) localizedText(TextR.string.pan_is) else localizedText(TextR.string.pan_are)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -874,20 +883,20 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Warning, contentDescription = null, tint = contrastErrorColor(Color.Red), modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.admin_supply_alert), fontWeight = FontWeight.Bold, color = Color.Red)
+                Text(stringResource(R.string.admin_supply_alert), fontWeight = FontWeight.Bold, color = contrastErrorColor(Color.Red))
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "$nombresTexto $verbo en nivel crítico. Considere reabastecer hoy.",
+                localizedText(TextR.string.pan_critical_alert, nombresTexto, verbo),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isDarkMode) Color.LightGray else Color.DarkGray
+                color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Ver Inventario Crítico",
-                color = Color.Red,
+                localizedText(TextR.string.pan_critical_inventory),
+                color = contrastErrorColor(Color.Red),
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.clickable(onClick = onClick)
@@ -905,7 +914,7 @@ fun AdminFAB(modifier: Modifier = Modifier, onAdd: () -> Unit) {
         shape = CircleShape,
         modifier = modifier
     ) {
-        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.admin_new_btn))
+        Icon( Icons.Default.Add, contentDescription = stringResource(R.string.admin_new_btn), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
     }
 }
 
@@ -919,10 +928,10 @@ fun AdminFloatingBottomBar(
 ) {
     val bottomNavItems = remember {
         listOf(
-            Triple(AdminScreen.Dashboard.route, "Dashboard", Icons.Default.GridView),
-            Triple(AdminScreen.Almacen.route, "Almacén", Icons.Default.Inventory2),
-            Triple(AdminScreen.Pedidos.route, "Pedidos", Icons.Default.ChatBubble),
-            Triple(AdminScreen.Asistencia.route, "Asistencia", Icons.Default.HowToReg)
+            Triple(AdminScreen.Dashboard.route, localizedText(TextR.string.pan_dashboard), Icons.Default.GridView),
+            Triple(AdminScreen.Almacen.route, localizedText(TextR.string.pan_warehouse), Icons.Default.Inventory2),
+            Triple(AdminScreen.Pedidos.route, localizedText(TextR.string.pan_orders), Icons.Default.ChatBubble),
+            Triple(AdminScreen.Asistencia.route, localizedText(TextR.string.pan_attendance), Icons.Default.HowToReg)
         )
     }
 
@@ -972,7 +981,7 @@ fun AdminFloatingNavItem(
     onClick: () -> Unit
 ) {
     val activeBackgroundColor = AdminPrimary.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) AdminPrimary else Color.Gray
+    val contentColor = if (isSelected) contrastAccentColor(AdminPrimary) else contrastTextColor(Color.Gray, secondary = true)
 
     Surface(
         onClick = onClick,
@@ -991,7 +1000,7 @@ fun AdminFloatingNavItem(
                 badge = {
                     if (badgeCount > 0) {
                         Badge(containerColor = Color.Red, contentColor = Color.White) {
-                            Text(badgeCount.toString())
+                            Text( badgeCount.toString(), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                         }
                     }
                 }

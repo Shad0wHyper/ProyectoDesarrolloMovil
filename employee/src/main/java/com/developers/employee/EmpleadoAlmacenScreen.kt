@@ -1,5 +1,13 @@
 package com.developers.employee
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -44,7 +52,7 @@ data class MateriaPrima(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
+fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, onProfileClick: () -> Unit) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     
@@ -115,7 +123,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = 80.dp) // Move slightly up so it doesn't overlap BottomNav
             ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Producto")
+                Icon(Icons.Default.QrCodeScanner, contentDescription = localizedText(TextR.string.pan_scan_product))
             }
         },
         containerColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF5F6FA)
@@ -126,15 +134,22 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
-            Text(
-                text = stringResource(R.string.emp_warehouse),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = if (isDarkMode) Color.White else Color.Black
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.emp_warehouse),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    modifier = Modifier.weight(1f)
+                )
+                EmployeeProfileButton(viewModel, onClick = onProfileClick)
+            }
             Text(
                 text = stringResource(R.string.emp_warehouse_desc),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = contrastTextColor(Color.Gray, secondary = true)
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -165,14 +180,14 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = PrimaryBlue)
+                    CircularProgressIndicator(color = contrastAccentColor(PrimaryBlue))
                 }
             } else if (insumosList.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(stringResource(R.string.emp_no_supplies), color = Color.Gray)
+                    Text(stringResource(R.string.emp_no_supplies), color = contrastTextColor(Color.Gray, secondary = true))
                 }
             } else {
                 LazyColumn(
@@ -192,7 +207,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
     if (scannedCodeError != null) {
         AlertDialog(
             onDismissRequest = { scannedCodeError = null },
-            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red, modifier = Modifier.size(40.dp)) },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = contrastErrorColor(Color.Red), modifier = Modifier.size(40.dp)) },
             title = { Text(stringResource(R.string.emp_code_not_found), fontWeight = FontWeight.Bold) },
             text = { Text(stringResource(R.string.emp_code_not_found_desc)) },
             confirmButton = {
@@ -204,8 +219,8 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                 }
             },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
-            titleContentColor = if (isDarkMode) Color.White else Color.Black,
-            textContentColor = if (isDarkMode) Color.LightGray else Color.DarkGray
+            titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+            textContentColor = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode)
         )
     }
 
@@ -222,15 +237,16 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                     Text(
                         text = stringResource(R.string.emp_product, insumoToModify!!.nombre),
                         fontWeight = FontWeight.SemiBold,
-                        color = PrimaryBlue
+                        color = contrastAccentColor(PrimaryBlue)
                     )
                     Text(
                         text = stringResource(R.string.emp_current_stock, insumoToModify!!.cantidadActual.toString(), insumoToModify!!.unidadMedida),
-                        color = Color.Gray,
+                        color = contrastTextColor(Color.Gray, secondary = true),
                         fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
+                        colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                         value = modifyAmount,
                         onValueChange = { modifyAmount = it },
                         label = { Text(stringResource(R.string.emp_amount_to_adjust)) },
@@ -242,7 +258,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
                     Text(
                         text = stringResource(R.string.emp_adjust_hint),
                         fontSize = 11.sp,
-                        color = Color.Gray
+                        color = contrastTextColor(Color.Gray, secondary = true)
                     )
                 }
             },
@@ -277,11 +293,11 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel) {
             },
             dismissButton = {
                 TextButton(onClick = { showModifyDialog = false }, enabled = !isSaving) {
-                    Text(stringResource(R.string.emp_cancel), color = Color.Gray)
+                    Text(stringResource(R.string.emp_cancel), color = contrastTextColor(Color.Gray, secondary = true))
                 }
             },
             containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
-            titleContentColor = if (isDarkMode) Color.White else Color.Black
+            titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
         )
     }
 }
@@ -343,18 +359,18 @@ fun EmpleadoInsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
                 Text(
                     text = insumo.nombre, 
                     fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Text(
                     text = stringResource(R.string.emp_stock_label, insumo.cantidadActual.toString(), insumo.unidadMedida), 
-                    color = if (isCritico) Color.Red else Color.Gray, 
+                    color = if (isCritico) Color.Red else contrastTextColor(Color.Gray, secondary = true),
                     fontSize = 14.sp,
                     fontWeight = if (isCritico) FontWeight.Bold else FontWeight.Normal
                 )
                 if (insumo.codigosBarras.isNotEmpty()) {
-                    Text(stringResource(R.string.emp_codes_label, insumo.codigosBarras.joinToString(", ")), color = Color.LightGray, fontSize = 11.sp, maxLines = 1)
+                    Text(stringResource(R.string.emp_codes_label, insumo.codigosBarras.joinToString(", ")), color = contrastTextColor(Color.LightGray, secondary = true), fontSize = 11.sp, maxLines = 1)
                 } else if (insumo.codigoBarras.isNotEmpty()) {
-                    Text(stringResource(R.string.emp_code_label, insumo.codigoBarras), color = Color.LightGray, fontSize = 11.sp)
+                    Text(stringResource(R.string.emp_code_label, insumo.codigoBarras), color = contrastTextColor(Color.LightGray, secondary = true), fontSize = 11.sp)
                 }
             }
             CircularProgressIndicator(

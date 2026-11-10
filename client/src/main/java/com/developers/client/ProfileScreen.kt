@@ -1,5 +1,13 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.contrastErrorColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -74,12 +82,12 @@ fun ProfileScreen(
                         storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
                             appViewModel.updateProfileImage(downloadUrl.toString())
                             isUploadingImage = false
-                            Toast.makeText(context, "Foto actualizada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, localizedText(TextR.string.pan_photo_updated), Toast.LENGTH_SHORT).show()
                         }
                     }
                     .addOnFailureListener {
                         isUploadingImage = false
-                        Toast.makeText(context, "Error al subir la foto", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, localizedText(TextR.string.pan_photo_error), Toast.LENGTH_SHORT).show()
                     }
             }
         }
@@ -96,8 +104,8 @@ fun ProfileScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         }
@@ -123,7 +131,7 @@ fun ProfileScreen(
                                 )
                             )
                         } else if (appViewModel.currentUserId == "INVITADO") {
-                            Toast.makeText(context, "Inicia sesión para subir una foto", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, localizedText(TextR.string.pan_photo_login), Toast.LENGTH_SHORT).show()
                         }
                     },
                 contentAlignment = Alignment.Center
@@ -142,12 +150,12 @@ fun ProfileScreen(
                                 .data(appViewModel.userImageUrl)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "Foto de perfil",
+                            contentDescription = localizedText(TextR.string.pan_photo_profile),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(65.dp), tint = Color.Gray)
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(65.dp), tint = contrastTextColor(Color.Gray, secondary = true))
                     }
 
                     if (isUploadingImage) {
@@ -176,7 +184,7 @@ fun ProfileScreen(
                     ) {
                         Icon(
                             Icons.Default.CameraAlt,
-                            contentDescription = "Cambiar foto",
+                            contentDescription = localizedText(TextR.string.pan_photo_change),
                             tint = Color.White,
                             modifier = Modifier.size(18.dp)
                         )
@@ -195,23 +203,24 @@ fun ProfileScreen(
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PanAppPrimary,
                     focusedLabelColor = PanAppPrimary
-                )
+                ))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // CORREO (BLOQUEADO)
             OutlinedTextField(
+                colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                 value = email,
                 onValueChange = { },
                 readOnly = true,
                 enabled = false,
                 label = { Text(appViewModel.getString("email_label")) },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                trailingIcon = { Icon(Icons.Default.Lock, contentDescription = "Bloqueado") },
+                trailingIcon = { Icon(Icons.Default.Lock, contentDescription = localizedText(TextR.string.pan_blocked)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -226,10 +235,10 @@ fun ProfileScreen(
                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PanAppPrimary,
                     focusedLabelColor = PanAppPrimary
-                )
+                ))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -243,10 +252,10 @@ fun ProfileScreen(
                 leadingIcon = { Icon(Icons.Default.Home, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PanAppPrimary,
                     focusedLabelColor = PanAppPrimary
-                )
+                ))
             )
 
             // ✨ NUEVO: Gestión de Direcciones Guardadas
@@ -270,11 +279,11 @@ fun ProfileScreen(
                             modifier = Modifier.padding(16.dp).clickable { address = addr },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Home, contentDescription = null, tint = if (addr == address) PanAppPrimary else Color.Gray)
+                            Icon(Icons.Default.Home, contentDescription = null, tint = if (addr == address) PanAppPrimary else contrastTextColor(Color.Gray, secondary = true))
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(addr, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = if (isDarkMode) Color.White else Color.Black)
+                            Text(addr, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
                             if (addr == address) {
-                                Icon(Icons.Default.Check, contentDescription = "Seleccionada", tint = PanAppPrimary, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Check, contentDescription = localizedText(TextR.string.pan_selected), tint = contrastAccentColor(PanAppPrimary), modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -289,15 +298,15 @@ fun ProfileScreen(
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, if (isDarkMode) Color.DarkGray else Color.LightGray)
             ) {
-                Icon(Icons.Default.Home, contentDescription = null, tint = PanAppPrimary)
+                Icon(Icons.Default.Home, contentDescription = null, tint = contrastAccentColor(PanAppPrimary))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     appViewModel.getString("manage_addresses"),
                     modifier = Modifier.padding(vertical = 8.dp),
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = contrastTextColor(Color.Gray, secondary = true))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -308,15 +317,15 @@ fun ProfileScreen(
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, if (isDarkMode) Color.DarkGray else Color.LightGray)
             ) {
-                Icon(Icons.Default.Payment, contentDescription = null, tint = PanAppPrimary)
+                Icon(Icons.Default.Payment, contentDescription = null, tint = contrastAccentColor(PanAppPrimary))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     appViewModel.getString("payment_methods"),
                     modifier = Modifier.padding(vertical = 8.dp),
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = contrastTextColor(Color.Gray, secondary = true))
             }
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -331,7 +340,7 @@ fun ProfileScreen(
                         isSaving = true
                         appViewModel.updateProfileData(name, phone, address) {
                             isSaving = false
-                            Toast.makeText(context, "Perfil guardado con éxito", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, localizedText(TextR.string.pan_profile_saved), Toast.LENGTH_SHORT).show()
                             onNavigateBack()
                         }
                     }
@@ -354,7 +363,7 @@ fun ProfileScreen(
             OutlinedButton(
                 onClick = {
                     appViewModel.limpiarDatosDeSesion {
-                        Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, localizedText(TextR.string.pan_logout_success), Toast.LENGTH_SHORT).show()
                         onLogoutClick()
                     }
                 },
@@ -363,7 +372,7 @@ fun ProfileScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
             ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.Red)
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = contrastErrorColor(Color.Red))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(appViewModel.getString("logout"), fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
             }

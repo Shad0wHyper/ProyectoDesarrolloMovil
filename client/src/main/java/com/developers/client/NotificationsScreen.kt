@@ -1,5 +1,7 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastTextColor
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,8 +36,8 @@ fun NotificationsScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         }
@@ -54,7 +56,7 @@ fun NotificationsScreen(
                 imageVector = if (appViewModel.notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
-                tint = if (appViewModel.notificationsEnabled) MaterialTheme.colorScheme.primary else Color.Gray
+                tint = if (appViewModel.notificationsEnabled) MaterialTheme.colorScheme.primary else contrastTextColor(Color.Gray, secondary = true)
             )
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -63,13 +65,13 @@ fun NotificationsScreen(
                 text = appViewModel.getString("notifications"),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color.White else Color.Black
+                color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
             )
             
             Text(
                 text = appViewModel.getString("notif_desc"),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = contrastTextColor(Color.Gray, secondary = true),
                 modifier = Modifier.padding(top = 8.dp)
             )
             

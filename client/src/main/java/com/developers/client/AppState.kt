@@ -1,5 +1,8 @@
 package com.developers.client
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,8 +62,24 @@ class AppViewModel : ViewModel() {
 
     // Datos del Usuario
     var currentUserId by mutableStateOf("INVITADO")
-    var userName by mutableStateOf("Cargando...")
-    var userEmail by mutableStateOf("Cargando...")
+    // Resolve local fallback text when read, so retained ViewModels follow locale changes.
+    private var userNameResource by mutableStateOf<Int?>(TextR.string.pan_loading)
+    private var userNameValue by mutableStateOf("")
+    var userName: String
+        get() = userNameResource?.let { localizedText(it) } ?: userNameValue
+        set(value) {
+            userNameResource = null
+            userNameValue = value
+        }
+    // Resolve local fallback text when read, so retained ViewModels follow locale changes.
+    private var userEmailResource by mutableStateOf<Int?>(TextR.string.pan_loading)
+    private var userEmailValue by mutableStateOf("")
+    var userEmail: String
+        get() = userEmailResource?.let { localizedText(it) } ?: userEmailValue
+        set(value) {
+            userEmailResource = null
+            userEmailValue = value
+        }
     var userPhone by mutableStateOf("...")
     var userImageUrl by mutableStateOf("")
     var userAddress by mutableStateOf("")
@@ -107,8 +126,8 @@ class AppViewModel : ViewModel() {
     fun setSessionUser(uid: String, email: String) {
         if (uid == "INVITADO" || uid.isEmpty()) {
             currentUserId = "INVITADO"
-            userName = "Invitado"
-            userEmail = "Inicia sesión para ordenar"
+            userNameResource = TextR.string.pan_guest
+            userEmailResource = TextR.string.pan_guest_order
             return
         }
         currentUserId = uid
@@ -122,7 +141,9 @@ class AppViewModel : ViewModel() {
         db.collection("usuarios").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    userName = doc.getString("nombre") ?: "Usuario"
+                    val storedName = doc.getString("nombre")
+                    if (storedName == null) userNameResource = TextR.string.pan_user
+                    else userName = storedName
                     userPhone = doc.getString("telefono") ?: "..."
                     userImageUrl = doc.getString("imageUrl") ?: ""
                     userAddress = doc.getString("direccion") ?: ""
@@ -139,7 +160,7 @@ class AppViewModel : ViewModel() {
                     userCardExp = doc.getString("cardExp") ?: ""
                     hasSavedCard = userCardLast4.isNotEmpty()
                 } else {
-                    userName = "PanApp User"
+                    userNameResource = TextR.string.pan_panapp_user
                 }
             }
 
@@ -160,7 +181,7 @@ class AppViewModel : ViewModel() {
                         val itemsRaw = d.get("items") as? List<HashMap<String, Any>> ?: emptyList()
                         val parsedItems = itemsRaw.map { map ->
                             OrderItemDetail(
-                                nombre = map["nombre"]?.toString() ?: "Producto",
+                                nombre = map["nombre"]?.toString() ?: localizedText(TextR.string.pan_product),
                                 cantidad = (map["cantidad"] as? Number)?.toInt() ?: 1,
                                 precio = (map["precio"] as? Number)?.toDouble() ?: 0.0
                             )
@@ -290,12 +311,12 @@ class AppViewModel : ViewModel() {
     fun procesarCobroBancario(monto: Double, onResult: (Boolean, String) -> Unit) {
         val uid = currentUserId
         if (uid == "INVITADO" || uid.isEmpty()) {
-            onResult(false, "Inicia sesión para pagar")
+            onResult(false, localizedText(TextR.string.pan_login_pay))
             return
         }
 
         if (userBalance < monto) {
-            onResult(false, "Saldo insuficiente en tu cuenta bancaria")
+            onResult(false, localizedText(TextR.string.pan_insufficient_bank_balance))
             return
         }
 
@@ -309,7 +330,7 @@ class AppViewModel : ViewModel() {
             val currentBalance = userDoc.getDouble("saldo") ?: 0.0
             
             if (currentBalance < monto) {
-                throw Exception("Saldo insuficiente")
+                throw Exception(localizedText(TextR.string.pan_insufficient_balance))
             }
 
             // 1. Descontar del usuario
@@ -325,9 +346,9 @@ class AppViewModel : ViewModel() {
             null
         }.addOnSuccessListener {
             userBalance -= monto
-            onResult(true, "Cobro realizado con éxito")
+            onResult(true, localizedText(TextR.string.pan_charge_success))
         }.addOnFailureListener { e ->
-            onResult(false, e.message ?: "Error en la transacción bancaria")
+            onResult(false, e.message ?: localizedText(TextR.string.pan_bank_error))
         }
     }
 
@@ -458,7 +479,7 @@ class AppViewModel : ViewModel() {
         val resourceKey = "client_$key"
         val resId = context.resources.getIdentifier(resourceKey, "string", context.packageName)
         if (resId != 0) {
-            return context.getString(resId)
+            return androidx.compose.ui.res.stringResource(resId)
         }
         return key
     }

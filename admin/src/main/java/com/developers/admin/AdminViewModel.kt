@@ -1,5 +1,8 @@
 package com.developers.admin
 
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,7 +14,15 @@ import com.google.firebase.firestore.ListenerRegistration
 class AdminViewModel : ViewModel() {
     var currentUserId by mutableStateOf("INVITADO")
     var userEmail by mutableStateOf("")
-    var userName by mutableStateOf("")
+    // Resolve local fallback text when read, so retained ViewModels follow locale changes.
+    private var userNameResource by mutableStateOf<Int?>(null)
+    private var userNameValue by mutableStateOf("")
+    var userName: String
+        get() = userNameResource?.let { localizedText(it) } ?: userNameValue
+        set(value) {
+            userNameResource = null
+            userNameValue = value
+        }
     var userImageUrl by mutableStateOf("")
     var isDarkMode by mutableStateOf(false)
 
@@ -33,14 +44,16 @@ class AdminViewModel : ViewModel() {
             db.collection("usuarios").document(uid).get()
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
-                        userName = doc.getString("nombre") ?: "Administrador"
+                    val storedName = doc.getString("nombre")
+                    if (storedName == null) userNameResource = TextR.string.pan_admin
+                    else userName = storedName
                         userImageUrl = doc.getString("imageUrl") ?: ""
                     }
                 }
             
             iniciarEscuchaGlobal(db)
         } else {
-            userName = "Admin Invitado"
+            userNameResource = TextR.string.pan_guest_admin
         }
     }
 
@@ -50,7 +63,7 @@ class AdminViewModel : ViewModel() {
             if (snap != null) {
                 val criticos = snap.documents.filter { 
                     (it.getDouble("cantidadActual") ?: 0.0) <= (it.getDouble("nivelCritico") ?: 0.0) 
-                }.map { it.getString("nombre") ?: "Desconocido" }
+                }.map { it.getString("nombre") ?: localizedText(TextR.string.pan_unknown) }
                 
                 insumosCriticosNombres = criticos
                 globalCriticosCount = criticos.size
@@ -73,7 +86,7 @@ class AdminViewModel : ViewModel() {
         // 3. Limpiar variables en RAM
         currentUserId = "INVITADO"
         userEmail = ""
-        userName = "Cargando..."
+        userNameResource = TextR.string.pan_loading
         userImageUrl = ""
         globalCriticosCount = 0
         insumosCriticosNombres = emptyList()

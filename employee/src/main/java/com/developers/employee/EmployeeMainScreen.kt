@@ -1,5 +1,8 @@
 package com.developers.employee
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
 import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -108,7 +112,7 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
                 AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
                 AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
-                AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel)
+                AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel, onProfileClick = { currentScreen = AppScreen.PERFIL })
                 AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it }, onLogoutClick = onLogoutClick)
                 AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
                 AppScreen.LAUNCHING_WS -> {
@@ -130,6 +134,36 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
 }
 
 @Composable
+internal fun EmployeeProfileButton(viewModel: EmployeeViewModel, onClick: () -> Unit) {
+    val profileLabel = stringResource(R.string.emp_nav_profile)
+    IconButton(onClick = onClick, modifier = Modifier.padding(end = 8.dp)) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (viewModel.userImageUrl.isNotEmpty()) {
+                coil.compose.AsyncImage(
+                    model = viewModel.userImageUrl,
+                    contentDescription = profileLabel,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = profileLabel,
+                    tint = contrastTextColor(MaterialTheme.colorScheme.onSurfaceVariant),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun EmployeeFloatingBottomBar(
     currentScreen: AppScreen,
     onNavigate: (AppScreen) -> Unit,
@@ -140,15 +174,13 @@ fun EmployeeFloatingBottomBar(
     val navAttendance = stringResource(R.string.emp_nav_attendance)
     val navOrders = stringResource(R.string.emp_nav_orders)
     val navWarehouse = stringResource(R.string.emp_nav_warehouse)
-    val navProfile = stringResource(R.string.emp_nav_profile)
 
-    val bottomNavItems = remember(navHome, navAttendance, navOrders, navWarehouse, navProfile) {
+    val bottomNavItems = remember(navHome, navAttendance, navOrders, navWarehouse) {
         listOf(
             Triple(AppScreen.INICIO, navHome, Icons.Default.Home),
             Triple(AppScreen.ASISTENCIA, navAttendance, Icons.Default.QrCodeScanner),
             Triple(AppScreen.PEDIDOS, navOrders, Icons.Default.ListAlt),
-            Triple(AppScreen.ALMACEN, navWarehouse, Icons.Default.Inventory2),
-            Triple(AppScreen.PERFIL, navProfile, Icons.Default.Person)
+            Triple(AppScreen.ALMACEN, navWarehouse, Icons.Default.Inventory2)
         )
     }
 
@@ -199,7 +231,7 @@ fun EmployeeFloatingNavItem(
     onClick: () -> Unit
 ) {
     val activeBackgroundColor = PrimaryBlue.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) PrimaryBlue else Color.Gray
+    val contentColor = if (isSelected) contrastAccentColor(PrimaryBlue) else contrastTextColor(Color.Gray, secondary = true)
 
     Surface(
         onClick = onClick,

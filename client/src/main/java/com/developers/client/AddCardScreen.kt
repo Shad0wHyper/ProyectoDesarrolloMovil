@@ -1,5 +1,11 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.contrastTextColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,16 +41,16 @@ fun AddCardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Agregar Tarjeta", fontWeight = FontWeight.Bold) },
+                title = { Text(localizedText(TextR.string.pan_add_card), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedText(TextR.string.pan_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         }
@@ -69,7 +75,7 @@ fun AddCardScreen(
                         Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
-                            text = if (cardNumber.isEmpty()) "XXXX XXXX XXXX XXXX" else cardNumber.chunked(4).joinToString(" "),
+                            text = if (cardNumber.isEmpty()) localizedText(TextR.string.pan_card_mask) else cardNumber.chunked(4).joinToString(" "),
                             color = Color.White,
                             fontSize = 20.sp,
                             letterSpacing = 2.sp
@@ -77,12 +83,12 @@ fun AddCardScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column {
-                                Text("Titular", color = Color.Gray, fontSize = 10.sp)
-                                Text(if (cardHolderName.isEmpty()) "NOMBRE APELLIDO" else cardHolderName.uppercase(), color = Color.White, fontSize = 14.sp)
+                                Text(localizedText(TextR.string.pan_card_holder), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 10.sp)
+                                Text(if (cardHolderName.isEmpty()) localizedText(TextR.string.pan_card_name_placeholder) else cardHolderName.uppercase(), color = Color.White, fontSize = 14.sp)
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("Expira", color = Color.Gray, fontSize = 10.sp)
-                                Text(if (expiryDate.isEmpty()) "MM/YY" else expiryDate, color = Color.White, fontSize = 14.sp)
+                                Text(localizedText(TextR.string.pan_expires), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 10.sp)
+                                Text(if (expiryDate.isEmpty()) localizedText(TextR.string.pan_card_expiry_hint) else expiryDate, color = Color.White, fontSize = 14.sp)
                             }
                         }
                     }
@@ -93,9 +99,10 @@ fun AddCardScreen(
 
             // Form
             OutlinedTextField(
+                colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                 value = cardHolderName,
                 onValueChange = { cardHolderName = it },
-                label = { Text("Nombre en la tarjeta") },
+                label = { Text(localizedText(TextR.string.pan_card_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -103,9 +110,10 @@ fun AddCardScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
+                colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                 value = cardNumber,
                 onValueChange = { if (it.length <= 16) cardNumber = it },
-                label = { Text("Número de tarjeta") },
+                label = { Text(localizedText(TextR.string.pan_card_number)) },
                 leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -116,18 +124,20 @@ fun AddCardScreen(
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
+                    colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                     value = expiryDate,
                     onValueChange = { if (it.length <= 5) expiryDate = it },
-                    label = { Text("MM/YY") },
+                    label = { Text(localizedText(TextR.string.pan_card_expiry_hint)) },
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     shape = RoundedCornerShape(12.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 OutlinedTextField(
+                    colors = contrastFieldColors(androidx.compose.material3.OutlinedTextFieldDefaults.colors()),
                     value = cvc,
                     onValueChange = { if (it.length <= 3) cvc = it },
-                    label = { Text("CVC") },
+                    label = { Text(localizedText(TextR.string.pan_card_cvc)) },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     modifier = Modifier.weight(1f),
                     visualTransformation = PasswordVisualTransformation(),
@@ -150,7 +160,7 @@ fun AddCardScreen(
                 enabled = cardNumber.length == 16 && expiryDate.length >= 4 && cvc.length == 3,
                 colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
             ) {
-                Text("Guardar Tarjeta", modifier = Modifier.padding(vertical = 8.dp))
+                Text(localizedText(TextR.string.pan_save_card), modifier = Modifier.padding(vertical = 8.dp))
             }
         }
     }

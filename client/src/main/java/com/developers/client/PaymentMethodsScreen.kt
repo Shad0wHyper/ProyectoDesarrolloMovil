@@ -1,5 +1,11 @@
 package com.developers.client
 
+import com.developers.core.ui.contrastTextColor
+import com.developers.core.ui.contrastAccentColor
+
+import com.developers.core.text.localizedText
+import com.developers.core.R as TextR
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -35,16 +41,16 @@ fun PaymentMethodsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Métodos de Pago", fontWeight = FontWeight.Bold) },
+                title = { Text(localizedText(TextR.string.pan_payment_methods), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedText(TextR.string.pan_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) Color.Black else Color.White,
-                    titleContentColor = if (isDarkMode) Color.White else Color.Black,
-                    navigationIconContentColor = if (isDarkMode) Color.White else Color.Black
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         },
@@ -54,7 +60,7 @@ fun PaymentMethodsScreen(
                 containerColor = PanAppPrimary,
                 contentColor = Color.White
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Tarjeta")
+                Icon(Icons.Default.Add, contentDescription = localizedText(TextR.string.pan_add_card))
             }
         }
     ) { padding ->
@@ -67,10 +73,10 @@ fun PaymentMethodsScreen(
         ) {
             item {
                 Text(
-                    "Tus Tarjetas Guardadas",
+                    localizedText(TextR.string.pan_saved_cards),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black,
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
             }
@@ -98,21 +104,21 @@ fun PaymentMethodsScreen(
                                 Icon(
                                     Icons.Default.CreditCard, 
                                     contentDescription = null, 
-                                    tint = PanAppPrimary, 
+                                    tint = contrastAccentColor(PanAppPrimary),
                                     modifier = Modifier.padding(8.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "Tarjeta •••• ${appViewModel.userCardLast4}", 
+                                    localizedText(TextR.string.pan_card_last_four, appViewModel.userCardLast4),
                                     fontWeight = FontWeight.Bold, 
-                                    color = if (isDarkMode) Color.White else Color.Black
+                                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                                 )
                                 Text(
-                                    "Expira ${appViewModel.userCardExp}", 
+                                    localizedText(TextR.string.pan_card_expiry, appViewModel.userCardExp),
                                     fontSize = 12.sp, 
-                                    color = Color.Gray
+                                    color = contrastTextColor(Color.Gray, secondary = true)
                                 )
                             }
                             IconButton(onClick = {
@@ -129,7 +135,7 @@ fun PaymentMethodsScreen(
                                         }
                                 }
                             }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red.copy(alpha = 0.6f))
+                                Icon(Icons.Default.Delete, contentDescription = localizedText(TextR.string.pan_delete), tint = Color.Red.copy(alpha = 0.6f))
                             }
                         }
                     }
@@ -143,8 +149,8 @@ fun PaymentMethodsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "No tienes tarjetas guardadas.", 
-                            color = Color.Gray,
+                            localizedText(TextR.string.pan_no_cards),
+                            color = contrastTextColor(Color.Gray, secondary = true),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -154,10 +160,10 @@ fun PaymentMethodsScreen(
             item {
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
-                    "Otros Métodos Disponibles",
+                    localizedText(TextR.string.pan_other_methods),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.Black,
+                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
                 
@@ -169,8 +175,8 @@ fun PaymentMethodsScreen(
                 ) {
                     Column {
                         ListItem(
-                            headlineContent = { Text("Efectivo (OXXO Pay)", color = if (isDarkMode) Color.White else Color.Black) },
-                            supportingContent = { Text("Genera un código y paga en tienda", color = Color.Gray) },
+                            headlineContent = { Text(localizedText(TextR.string.pan_oxxo_cash), color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
+                            supportingContent = { Text(localizedText(TextR.string.pan_oxxo_description), color = contrastTextColor(Color.Gray, secondary = true)) },
                             leadingContent = { 
                                 Icon(Icons.Outlined.Payments, contentDescription = null, tint = Color(0xFF4CAF50)) 
                             },
@@ -178,8 +184,8 @@ fun PaymentMethodsScreen(
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = if (isDarkMode) Color.DarkGray else Color.LightGray.copy(alpha = 0.3f))
                         ListItem(
-                            headlineContent = { Text("Transferencia SPEI", color = if (isDarkMode) Color.White else Color.Black) },
-                            supportingContent = { Text("Pago directo vía banca móvil", color = Color.Gray) },
+                            headlineContent = { Text(localizedText(TextR.string.pan_spei), color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
+                            supportingContent = { Text(localizedText(TextR.string.pan_spei_description), color = contrastTextColor(Color.Gray, secondary = true)) },
                             leadingContent = { 
                                 Icon(Icons.Outlined.AccountBalance, contentDescription = null, tint = Color(0xFF2196F3)) 
                             },
