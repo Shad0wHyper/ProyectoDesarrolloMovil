@@ -195,4 +195,8 @@
     <string name="admin_new_supplier">New Supplier</string>
     <string name="admin_edit_supplier">Edit Supplier</string>
     <string name="admin_saving">Saving...</string>
+    <string name="admin_export_payroll_excel">Export Payroll Excel</string>
+    <string name="admin_payroll_generated">Payroll Excel file generated successfully</string>
+    <string name="admin_error_generating_payroll">Error generating payroll file: %1$s</string>
+    <string name="admin_share_payroll">Share Payroll Report</string>
 </resources>

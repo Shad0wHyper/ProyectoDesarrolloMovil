@@ -194,4 +194,8 @@
     <string name="admin_new_supplier">Nuevo Proveedor</string>
     <string name="admin_edit_supplier">Editar Proveedor</string>
     <string name="admin_saving">Guardando...</string>
+    <string name="admin_export_payroll_excel">Exportar Nómina Excel</string>
+    <string name="admin_payroll_generated">Archivo de nómina Excel generado con éxito</string>
+    <string name="admin_error_generating_payroll">Error al generar el archivo de nómina: %1$s</string>
+    <string name="admin_share_payroll">Compartir Reporte de Nómina</string>
 </resources>

@@ -66,8 +66,8 @@ fun CartScreen(
     // ✨ Estado para controlar el pop-up de error de dirección
     var showAddressErrorDialog by remember { mutableStateOf(false) }
 
-    // ✨ Nuevo estado para la dirección editable en tiempo real
-    var editableAddress by remember(appViewModel.userAddress) { mutableStateOf(appViewModel.userAddress) }
+    // ✨ Dirección seleccionada (inicializada exclusivamente con la dirección puesta desde el perfil)
+    var selectedAddress by remember(appViewModel.userAddress) { mutableStateOf(appViewModel.userAddress) }
 
     val isDarkMode = appViewModel.isDarkMode
 
@@ -76,20 +76,18 @@ fun CartScreen(
     val taxes = subtotal * 0.08
     val finalTotal = subtotal + deliveryFee + taxes
 
-    // ✨ LÓGICA FILTRADORA DE SEGURIDAD (Permite poner la dirección aquí mismo)
+    // ✨ LÓGICA DE PROCESAMIENTO (Solo permite la dirección configurada en el perfil)
     fun handleCheckoutProcess() {
-        if (editableAddress.trim().isEmpty()) {
+        if (selectedAddress.trim().isEmpty()) {
             showAddressErrorDialog = true
         } else {
-            appViewModel.userAddress = editableAddress
+            appViewModel.userAddress = selectedAddress
             val uid = appViewModel.currentUserId
             if (uid != "INVITADO" && uid.isNotEmpty()) {
                 FirebaseFirestore.getInstance().collection("usuarios").document(uid)
-                    .update("direccion", editableAddress)
+                    .update("direccion", selectedAddress)
             }
 
-            // Mostramos la pasarela manual para todos los métodos para asegurar funcionalidad
-            appViewModel.addAddress(editableAddress) // ✨ Guardamos en la lista global del usuario
             showPaymentSheetManual = true
         }
     }
@@ -201,65 +199,128 @@ fun CartScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ✨ Selector de Direcciones Guardadas
-                if (appViewModel.userAddressesList.isNotEmpty()) {
-                    var showAddressDialog by remember { mutableStateOf(false) }
-                    
-                    OutlinedButton(
-                        onClick = { showAddressDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, PanAppPrimary.copy(alpha = 0.5f))
-                    ) {
-                        Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(localizedText(TextR.string.pan_choose_address), fontSize = 13.sp)
-                    }
+                var showAddressDialog by remember { mutableStateOf(false) }
 
-                    if (showAddressDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showAddressDialog = false },
-                            title = { Text(localizedText(TextR.string.pan_my_addresses)) },
-                            text = {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    appViewModel.userAddressesList.forEach { addr ->
-                                        ListItem(
-                                            headlineContent = { Text(addr, fontSize = 14.sp) },
-                                            modifier = Modifier.clickable {
-                                                editableAddress = addr
-                                                showAddressDialog = false
-                                            }
-                                        )
-                                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                                    }
-                                }
-                            },
-                            confirmButton = {
-                                TextButton(onClick = { showAddressDialog = false }) { Text(localizedText(TextR.string.pan_close)) }
+                // ✨ TARJETA VISUAL DE LA DIRECCIÓN DEL PERFIL (SIN CAMPO DE TEXTO MANUAL)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = appViewModel.userAddressesList.size > 1) {
+                            showAddressDialog = true
+                        },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        if (selectedAddress.isNotBlank()) PanAppPrimary.copy(alpha = 0.4f) else contrastErrorColor(Color.Red).copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(PanAppPrimary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Home,
+                                contentDescription = null,
+                                tint = contrastAccentColor(PanAppPrimary),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = localizedText(TextR.string.pan_main_address),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            if (selectedAddress.isNotBlank()) {
+                                Text(
+                                    text = selectedAddress,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                                )
+                            } else {
+                                Text(
+                                    text = localizedText(TextR.string.pan_no_address),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = contrastErrorColor(Color.Red)
+                                )
                             }
-                        )
+                        }
+
+                        if (appViewModel.userAddressesList.size > 1) {
+                            TextButton(onClick = { showAddressDialog = true }) {
+                                Text(
+                                    localizedText(TextR.string.pan_change),
+                                    fontWeight = FontWeight.Bold,
+                                    color = contrastAccentColor(PanAppPrimary)
+                                )
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                OutlinedTextField(
-                    value = editableAddress,
-                    onValueChange = { editableAddress = it },
-                    label = { Text(appViewModel.getString("add_address_or_select")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(localizedText(TextR.string.pan_address_example)) },
-                    leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = contrastAccentColor(PanAppPrimary)) },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PanAppPrimary,
-                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f),
-                        focusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
-                        unfocusedContainerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
-                        focusedTextColor = if (isDarkMode) Color.White else Color.Black,
-                        unfocusedTextColor = if (isDarkMode) Color.White else Color.Black
-                    )),
-                    singleLine = true
-                )
+                // ✨ DIÁLOGO PARA ELEGIR ENTRE LAS DIRECCIONES GUARDADAS EN EL PERFIL
+                if (showAddressDialog && appViewModel.userAddressesList.isNotEmpty()) {
+                    AlertDialog(
+                        onDismissRequest = { showAddressDialog = false },
+                        title = { Text(localizedText(TextR.string.pan_my_addresses), fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
+                        text = {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                appViewModel.userAddressesList.forEach { addr ->
+                                    val isSelected = (addr == selectedAddress)
+                                    ListItem(
+                                        headlineContent = {
+                                            Text(
+                                                addr,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) contrastAccentColor(PanAppPrimary) else contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                                            )
+                                        },
+                                        leadingContent = {
+                                            RadioButton(
+                                                selected = isSelected,
+                                                onClick = null,
+                                                colors = RadioButtonDefaults.colors(selectedColor = PanAppPrimary)
+                                            )
+                                        },
+                                        modifier = Modifier.clickable {
+                                            selectedAddress = addr
+                                            appViewModel.userAddress = addr
+                                            showAddressDialog = false
+                                        }
+                                    )
+                                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showAddressDialog = false }) {
+                                Text(localizedText(TextR.string.pan_close), color = contrastAccentColor(PanAppPrimary))
+                            }
+                        },
+                        containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
