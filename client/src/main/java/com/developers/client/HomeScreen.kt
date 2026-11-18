@@ -134,9 +134,9 @@ fun HomeScreen(
             ) {
                 // LOGO OFICIAL
                 Image(
-                    painter = painterResource(id = com.developers.client.R.drawable.icon),
+                    painter = painterResource(id = com.developers.client.R.drawable.newp),
                     contentDescription = localizedText(TextR.string.pan_official_logo),
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .size(45.dp)
                         .clip(RoundedCornerShape(12.dp))
