@@ -1,5 +1,6 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 
@@ -29,12 +30,12 @@ fun SuccessScreen(
     onNavigateHome: () -> Unit,
     onNavigateToOrders: () -> Unit
 ) {
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isDarkMode) Color(0xFF121212) else Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

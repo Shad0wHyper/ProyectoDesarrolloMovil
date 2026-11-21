@@ -14,7 +14,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -162,12 +161,6 @@ fun AppNavigation() {
             val clientViewModel: AppViewModel = viewModel()
             val context = LocalContext.current
 
-            // ✨ 1. Aplicar el tema oscuro automáticamente
-            val systemDarkTheme = isSystemInDarkTheme()
-            LaunchedEffect(systemDarkTheme) {
-                clientViewModel.isDarkMode = systemDarkTheme
-            }
-            
             // ✨ 1.5 Launcher para permisos de notificación de Android 13+
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()

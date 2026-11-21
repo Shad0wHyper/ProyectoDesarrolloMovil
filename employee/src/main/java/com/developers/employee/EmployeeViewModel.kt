@@ -11,6 +11,7 @@ import java.util.*
 
 // ✨ NUEVOS MODELOS PARA LOS PEDIDOS REALES
 data class PedidoItem(
+    val productoId: String = "",
     val nombre: String = localizedText(TextR.string.pan_product),
     val cantidad: Int = 1,
     val precio: Double = 0.0
@@ -103,6 +104,7 @@ class EmployeeViewModel : ViewModel() {
                         val itemsRaw = doc.get("items") as? List<HashMap<String, Any>> ?: emptyList()
                         val parsedItems = itemsRaw.map { map ->
                             PedidoItem(
+                                productoId = map["productoId"] as? String ?: "",
                                 nombre = map["nombre"]?.toString() ?: localizedText(TextR.string.pan_product),
                                 cantidad = (map["cantidad"] as? Number)?.toInt() ?: 1,
                                 precio = (map["precio"] as? Number)?.toDouble() ?: 0.0

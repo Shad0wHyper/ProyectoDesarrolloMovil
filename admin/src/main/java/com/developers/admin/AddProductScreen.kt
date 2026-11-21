@@ -25,6 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarHalf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -59,15 +62,14 @@ fun AddProductScreen(
     onSuccessSave: () -> Unit
 ) {
     val isDarkMode = isSystemInDarkTheme()
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val bgColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val topBarColor = MaterialTheme.colorScheme.surface
 
     // Relleno de campos iniciales
     var nombre by remember { mutableStateOf(productoAEditar?.nombre ?: "") }
     var precio by remember { mutableStateOf(productoAEditar?.precio ?: "") }
-    var calificacion by remember { mutableStateOf(productoAEditar?.calificacion?.toString() ?: "5.0") }
     var isNuevo by remember { mutableStateOf(productoAEditar?.isNuevo ?: false) }
     var categoriaSeleccionada by remember { mutableStateOf(productoAEditar?.categoria ?: "PANES") }
 
@@ -224,29 +226,20 @@ fun AddProductScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // PRECIO Y CALIFICACIÓN
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = precio, onValueChange = { precio = it }, label = { Text(stringResource(R.string.admin_price_label)) },
-                    leadingIcon = { Icon(Icons.Default.CurrencyExchange, contentDescription = null) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
-                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
-                        unfocusedTextColor = textColor,
-                        focusedTextColor = textColor
-                    ))
-                )
-                OutlinedTextField(
-                    value = calificacion, onValueChange = { calificacion = it }, label = { Text(stringResource(R.string.admin_rating_label)) },
-                    leadingIcon = { Icon(Icons.Default.StarBorder, contentDescription = null) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), singleLine = true,
-                    colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
-                        unfocusedTextColor = textColor,
-                        focusedTextColor = textColor
-                    ))
-                )
-            }
+            OutlinedTextField(
+                value = precio,
+                onValueChange = { precio = it },
+                label = { Text(stringResource(R.string.admin_price_label)) },
+                leadingIcon = { Icon(Icons.Default.CurrencyExchange, contentDescription = null) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                colors = contrastFieldColors(OutlinedTextFieldDefaults.colors(
+                    unfocusedTextColor = textColor,
+                    focusedTextColor = textColor
+                ))
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -415,7 +408,6 @@ fun AddProductScreen(
             Button(
                 onClick = {
                     val priceDouble = precio.toDoubleOrNull()
-                    val califDouble = calificacion.toDoubleOrNull() ?: 5.0
 
                     if (nombre.trim().isEmpty() || priceDouble == null || (imageUri == null && imageUrlGuardada.isEmpty())) {
                         Toast.makeText(context, context.getString(R.string.admin_fill_data_and_photo), Toast.LENGTH_SHORT).show()
@@ -430,7 +422,6 @@ fun AddProductScreen(
                                 "precio" to priceDouble,
                                 "categoria" to categoriaSeleccionada,
                                 "stock" to (productoAEditar?.stock ?: 0), // 0 si es creación
-                                "calificacion" to califDouble,
                                 "isNuevo" to isNuevo,
                                 "imagenUrl" to urlFinal
                             )

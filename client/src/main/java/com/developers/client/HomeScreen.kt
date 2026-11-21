@@ -1,5 +1,9 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppLogo
+import com.developers.core.ui.PanAppProfileMenu
+
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 import com.developers.core.ui.contrastErrorColor
@@ -7,6 +11,7 @@ import com.developers.core.ui.contrastErrorColor
 import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -33,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.developers.client.ui.theme.PanAppPrimary
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -44,7 +48,8 @@ data class Product(
     val calificacion: Double = 0.0,
     val isNuevo: Boolean = false,
     val categoria: String = "",
-    val imagenUrl: String = ""
+    val imagenUrl: String = "",
+    val pedidosRegistrados: Long = 0
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,32 +62,22 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onLogoutClick: () -> Unit = {}
 ) {
-    var showMenu by remember { mutableStateOf(false) }
     var selectedProduct by remember { mutableStateOf<Product?>(null) } // ✨ ESTADO PARA EL BOTTOM SHEET DE DETALLE DE PRODUCTO
 
+    val compactHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
     val categories = remember { listOf("TODO", "PANES", "CAFÉ", "OTROS") }
     val pagerState = rememberPagerState(pageCount = { categories.size })
     val coroutineScope = rememberCoroutineScope()
 
-    var allProducts by remember { mutableStateOf<List<Product>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val catalog = rememberCatalogProducts()
+    val allProducts = catalog.products
+    val isLoading = catalog.loading
+    var sort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(CatalogSort.Default) }
+    val ratings = rememberCatalogRatings(allProducts, appViewModel.currentUserId, appViewModel.ratingRevision)
 
-    LaunchedEffect(Unit) {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("productos").get()
-            .addOnSuccessListener { result ->
-                val lista = result.documents.mapNotNull { doc ->
-                    doc.toObject(Product::class.java)?.copy(id = doc.id)
-                }
-                allProducts = lista
-                isLoading = false
-            }
-            .addOnFailureListener {
-                isLoading = false
-            }
-    }
 
-    val isDarkMode = appViewModel.isDarkMode
+
+    val isDarkMode = isPanAppInDarkTheme()
 
     // ✨ MEMORIZAR NOMBRE DE USUARIO PARA EVITAR .split() EN CADA FRAME DE SCROLL (120Hz)
     val userFirstName = remember(appViewModel.userName) {
@@ -114,14 +109,14 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = if (isDarkMode) Color(0xFF121212) else Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         // ✨ 1. CONTENEDOR PRINCIPAL QUE OCUPA TODA LA PANTALLA
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if (isDarkMode) Color(0xFF121212) else Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // ✨ 2. TOP ROW (HEADER) ALINEADO PERFECTAMENTE CON EL STATUS BAR
             Row(
@@ -132,15 +127,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // LOGO OFICIAL
-                Image(
-                    painter = painterResource(id = com.developers.client.R.drawable.newp),
-                    contentDescription = localizedText(TextR.string.pan_official_logo),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .size(45.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                )
+                PanAppLogo()
 
                 // ACCIONES DERECHA: CARRITO Y PERFIL
                 Row(
@@ -150,8 +137,8 @@ fun HomeScreen(
                     IconButton(onClick = onNavigateToCart) {
                         BadgedBox(
                             badge = {
-                                if (appViewModel.cartUniqueItems > 0) {
-                                    Badge { Text(appViewModel.cartUniqueItems.toString()) }
+                                Crossfade(appViewModel.cartTotalQuantity, label = "cart badge") { count ->
+                                    if (count > 0) Badge { Text(count.toString()) }
                                 }
                             }
                         ) {
@@ -162,79 +149,43 @@ fun HomeScreen(
                             )
                         }
                     }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            if (appViewModel.userImageUrl.isNotEmpty()) {
+                    PanAppProfileMenu(
+                        onProfile = onNavigateToProfile,
+                        onSettings = onNavigateToSettings,
+                        onLogout = { appViewModel.limpiarDatosDeSesion { onLogoutClick() } },
+                        avatar = if (appViewModel.userImageUrl.isNotEmpty()) {
+                            { modifier ->
                                 AsyncImage(
                                     model = appViewModel.userImageUrl,
                                     contentDescription = localizedText(TextR.string.pan_profile),
                                     contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.AccountCircle,
-                                    contentDescription = localizedText(TextR.string.pan_profile),
-                                    modifier = Modifier.size(32.dp),
-                                    tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                                    modifier = modifier
                                 )
                             }
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(appViewModel.getString("profile"), color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
-                                onClick = {
-                                    showMenu = false
-                                    onNavigateToProfile()
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(appViewModel.getString("settings"), color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
-                                onClick = {
-                                    showMenu = false
-                                    onNavigateToSettings()
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
-                            )
-                            HorizontalDivider(color = if (isDarkMode) Color.DarkGray else Color.LightGray)
-                            DropdownMenuItem(
-                                text = { Text(appViewModel.getString("logout"), color = contrastErrorColor(Color.Red)) },
-                                onClick = {
-                                    showMenu = false
-                                    appViewModel.limpiarDatosDeSesion { onLogoutClick() }
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Logout, contentDescription = null, tint = contrastErrorColor(Color.Red)) }
-                            )
-                        }
-                    }
+                        } else null
+                    )
                 }
             }
 
-            // ✨ 3. ESPACIADOR CRUCIAL (24.dp) ENTRE HEADER Y SALUDO
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 4.dp else 24.dp))
 
             // BLOQUE DE SALUDO Y CATEGORÍAS
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text(
-                    text = "${appViewModel.getString("hello")}, $userFirstName! 👋",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-                )
-                Text(
-                    text = appViewModel.getString("what_fancy"),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = contrastTextColor(Color.Gray, secondary = true)
-                )
+                if (!compactHeight) {
+                    Text(
+                        text = "${appViewModel.getString("hello")}, $userFirstName! 👋",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                    )
+                    Text(
+                        text = appViewModel.getString("what_fancy"),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = contrastTextColor(Color.Gray, secondary = true)
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -254,7 +205,7 @@ fun HomeScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(if (compactHeight) 8.dp else 24.dp))
             }
 
             HorizontalPager(
@@ -265,13 +216,12 @@ fun HomeScreen(
                 val currentCat = categories[pageIndex]
 
                 // ✨ OPTIMIZACIÓN ULTRA 120Hz: MEMORIZAR LISTA FILTRADA PARA EVITAR RE-FILTRAR EN CADA FRAME DE SCROLL
-                val filteredProducts = remember(currentCat, allProducts) {
-                    if (currentCat == "TODO") {
-                        allProducts
-                    } else {
-                        allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) }
-                    }
-                }
+                val filteredProducts = rankProducts(
+                    if (currentCat == "TODO") allProducts
+                    else allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) },
+                    sort,
+                    ratings
+                )
 
                 val currentCategoryDisplayName = when (currentCat) {
                     "PANES" -> catBreads
@@ -288,7 +238,8 @@ fun HomeScreen(
                         color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    CatalogSortChips(sort, onSelect = { sort = it })
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -300,7 +251,7 @@ fun HomeScreen(
                         }
                     } else {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Adaptive(150.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             contentPadding = PaddingValues(bottom = 110.dp),
@@ -316,7 +267,8 @@ fun HomeScreen(
                                     product = product,
                                     isDarkMode = isDarkMode,
                                     appViewModel = appViewModel,
-                                    onClick = onCardClick
+                                    onClick = onCardClick,
+                                    rating = ratings[product.id]
                                 )
                             }
                         }
@@ -335,11 +287,12 @@ fun HomeScreen(
             onDismissRequest = { selectedProduct = null },
             sheetState = sheetState,
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             scrimColor = Color.Black.copy(alpha = 0.6f)
         ) {
             ProductDetailBottomSheetContent(
                 product = product,
+                rating = ratings[product.id],
                 isDarkMode = isDarkMode,
                 onAddToCart = {
                     appViewModel.addToCart(product)
@@ -385,7 +338,8 @@ fun ProductCard(
     isDarkMode: Boolean,
     appViewModel: AppViewModel,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    rating: CatalogRating? = null
 ) {
     val context = LocalContext.current
 
@@ -407,7 +361,7 @@ fun ProductCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -437,31 +391,7 @@ fun ProductCard(
                     }
                 }
 
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    color = (if (isDarkMode) Color.Black else Color.White).copy(alpha = 0.7f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = product.calificacion.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-                        )
-                    }
-                }
+                CatalogPhotoRating(rating, Modifier.align(Alignment.BottomEnd))
             }
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
@@ -471,6 +401,7 @@ fun ProductCard(
                     color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     maxLines = 1
                 )
+                CatalogRatingLabel(rating)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -505,6 +436,7 @@ fun ProductCard(
 @Composable
 fun ProductDetailBottomSheetContent(
     product: Product,
+    rating: CatalogRating? = null,
     isDarkMode: Boolean,
     onAddToCart: () -> Unit
 ) {
@@ -524,6 +456,7 @@ fun ProductDetailBottomSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(bottom = 32.dp, top = 8.dp)
     ) {
@@ -560,32 +493,7 @@ fun ProductDetailBottomSheetContent(
                 }
             }
 
-            Surface(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .align(Alignment.TopEnd),
-                color = (if (isDarkMode) Color.Black else Color.White).copy(alpha = 0.8f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = product.calificacion.toString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-                    )
-                }
-            }
+
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -638,6 +546,9 @@ fun ProductDetailBottomSheetContent(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        CatalogRatingLabel(rating)
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Botón Agregar al Carrito Grande
         Button(

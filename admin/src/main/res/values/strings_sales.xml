@@ -1,0 +1,29 @@
+<resources>
+    <string name="sales_title">Sales analysis</string>
+    <string name="sales_this_month">This month · MXN</string>
+    <string name="sales_error">Could not load sales.</string>
+    <string name="sales_start">Start: %1$s</string>
+    <string name="sales_end">End: %1$s</string>
+    <string name="sales_clear">Clear filters</string>
+    <string name="sales_tax_setup">Configure VAT</string>
+    <string name="sales_day">Day</string>
+    <string name="sales_week">Week</string>
+    <string name="sales_month">Month</string>
+    <string name="sales_retry">Retry</string>
+    <string name="sales_mxn">%1$s MXN</string>
+    <string name="sales_empty">No sales match these filters.</string>
+    <string name="sales_over_time">Sales over time</string>
+    <string name="sales_top_products">Best-selling products</string>
+    <string name="sales_no_lines">No product lines recorded.</string>
+    <string name="sales_product_amount">%1$d units · %2$s</string>
+    <string name="sales_apply">Apply</string>
+    <string name="sales_all_products">All products</string>
+    <string name="sales_product_filter">Product</string>
+    <string name="sales_point">%1$s · %2$s</string>
+    <string name="sales_tax_error">Could not load or save the VAT settings.</string>
+    <string name="sales_tax_rate">VAT rate (%)</string>
+    <string name="sales_tax_included">Prices include VAT</string>
+    <string name="sales_tax_included_note">VAT is already part of the product price.</string>
+    <string name="sales_tax_added_note">VAT is added to the product subtotal.</string>
+    <string name="sales_save">Save</string>
+</resources>

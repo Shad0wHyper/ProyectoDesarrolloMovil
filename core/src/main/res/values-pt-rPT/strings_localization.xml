@@ -209,6 +209,7 @@
     <string name="pan_status_optimal">Adequado</string>
     <string name="pan_status_low">BAIXO</string>
     <string name="pan_status_ok">OK</string>
+    <string name="pan_status_awaiting_payment">A aguardar pagamento</string>
     <string name="pan_status_pending">PENDENTE</string>
     <string name="pan_status_shipped">ENVIADO</string>
     <string name="pan_status_delivered">ENTREGUE</string>

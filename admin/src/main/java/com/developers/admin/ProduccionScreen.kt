@@ -47,10 +47,10 @@ fun ProduccionScreen(onBack: () -> Unit) {
     val scrollState = rememberScrollState()
     val isDarkMode = isSystemInDarkTheme()
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val bgColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val topBarColor = MaterialTheme.colorScheme.surface
 
     var productosList by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
@@ -91,7 +91,6 @@ fun ProduccionScreen(onBack: () -> Unit) {
                     statusColor = statusC,
                     precio = String.format("%.2f", doc.getDouble("precio") ?: 0.0),
                     imagenUrl = doc.getString("imagenUrl") ?: "",
-                    calificacion = doc.getDouble("calificacion") ?: 5.0,
                     isNuevo = doc.getBoolean("isNuevo") ?: false
                 )
             }

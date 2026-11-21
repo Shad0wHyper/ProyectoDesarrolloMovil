@@ -1,5 +1,6 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -37,7 +38,7 @@ fun ManageAddressesScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit,
 ) {
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
     var showAddDialog by remember { mutableStateOf(false) }
     var newAddress by remember { mutableStateOf("") }
 
@@ -71,7 +72,7 @@ fun ManageAddressesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp)
         ) {
             item {
@@ -171,7 +172,7 @@ fun AddressItem(
             .clickable { onSelect() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else null,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

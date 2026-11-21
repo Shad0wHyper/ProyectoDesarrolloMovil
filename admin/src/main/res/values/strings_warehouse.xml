@@ -1,0 +1,39 @@
+<resources>
+    <string name="warehouse_title">Warehouse status</string>
+    <string name="warehouse_error">Could not load inventory.</string>
+    <string name="warehouse_no_alerts">No alerts</string>
+    <string name="warehouse_expired">Expired</string>
+    <string name="warehouse_out">Out of stock</string>
+    <string name="warehouse_out_single">Out of stock</string>
+    <string name="warehouse_expiring">Expiring soon</string>
+    <string name="warehouse_low">Low stock</string>
+    <string name="warehouse_control">Go to warehouse control</string>
+    <string name="warehouse_attention">Need attention</string>
+    <string name="warehouse_all">All</string>
+    <string name="warehouse_search">Search by name</string>
+    <string name="warehouse_clear">Clear filters</string>
+    <string name="warehouse_retry">Retry</string>
+    <string name="warehouse_empty">No products registered</string>
+    <string name="warehouse_no_matches">No matches</string>
+    <string name="warehouse_stock">Available stock: %1$s</string>
+    <string name="warehouse_minimum">Minimum: %1$s</string>
+    <string name="warehouse_no_minimum">No minimum set</string>
+    <string name="warehouse_no_date">No expiry date recorded</string>
+    <string name="warehouse_lot">Lot: %1$s · %2$s</string>
+    <string name="warehouse_entry">Register stock entry</string>
+    <string name="warehouse_expires_today">Expires today</string>
+    <string name="warehouse_expired_yesterday">Expired yesterday</string>
+    <string name="warehouse_code_mismatch">This code is not available for the selected product.</string>
+    <plurals name="warehouse_attention_count">
+        <item quantity="one">%d product needs attention</item>
+        <item quantity="other">%d products need attention</item>
+    </plurals>
+    <plurals name="warehouse_expires_days">
+        <item quantity="one">Expires in %d day</item>
+        <item quantity="other">Expires in %d days</item>
+    </plurals>
+    <plurals name="warehouse_expired_days">
+        <item quantity="one">Expired %d day ago</item>
+        <item quantity="other">Expired %d days ago</item>
+    </plurals>
+</resources>

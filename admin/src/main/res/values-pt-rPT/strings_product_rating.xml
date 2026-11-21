@@ -1,0 +1,4 @@
+<resources>
+    <string name="admin_rating_choose_stars">Escolher %1$d de 5 estrelas</string>
+    <string name="admin_rating_value">%1$.1f de 5</string>
+</resources>

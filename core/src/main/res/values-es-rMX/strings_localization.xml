@@ -192,7 +192,7 @@
     <string name="pan_shipping_to">Envío a: %1$s</string>
     <string name="pan_order_total">Total: %1$s</string>
     <string name="pan_order_method">Método: %1$s</string>
-    <string name="pan_order_status">Status: %1$s</string>
+    <string name="pan_order_status">Estado: %1$s</string>
     <string name="pan_confirm_total">Confirmar %1$s</string>
     <string name="pan_card_last_four">Tarjeta •••• %1$s</string>
     <string name="pan_card_expiry">Expira %1$s</string>
@@ -209,6 +209,7 @@
     <string name="pan_status_optimal">Óptimo</string>
     <string name="pan_status_low">BAJO</string>
     <string name="pan_status_ok">OK</string>
+    <string name="pan_status_awaiting_payment">Esperando pago</string>
     <string name="pan_status_pending">PENDIENTE</string>
     <string name="pan_status_shipped">ENVIADO</string>
     <string name="pan_status_delivered">ENTREGADO</string>

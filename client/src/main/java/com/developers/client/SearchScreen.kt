@@ -1,10 +1,12 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -38,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.developers.client.ui.theme.PanAppPrimary
-import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,10 +48,13 @@ fun SearchScreen(
     appViewModel: AppViewModel,
     onNavigateToCart: () -> Unit
 ) {
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
     var query by remember { mutableStateOf("") }
-    var allProducts by remember { mutableStateOf<List<Product>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val catalog = rememberCatalogProducts()
+    val allProducts = catalog.products
+    val isLoading = catalog.loading
+    var sort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(CatalogSort.Default) }
+    val ratings = rememberCatalogRatings(allProducts, appViewModel.currentUserId, appViewModel.ratingRevision)
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -60,21 +64,11 @@ fun SearchScreen(
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("productos").get()
-            .addOnSuccessListener { result ->
-                allProducts = result.documents.mapNotNull { doc ->
-                    doc.toObject(Product::class.java)?.copy(id = doc.id)
-                }
-                isLoading = false
-                // Auto focus search bar
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            }
-            .addOnFailureListener {
-                isLoading = false
-            }
+    LaunchedEffect(isLoading) {
+        if (!isLoading && catalog.loaded) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
 
     val searchResults = remember(query, allProducts) {
@@ -93,7 +87,7 @@ fun SearchScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(if (isDarkMode) Color(0xFF121212) else Color.White)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars))
                 
@@ -136,7 +130,7 @@ fun SearchScreen(
                         Surface(
                             modifier = Modifier.size(48.dp),
                             shape = CircleShape,
-                            color = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             shadowElevation = 2.dp
                         ) {
                             Icon(
@@ -146,31 +140,18 @@ fun SearchScreen(
                                 tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                             )
                         }
-                        if (appViewModel.cartUniqueItems > 0) {
-                            Surface(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = 2.dp, y = (-2).dp)
-                                    .size(20.dp),
-                                shape = CircleShape,
-                                color = Color.Red,
-                                border = BorderStroke(2.dp, if (isDarkMode) Color(0xFF121212) else Color.White)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = appViewModel.cartUniqueItems.toString(),
-                                        color = Color.White,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
+                        Crossfade(
+                            appViewModel.cartTotalQuantity,
+                            modifier = Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp),
+                            label = "search cart badge"
+                        ) { count ->
+                            if (count > 0) Badge { Text(count.toString()) }
                         }
                     }
                 }
             }
         },
-        containerColor = if (isDarkMode) Color(0xFF121212) else Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
             modifier = Modifier
@@ -229,15 +210,19 @@ fun SearchScreen(
             } else {
                 // Resultados
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Adaptive(150.dp),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp, top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(searchResults, key = { it.id }) { product ->
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                        CatalogSortChips(sort, onSelect = { sort = it })
+                    }
+                    items(rankProducts(searchResults, sort, ratings), key = { it.id }) { product ->
                         SearchProductCard(
                             product = product,
+                            rating = ratings[product.id],
                             isDarkMode = isDarkMode,
                             onClick = {
                                 keyboardController?.hide()
@@ -255,10 +240,11 @@ fun SearchScreen(
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
             sheetState = sheetState,
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             ProductDetailBottomSheetContent(
                 product = selectedProduct!!,
+                rating = ratings[selectedProduct!!.id],
                 isDarkMode = isDarkMode,
                 onAddToCart = {
                     appViewModel.addToCart(selectedProduct!!)
@@ -272,6 +258,7 @@ fun SearchScreen(
 @Composable
 fun SearchProductCard(
     product: Product,
+    rating: CatalogRating? = null,
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
@@ -281,7 +268,7 @@ fun SearchProductCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -303,6 +290,7 @@ fun SearchProductCard(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+                CatalogPhotoRating(rating, Modifier.align(Alignment.BottomEnd))
             }
             
             Column(modifier = Modifier.padding(12.dp)) {
@@ -313,6 +301,7 @@ fun SearchProductCard(
                     maxLines = 1,
                     color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
+                CatalogRatingLabel(rating)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = String.format(Locale.getDefault(), "$%.2f", product.precio),

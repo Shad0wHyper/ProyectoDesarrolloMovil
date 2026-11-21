@@ -1,5 +1,7 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
+
 import com.developers.core.ui.contrastTextColor
 
 import androidx.compose.foundation.background
@@ -23,7 +25,7 @@ fun NotificationsScreen(
     appViewModel: AppViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
 
     Scaffold(
         topBar = {
@@ -46,7 +48,7 @@ fun NotificationsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

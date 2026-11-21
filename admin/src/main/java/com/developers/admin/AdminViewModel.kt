@@ -24,10 +24,11 @@ class AdminViewModel : ViewModel() {
             userNameValue = value
         }
     var userImageUrl by mutableStateOf("")
-    var isDarkMode by mutableStateOf(false)
 
     // Listeners para prevenir State Leaks
     private var stockListener: ListenerRegistration? = null
+    internal var warehouse by mutableStateOf<WarehouseLoad>(WarehouseLoad.Loading)
+        private set
     private var pedidosListener: ListenerRegistration? = null
     private var ventasListener: ListenerRegistration? = null
     
@@ -57,10 +58,24 @@ class AdminViewModel : ViewModel() {
         }
     }
 
+    internal fun retryWarehouse() = iniciarEscuchaGlobal(FirebaseFirestore.getInstance())
+
     private fun iniciarEscuchaGlobal(db: FirebaseFirestore) {
         stockListener?.remove()
-        stockListener = db.collection("materia_prima").addSnapshotListener { snap, _ ->
-            if (snap != null) {
+        warehouse = WarehouseLoad.Loading
+        stockListener = db.collection("materia_prima").addSnapshotListener { snap, error ->
+            if (error != null || snap == null) {
+                warehouse = WarehouseLoad.Error
+                return@addSnapshotListener
+            }
+            warehouse = runCatching {
+                WarehouseLoad.Ready(snap.documents.mapNotNull { doc ->
+                    doc.toObject(MateriaPrima::class.java)?.let { material ->
+                        WarehouseItem(material.copy(id = doc.id), (doc.get("nivelCritico") as? Number)?.toDouble())
+                    }
+                })
+            }.getOrElse { WarehouseLoad.Error }
+            if (warehouse is WarehouseLoad.Ready) {
                 val criticos = snap.documents.filter { 
                     (it.getDouble("cantidadActual") ?: 0.0) <= (it.getDouble("nivelCritico") ?: 0.0) 
                 }.map { it.getString("nombre") ?: localizedText(TextR.string.pan_unknown) }
@@ -75,6 +90,7 @@ class AdminViewModel : ViewModel() {
         // 1. Destrucción de Listeners
         stockListener?.remove()
         stockListener = null
+        warehouse = WarehouseLoad.Loading
         pedidosListener?.remove()
         pedidosListener = null
         ventasListener?.remove()

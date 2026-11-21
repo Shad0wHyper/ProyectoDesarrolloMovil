@@ -1,0 +1,8 @@
+<resources>
+    <string name="order_stats_title">Order statistics</string>
+    <string name="order_stats_timeline">Orders over time</string>
+    <string name="order_stats_status">Orders by current status</string>
+    <string name="order_stats_empty">No orders in this date range.</string>
+    <string name="order_stats_scope">Uses the date range and period above.</string>
+    <string name="order_stats_other">Other status</string>
+</resources>

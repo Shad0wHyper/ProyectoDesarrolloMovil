@@ -1,5 +1,7 @@
 package com.developers.employee
 
+import com.developers.core.ui.PanAppHeaderTitle
+
 import com.developers.core.ui.contrastAccentColor
 
 import com.developers.core.ui.contrastTextColor
@@ -55,9 +57,9 @@ import com.google.firebase.storage.FirebaseStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
+fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, profileMenu: @Composable () -> Unit) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_nav_home), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, actions = { EmployeeProfileButton(viewModel, onClick = { onNavigate(AppScreen.PERFIL) }) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_nav_home)) }, actions = { profileMenu() }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -72,6 +74,7 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
                 DashboardButton(modifier = Modifier.weight(1f), icon = Icons.Outlined.CheckCircle, text = stringResource(R.string.emp_nav_attendance), onClick = { onNavigate(AppScreen.ASISTENCIA) })
                 DashboardButton(modifier = Modifier.weight(1f), icon = Icons.AutoMirrored.Outlined.List, text = stringResource(R.string.emp_dispatch), onClick = { onNavigate(AppScreen.PEDIDOS) })
             }
+
         }
     }
 }
@@ -79,7 +82,7 @@ fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Uni
 // ✨ PANTALLA DE PEDIDOS CONECTADA A FIREBASE
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
+fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> Unit, onSendWhatsapp: (PedidoFirebase) -> Unit) {
     // These are the existing persisted states; filtering does not update orders.
     var estadoSeleccionado by rememberSaveable { mutableStateOf("PENDIENTE") }
     val filtros = listOf(
@@ -90,7 +93,7 @@ fun PedidosScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit,
     val pedidosFiltrados = viewModel.pedidosActivos.filter { it.estado == estadoSeleccionado }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_dispatch_queue), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, actions = { EmployeeProfileButton(viewModel, onClick = { onNavigate(AppScreen.PERFIL) }) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_dispatch_queue)) }, actions = { profileMenu() }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -214,7 +217,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
             pedido.items.forEach { item ->
                 Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        EmployeeProductPhoto(item, Modifier.size(64.dp))
                         Column(modifier = Modifier.padding(start = 8.dp)) {
                             Text(item.nombre, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text(stringResource(R.string.emp_quantity, item.cantidad), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
@@ -303,7 +306,7 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_my_profile), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_my_profile)) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

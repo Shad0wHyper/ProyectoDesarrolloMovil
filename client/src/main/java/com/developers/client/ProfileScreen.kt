@@ -1,5 +1,8 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppHeaderTitle
+
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -65,7 +68,7 @@ fun ProfileScreen(
     var isSaving by remember { mutableStateOf(false) }
     var isUploadingImage by remember { mutableStateOf(false) }
 
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -96,7 +99,7 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(appViewModel.getString("profile"), fontWeight = FontWeight.Bold) },
+                title = { PanAppHeaderTitle(appViewModel.getString("profile")) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = appViewModel.getString("close"))
@@ -114,7 +117,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -272,7 +275,7 @@ fun ProfileScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         border = BorderStroke(1.dp, if (addr == address) PanAppPrimary else Color.Transparent)
                     ) {
                         Row(

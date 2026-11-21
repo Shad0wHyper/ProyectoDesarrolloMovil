@@ -36,16 +36,15 @@ class MainActivity : AppCompatActivity() {
             val darkTheme = isSystemInDarkTheme()
             SideEffect {
                 // Apply after AppCompat has installed its theme, using the same mode as Compose.
-                enableEdgeToEdge(
-                    statusBarStyle = if (darkTheme) {
-                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT
-                        )
-                    }
-                )
+                val barStyle = if (darkTheme) {
+                    SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT
+                    )
+                }
+                enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
             }
             PanAppTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {

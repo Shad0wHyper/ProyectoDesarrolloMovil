@@ -1,5 +1,6 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 
@@ -36,7 +37,7 @@ fun PaymentMethodsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddCard: () -> Unit
 ) {
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
 
     Scaffold(
         topBar = {
@@ -68,7 +69,7 @@ fun PaymentMethodsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp)
         ) {
             item {
@@ -88,7 +89,7 @@ fun PaymentMethodsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {

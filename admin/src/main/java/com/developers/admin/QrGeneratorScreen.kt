@@ -61,11 +61,11 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val bgColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val secondaryTextColor = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode)
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val topBarColor = MaterialTheme.colorScheme.surface
 
     // Estado para el popup de QR ampliado
     var mostrarQrGrande by remember { mutableStateOf(false) }
@@ -228,7 +228,7 @@ fun QrGeneratorContent(
 fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, isDarkMode: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val qrBitmap = generarQrConLogo(context, qrContent, color)
-    val cardBg = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardBg = MaterialTheme.colorScheme.surface
     Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = cardBg), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontWeight = FontWeight.Bold, color = color, fontSize = 14.sp)

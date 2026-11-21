@@ -1,0 +1,9 @@
+<resources>
+    <string name="client_catalog_default">Orden del catálogo</string>
+    <string name="client_catalog_top_rated">Más valorados</string>
+    <string name="client_catalog_most_ordered">Más pedidos</string>
+    <string name="client_catalog_rating_unavailable">Valoración no disponible</string>
+    <string name="client_catalog_score">★ %1$.1f (%2$d)</string>
+    <string name="client_catalog_rate_product">Valorar producto</string>
+    <string name="client_catalog_legacy_order">Puedes valorar los artículos de pedidos nuevos una vez que se entreguen.</string>
+</resources>

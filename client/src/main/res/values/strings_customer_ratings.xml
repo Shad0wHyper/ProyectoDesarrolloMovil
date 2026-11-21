@@ -1,0 +1,19 @@
+<resources>
+    <string name="client_rating_title">Customer ratings</string>
+    <string name="client_rating_sign_in">Sign in to rate this product.</string>
+    <string name="client_rating_stats_error">Could not load customer ratings.</string>
+    <string name="client_rating_retry">Retry</string>
+    <string name="client_rating_none">No customer ratings yet.</string>
+    <string name="client_rating_average">Average: %1$.1f out of 5</string>
+    <string name="client_rating_load_error">Could not load your rating.</string>
+    <string name="client_rating_yours">Your rating</string>
+    <string name="client_rating_star">Rate %1$d out of 5 stars</string>
+    <string name="client_rating_saving">Saving…</string>
+    <string name="client_rating_save">Save rating</string>
+    <string name="client_rating_saved">Rating saved.</string>
+    <string name="client_rating_save_error">Could not save your rating. Try again.</string>
+    <plurals name="client_rating_votes">
+        <item quantity="one">%d rating</item>
+        <item quantity="other">%d ratings</item>
+    </plurals>
+</resources>

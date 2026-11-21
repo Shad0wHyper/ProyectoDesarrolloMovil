@@ -1,6 +1,11 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppHeaderTitle
+import com.developers.core.ui.PanAppProfileMenu
+import com.developers.core.ui.PanAppAccountSettings
+
 import com.developers.core.ui.contrastFieldColors
+import com.developers.core.ui.tabSlideDirection
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 import com.developers.core.ui.contrastErrorColor
@@ -13,6 +18,9 @@ import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
@@ -40,6 +48,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +71,6 @@ data class Producto(
     val statusColor: Color,
     val precio: String,
     val imagenUrl: String = "",
-    val calificacion: Double = 0.0,
     val isNuevo: Boolean = false // Añadido para que el Dashboard lo lea bien
 )
 
@@ -84,7 +93,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
     val showBottomBar = bottomNavRoutes.contains(currentRoute)
 
     // ✨ Colores adaptativos para el fondo
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val bgColor = MaterialTheme.colorScheme.background
 
     // ✨ Variable para guardar el pan que queremos editar
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
@@ -129,7 +138,6 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                         statusColor = statusC,
                         precio = String.format("%.2f", doc.getDouble("precio") ?: 0.0),
                         imagenUrl = doc.getString("imagenUrl") ?: "",
-                        calificacion = doc.getDouble("calificacion") ?: 5.0,
                         isNuevo = doc.getBoolean("isNuevo") ?: false
                     )
                 }
@@ -164,10 +172,22 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                     .fillMaxSize()
                     .padding(paddingValues)
                     .background(bgColor),
-                enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
-                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
-                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
-                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+                enterTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
+                    slideInHorizontally(initialOffsetX = { it * direction })
+                },
+                exitTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
+                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                },
+                popEnterTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
+                    slideInHorizontally(initialOffsetX = { it * direction })
+                },
+                popExitTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
+                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                }
             ) {
                 composable(AdminScreen.Dashboard.route) {
                     if (isLoading) {
@@ -184,6 +204,8 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                             onGestionarPedidosClick = { navController.navigate(AdminScreen.Pedidos.route) },
                             onAIPredictionsClick = { navController.navigate(AdminScreen.IAReport.route) },
                             onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
+                            onWarehouseStatusClick = { navController.navigate(AdminScreen.WarehouseStatus.route) { launchSingleTop = true } },
+                            onSalesClick = { navController.navigate(AdminScreen.Sales.route) },
                             onAddClick = {
                                 productoAEditar = null
                                 navController.navigate(AdminScreen.AddProduct.route)
@@ -212,13 +234,36 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                             onHistoryClick = { navController.navigate(AdminScreen.AttendanceHistory.route) },
                             onProduccionClick = { navController.navigate(AdminScreen.Produccion.route) },
                             onNotificationClick = { showNotificationsSheet = true },
-                            onProfileClick = { navController.navigate(AdminScreen.Profile.route) },
+                            onProfileClick = { navController.navigate(AdminScreen.Profile.route) { launchSingleTop = true } },
+                            onSettingsClick = { navController.navigate(AdminScreen.Settings.route) { launchSingleTop = true } },
+                            onLogoutClick = onLogoutClick,
                             hasNotifications = globalCriticosCount > 0
                         )
                     }
                 }
-                composable(AdminScreen.Almacen.route) { AlmacenScreen() }
+                composable(AdminScreen.Almacen.route) {
+                    val previous = navController.previousBackStackEntry
+                        ?.takeIf { it.destination.route == AdminScreen.WarehouseStatus.route }
+                    AlmacenScreen(
+                        selectedMaterialId = previous?.savedStateHandle?.get<String>("warehouseMaterial"),
+                        onBack = previous?.let { { navController.popBackStack(); Unit } }
+                    )
+                }
+                composable(AdminScreen.WarehouseStatus.route) { entry ->
+                    WarehouseStatusScreen(
+                        state = viewModel.warehouse,
+                        onRetry = viewModel::retryWarehouse,
+                        onBack = { navController.popBackStack() },
+                        onControl = { materialId ->
+                            if (navController.currentBackStackEntry == entry) {
+                                entry.savedStateHandle["warehouseMaterial"] = materialId
+                                navController.navigate(AdminScreen.Almacen.route) { launchSingleTop = true }
+                            }
+                        }
+                    )
+                }
                 composable(AdminScreen.Pedidos.route) { PedidosScreen() }
+                composable(AdminScreen.Sales.route) { SalesAnalysisScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.AddProduct.route) {
                     AddProductScreen(
@@ -231,6 +276,13 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 composable(AdminScreen.Produccion.route) { ProduccionScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.AttendanceHistory.route) { AttendanceHistoryScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.Asistencia.route) { AsistenciaMainScreen() }
+                composable(AdminScreen.Settings.route) {
+                    PanAppAccountSettings(
+                        onBack = { navController.popBackStack() },
+                        onProfile = { navController.navigate(AdminScreen.Profile.route) { launchSingleTop = true } },
+                        onLogout = onLogoutClick
+                    )
+                }
                 composable(AdminScreen.Profile.route) { AdminProfileScreen(viewModel = viewModel, onBack = { navController.popBackStack() }, onLogoutClick = onLogoutClick) }
             }
         }
@@ -292,13 +344,16 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 currentRoute = currentRoute,
                 globalCriticosCount = globalCriticosCount,
                 onNavigate = { route ->
-                    if (currentRoute != route) { // ✨ Solo navegamos si no estamos ya en esa ruta
+                    val activeRoute = navController.currentDestination?.route
+                    if (activeRoute != null && activeRoute != route) {
+                        val openedFromWarehouseStatus = activeRoute == AdminScreen.Almacen.route &&
+                            navController.previousBackStackEntry?.destination?.route == AdminScreen.WarehouseStatus.route
                         navController.navigate(route) {
-                            popUpTo(AdminScreen.Dashboard.route) { // ✨ Forzamos popUpTo al Dashboard
-                                saveState = true
+                            popUpTo(AdminScreen.Dashboard.route) {
+                                saveState = !openedFromWarehouseStatus
                             }
                             launchSingleTop = true
-                            restoreState = true
+                            restoreState = route != AdminScreen.Dashboard.route
                         }
                     }
                 },
@@ -321,6 +376,8 @@ fun DashboardContent(
     onAIPredictionsClick: () -> Unit,
     onAlmacenClick: () -> Unit,
     onAddClick: () -> Unit,
+    onSalesClick: () -> Unit,
+    onWarehouseStatusClick: () -> Unit,
     onDecreaseStock: (Producto) -> Unit,
     onEditClick: (Producto) -> Unit,
     onQrClick: () -> Unit,
@@ -328,6 +385,8 @@ fun DashboardContent(
     onProduccionClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit,
     hasNotifications: Boolean
 ) {
     val context = LocalContext.current
@@ -353,14 +412,18 @@ fun DashboardContent(
                 onHistoryClick = onHistoryClick,
                 onNotificationClick = onNotificationClick,
                 onProfileClick = onProfileClick,
+                onSettingsClick = onSettingsClick,
+                onLogoutClick = onLogoutClick,
                 hasNotifications = hasNotifications
             ) 
         }
 
         item {
             ResumenHoySection(
-                insumosCriticosNombres = insumosCriticosNombres,
-                onGestionarPedidosClick = onGestionarPedidosClick
+                warehouse = viewModel.warehouse,
+                onGestionarPedidosClick = onGestionarPedidosClick,
+                onSalesClick = onSalesClick,
+                onWarehouseStatusClick = onWarehouseStatusClick
             )
         }
         item { AIPredictionsSection(onClick = onAIPredictionsClick) }
@@ -420,24 +483,20 @@ fun AdminTopBar(
     onHistoryClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit,
     hasNotifications: Boolean
 ) { // ✨ Recibe el evento del QR, Historial, Notificaciones y Perfil
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F9FA)
+    val topBarColor = MaterialTheme.colorScheme.surface
 
     val photoUrl = viewModel.userImageUrl
 
     TopAppBar(
         modifier = Modifier.statusBarsPadding(), // ✨ Añadido para evitar empalme en el Dashboard
-        title = {
-            Text(
-                text = localizedText(TextR.string.pan_administration),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = textColor
-            )
-        },
+        title = { PanAppHeaderTitle(localizedText(TextR.string.pan_administration)) },
         actions = {
             Box(modifier = Modifier.padding(8.dp).clickable(onClick = onNotificationClick)) {
                 Icon(
@@ -458,32 +517,21 @@ fun AdminTopBar(
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .padding(end = 8.dp)
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onProfileClick),
-                contentAlignment = Alignment.Center
-            ) {
-                if (photoUrl.isNotEmpty()) {
-                    coil.compose.AsyncImage(
-                        model = photoUrl,
-                        contentDescription = stringResource(R.string.admin_profile_photo),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(if (isDarkMode) Color(0xFF333333) else Color.LightGray),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp), tint = textColor)
+            PanAppProfileMenu(
+                onProfile = onProfileClick,
+                onSettings = onSettingsClick,
+                onLogout = onLogoutClick,
+                avatar = if (photoUrl.isNotEmpty()) {
+                    { modifier ->
+                        coil.compose.AsyncImage(
+                            model = photoUrl,
+                            contentDescription = stringResource(R.string.admin_profile_photo),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = modifier
+                        )
                     }
-                }
-            }
+                } else null
+            )
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
     )
@@ -597,46 +645,16 @@ fun ProduccionDiariaCard(onClick: () -> Unit) {
 
 
 @Composable
-fun ResumenHoySection(insumosCriticosNombres: List<String>, onGestionarPedidosClick: () -> Unit) {
+internal fun ResumenHoySection(warehouse: WarehouseLoad, onGestionarPedidosClick: () -> Unit, onSalesClick: () -> Unit, onWarehouseStatusClick: () -> Unit) {
     val isDarkMode = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = localizedText(TextR.string.pan_updated_time),
-            style = MaterialTheme.typography.bodySmall,
-            color = contrastTextColor(Color.Gray, secondary = true),
-            modifier = Modifier.align(Alignment.End)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ResumenCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.AutoMirrored.Filled.TrendingUp,
-                iconColor = Color(0xFF2196F3),
-                label = localizedText(TextR.string.pan_total_sales),
-                value = "$1,240.50",
-                trendText = localizedText(TextR.string.pan_sales_trend),
-                trendColor = Color(0xFF4CAF50),
-                isDarkMode = isDarkMode
-            )
+            SalesSummaryCard(Modifier.weight(1f), onSalesClick)
             
-            // ✨ Tarjeta de Alertas Dinámica
-            val insumosCriticosCount = insumosCriticosNombres.size
-            val icon = if (insumosCriticosCount > 0) Icons.Default.ErrorOutline else Icons.Default.CheckCircle
-            val color = if (insumosCriticosCount > 0) Color.Red else Color(0xFF4CAF50)
-            val valueText = if (insumosCriticosCount > 0) localizedText(TextR.string.pan_items_count, insumosCriticosCount) else localizedText(TextR.string.pan_status_optimal)
-            
-            ResumenCard(
-                modifier = Modifier.weight(1f),
-                icon = icon,
-                iconColor = color,
-                label = localizedText(TextR.string.pan_warehouse_status),
-                value = valueText,
-                isAlert = insumosCriticosCount > 0,
-                isDarkMode = isDarkMode
-            )
+            WarehouseSummaryCard(warehouse, Modifier.weight(1f), onWarehouseStatusClick)
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
@@ -672,7 +690,7 @@ fun ResumenCard(
     isAlert: Boolean = false,
     isDarkMode: Boolean
 ) {
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Card(
@@ -760,7 +778,7 @@ fun ProductoCard(
     onEditClick: () -> Unit
 ) {
     val isDarkMode = isSystemInDarkTheme()
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Card(
@@ -810,12 +828,7 @@ fun ProductoCard(
                     }
                     Text(producto.categoria, color = contrastTextColor(Color.Gray, secondary = true), style = MaterialTheme.typography.bodySmall)
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.admin_stock_label, producto.stock), style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
-                        Text("${producto.calificacion}", style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
-                    }
+                    Text(stringResource(R.string.admin_stock_label, producto.stock), style = MaterialTheme.typography.bodySmall, color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode))
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Surface(
@@ -909,8 +922,8 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
 fun AdminFAB(modifier: Modifier = Modifier, onAdd: () -> Unit) {
     FloatingActionButton(
         onClick = onAdd,
-        containerColor = Color(0xFFE91E63),
-        contentColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
         shape = CircleShape,
         modifier = modifier
     ) {
@@ -926,43 +939,49 @@ fun AdminFloatingBottomBar(
     isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val bottomNavItems = remember {
-        listOf(
-            Triple(AdminScreen.Dashboard.route, localizedText(TextR.string.pan_dashboard), Icons.Default.GridView),
-            Triple(AdminScreen.Almacen.route, localizedText(TextR.string.pan_warehouse), Icons.Default.Inventory2),
-            Triple(AdminScreen.Pedidos.route, localizedText(TextR.string.pan_orders), Icons.Default.ChatBubble),
-            Triple(AdminScreen.Asistencia.route, localizedText(TextR.string.pan_attendance), Icons.Default.HowToReg)
-        )
-    }
+    val bottomNavItems = listOf(
+        Triple(AdminScreen.Dashboard.route, stringResource(TextR.string.pan_dashboard), Icons.Default.GridView),
+        Triple(AdminScreen.Almacen.route, stringResource(TextR.string.pan_warehouse), Icons.Default.Inventory2),
+        Triple(AdminScreen.Pedidos.route, stringResource(TextR.string.pan_orders), Icons.Default.ChatBubble),
+        Triple(AdminScreen.Asistencia.route, stringResource(TextR.string.pan_attendance), Icons.Default.HowToReg)
+    )
+    val containerBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
-    val containerBackgroundColor = if (isDarkMode) Color(0xFF2C2C2C) else Color.White
-
-    Box(
+    BoxWithConstraints(
         modifier = modifier
-            .wrapContentWidth()
             .navigationBarsPadding()
             .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
     ) {
+        val spacing = 4.dp
+        val surfacePadding = 6.dp
+        val available = (maxWidth - surfacePadding * 2 - spacing * (bottomNavItems.size - 1))
+            .coerceAtLeast(0.dp)
+        val itemWidth = minOf(52.dp, available / bottomNavItems.size)
+        val selectedWidth = minOf(152.dp, available - itemWidth * (bottomNavItems.size - 1))
+
         Surface(
             shape = CircleShape,
             color = containerBackgroundColor,
             shadowElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.padding(6.dp),
+                modifier = Modifier.padding(surfacePadding),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 bottomNavItems.forEach { (route, title, icon) ->
                     val isSelected = currentRoute == route
-                    val badgeCount = if (route == AdminScreen.Almacen.route || route == AdminScreen.Pedidos.route) globalCriticosCount else 0
+                    val badgeCount = if (route == AdminScreen.Almacen.route || route == AdminScreen.Pedidos.route) {
+                        globalCriticosCount
+                    } else 0
 
                     AdminFloatingNavItem(
                         title = title,
                         icon = icon,
                         isSelected = isSelected,
                         badgeCount = badgeCount,
-                        isDarkMode = isDarkMode,
+                        itemWidth = itemWidth,
+                        selectedWidth = selectedWidth,
                         onClick = { onNavigate(route) }
                     )
                 }
@@ -972,19 +991,28 @@ fun AdminFloatingBottomBar(
 }
 
 @Composable
-fun AdminFloatingNavItem(
+private fun AdminFloatingNavItem(
     title: String,
     icon: ImageVector,
     isSelected: Boolean,
     badgeCount: Int,
-    isDarkMode: Boolean,
+    itemWidth: Dp,
+    selectedWidth: Dp,
     onClick: () -> Unit
 ) {
-    val activeBackgroundColor = AdminPrimary.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) contrastAccentColor(AdminPrimary) else contrastTextColor(Color.Gray, secondary = true)
+    val colors = MaterialTheme.colorScheme
+    val activeBackgroundColor = colors.primaryContainer
+    val contentColor = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
 
+    val width by animateDpAsState(
+        targetValue = if (isSelected) selectedWidth else itemWidth,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "adminTabWidth"
+    )
     Surface(
+        selected = isSelected,
         onClick = onClick,
+        modifier = Modifier.width(width).heightIn(min = 48.dp),
         shape = CircleShape,
         color = if (isSelected) activeBackgroundColor else Color.Transparent,
         contentColor = contentColor
@@ -992,7 +1020,7 @@ fun AdminFloatingNavItem(
         Row(
             modifier = Modifier
                 .animateContentSize()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -1013,13 +1041,15 @@ fun AdminFloatingNavItem(
                 )
             }
             
-            if (isSelected) {
+            if (isSelected && width >= itemWidth + 24.dp) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = contentColor
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

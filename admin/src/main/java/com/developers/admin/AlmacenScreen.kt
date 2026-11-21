@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
@@ -53,19 +55,21 @@ data class MateriaPrima(
     val cantidadesPorCodigo: Map<String, Double> = emptyMap(), // Diccionario codigo -> cantidad que aporta
     val nivelCritico: Double = 0.0,
     val colorHex: String = "#4CAF50",
-    val alertasEnviadas: Int = 0
+    val alertasEnviadas: Int = 0,
+    val existenciaObjetivo: Double? = null,
+    val tamanoPaquete: Double? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlmacenScreen() {
+fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     var insumosList by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val bgColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     // Estados para diálogos
@@ -84,21 +88,25 @@ fun AlmacenScreen() {
     // Campos Opción B (Alta Nueva)
     var nuevoNombre by remember { mutableStateOf("") }
     var nuevaUnidad by remember { mutableStateOf("g") }
-    val unidadesDisponibles = remember { listOf("g", "ml") }
+    val unidadesDisponibles = InventoryUnit.entries.map { it.symbol }
+    var contributionUnit by remember { mutableStateOf("") }
+    var expandedContributionUnit by remember { mutableStateOf(false) }
     var expandedDropdownUnidad by remember { mutableStateOf(false) }
     var nuevoNivelCriticoText by remember { mutableStateOf("10.0") }
     var cantidadAportaTextB by remember { mutableStateOf("") }
 
     // Campo auxiliar para simulación o entrada manual de prueba
-    var showTestInputCodeDialog by remember { mutableStateOf(false) }
-    var testCodeInputText by remember { mutableStateOf("") }
+    var showTestInputCodeDialog by rememberSaveable { mutableStateOf(false) }
+    var testCodeInputText by rememberSaveable { mutableStateOf("") }
+    var openSelectedEntry by rememberSaveable(selectedMaterialId) { mutableStateOf(selectedMaterialId != null) }
+    var entryMaterialId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val barcodeScanner = remember { GmsBarcodeScanning.getClient(context) }
 
     // 2. Lectura en Tiempo Real desde Firebase Firestore (materia_prima)
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
-        db.collection("materia_prima").addSnapshotListener { snapshot, error ->
+        val listener = db.collection("materia_prima").addSnapshotListener { snapshot, error ->
             if (error != null) {
                 isLoading = false
                 return@addSnapshotListener
@@ -110,10 +118,23 @@ fun AlmacenScreen() {
                 isLoading = false
             }
         }
+        onDispose { listener.remove() }
+    }
+
+    LaunchedEffect(insumosList, openSelectedEntry) {
+        if (openSelectedEntry) {
+            val material = insumosList.firstOrNull { it.id == selectedMaterialId }
+            if (material != null) {
+                openSelectedEntry = false
+                entryMaterialId = material.id
+                testCodeInputText = material.codigoBarras.ifBlank { material.codigosBarras.firstOrNull().orEmpty() }
+                showTestInputCodeDialog = true
+            }
+        }
     }
 
     // Lógica del Escáner (Modo Autopiloto)
-    fun procesarCodigoEscaneado(scannedCode: String) {
+    fun procesarCodigoEscaneado(scannedCode: String, targetMaterialId: String? = null) {
         val codeClean = scannedCode.trim()
         if (codeClean.isEmpty()) return
 
@@ -122,6 +143,15 @@ fun AlmacenScreen() {
         // Buscar si el código ya existe en algún insumo
         val insumoEncontrado = insumosList.find { insumo ->
             insumo.codigosBarras.contains(codeClean) || insumo.codigoBarras == codeClean
+        }
+
+        if (targetMaterialId != null && (
+                insumosList.none { it.id == targetMaterialId } ||
+                    insumoEncontrado?.let { it.id != targetMaterialId } == true
+                )
+        ) {
+            Toast.makeText(context, context.getString(R.string.warehouse_code_mismatch), Toast.LENGTH_SHORT).show()
+            return
         }
 
         if (insumoEncontrado != null) {
@@ -142,7 +172,8 @@ fun AlmacenScreen() {
             // SI NO LO ENCUENTRA (Modo Aprendizaje)
             unregisteredCode = codeClean
             modoAprendizajeOpcion = "A"
-            insumoASeleccionar = null
+            insumoASeleccionar = insumosList.firstOrNull { it.id == targetMaterialId }
+            contributionUnit = insumoASeleccionar?.unidadMedida.orEmpty()
             cantidadAportaTextA = ""
             nuevoNombre = ""
             cantidadAportaTextB = ""
@@ -159,6 +190,7 @@ fun AlmacenScreen() {
             }
             .addOnFailureListener {
                 // Fallback para emuladores o si falla la cámara: abrir diálogo de entrada manual de prueba
+                entryMaterialId = null
                 showTestInputCodeDialog = true
             }
     }
@@ -193,19 +225,25 @@ fun AlmacenScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.admin_back), tint = textColor)
+                    }
+                }
                 Text(
+                    modifier = Modifier.weight(1f),
                     text = localizedText(TextR.string.pan_warehouse_control),
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = textColor
                 )
 
                 OutlinedButton(
-                    onClick = { showTestInputCodeDialog = true },
+                    onClick = { entryMaterialId = null; showTestInputCodeDialog = true },
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.Gray)
                 ) {
-                    Text( stringResource(R.string.admin_test_code), fontSize = 12.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
+                    Text( stringResource(R.string.inventory_manual_code), fontSize = 12.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             }
 
@@ -361,6 +399,7 @@ fun AlmacenScreen() {
                                         text = { Text(stringResource(R.string.admin_supply_format, item.nombre, item.unidadMedida), color = textColor) },
                                         onClick = {
                                             insumoASeleccionar = item
+                                            contributionUnit = item.unidadMedida
                                             expandedDropdownInsumo = false
                                         }
                                     )
@@ -374,7 +413,7 @@ fun AlmacenScreen() {
                             value = cantidadAportaTextA,
                             onValueChange = { cantidadAportaTextA = it },
                             label = { Text(stringResource(R.string.admin_package_contribution_quantity)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
@@ -384,6 +423,27 @@ fun AlmacenScreen() {
                                 unfocusedBorderColor = Color.Gray
                             ))
                         )
+                        insumoASeleccionar?.let { material ->
+                            val baseUnit = InventoryUnit.from(material.unidadMedida)
+                            val compatible = InventoryUnit.entries.filter {
+                                baseUnit != null && it.group == baseUnit.group
+                            }.map { it.symbol }
+                            if (compatible.size > 1) {
+                                Box {
+                                    TextButton(onClick = { expandedContributionUnit = true }) {
+                                        Text(stringResource(R.string.inventory_entry_unit, contributionUnit))
+                                    }
+                                    DropdownMenu(expandedContributionUnit, { expandedContributionUnit = false }) {
+                                        compatible.forEach { unit ->
+                                            DropdownMenuItem(text = { Text(unit) }, onClick = {
+                                                contributionUnit = unit
+                                                expandedContributionUnit = false
+                                            })
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         // OPCIÓN B: DAR DE ALTA NUEVO INSUMO
                         OutlinedTextField(
@@ -405,7 +465,7 @@ fun AlmacenScreen() {
                             value = nuevoNivelCriticoText,
                             onValueChange = { nuevoNivelCriticoText = it },
                             label = { Text(stringResource(R.string.admin_low_stock_when), fontSize = 12.sp) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             trailingIcon = {
                                 Text(
                                     text = nuevaUnidad,
@@ -452,7 +512,7 @@ fun AlmacenScreen() {
                                 value = cantidadAportaTextB,
                                 onValueChange = { cantidadAportaTextB = it },
                                 label = { Text(stringResource(R.string.admin_package_contribution)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(8.dp),
                                 singleLine = true,
@@ -474,18 +534,23 @@ fun AlmacenScreen() {
                         
                         val db = FirebaseFirestore.getInstance()
                         if (modoAprendizajeOpcion == "A") {
-                            val cantAporta = cantidadAportaTextA.toDoubleOrNull() ?: 0.0
-                            if (insumoASeleccionar != null && cantAporta > 0) {
+                            val material = insumoASeleccionar
+                            val cantAporta = inputNumber(cantidadAportaTextA)?.let { value ->
+                                material?.let { convertInventoryAmount(value, contributionUnit, it.unidadMedida) }
+                            }
+                            if (material != null && cantAporta != null) {
                                 isSavingInsumo = true
-                                val targetDoc = db.collection("materia_prima").document(insumoASeleccionar!!.id)
-                                val updates = hashMapOf<String, Any>(
-                                    "cantidadActual" to FieldValue.increment(cantAporta),
-                                    "codigosBarras" to FieldValue.arrayUnion(code),
-                                    "cantidadesPorCodigo.$code" to cantAporta
-                                )
-                                targetDoc.update(updates).addOnSuccessListener {
+                                val targetDoc = db.collection("materia_prima").document(material.id)
+                                targetDoc.update(
+                                    com.google.firebase.firestore.FieldPath.of("cantidadActual"),
+                                    FieldValue.increment(cantAporta),
+                                    com.google.firebase.firestore.FieldPath.of("codigosBarras"),
+                                    FieldValue.arrayUnion(code),
+                                    com.google.firebase.firestore.FieldPath.of("cantidadesPorCodigo", code),
+                                    cantAporta
+                                ).addOnSuccessListener {
                                     isSavingInsumo = false
-                                    Toast.makeText(context, context.getString(R.string.admin_code_linked, code, insumoASeleccionar!!.nombre), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.admin_code_linked, code, material.nombre), Toast.LENGTH_SHORT).show()
                                     unregisteredCode = null
                                 }.addOnFailureListener { e ->
                                     isSavingInsumo = false
@@ -495,9 +560,9 @@ fun AlmacenScreen() {
                                 Toast.makeText(context, context.getString(R.string.admin_select_supply_contribution), Toast.LENGTH_SHORT).show()
                             }
                         } else {
-                            val cantAporta = cantidadAportaTextB.toDoubleOrNull() ?: 0.0
-                            val critico = nuevoNivelCriticoText.toDoubleOrNull() ?: 10.0
-                            if (nuevoNombre.isNotBlank() && cantAporta > 0) {
+                            val cantAporta = inputNumber(cantidadAportaTextB)?.toDouble() ?: 0.0
+                            val critico = inputNumber(nuevoNivelCriticoText)?.toDouble()
+                            if (nuevoNombre.isNotBlank() && cantAporta > 0 && critico != null) {
                                 isSavingInsumo = true
                                 val nuevoMap = hashMapOf<String, Any>(
                                     "nombre" to nuevoNombre.trim(),
@@ -542,13 +607,19 @@ fun AlmacenScreen() {
 
     // DIÁLOGO AUXILIAR PARA PRUEBA DE CÓDIGO MANUAL
     if (showTestInputCodeDialog) {
+        val entryMaterial = insumosList.firstOrNull { it.id == entryMaterialId }
+        val dismissEntry = {
+            showTestInputCodeDialog = false
+            entryMaterialId = null
+            testCodeInputText = ""
+        }
         AlertDialog(
-            onDismissRequest = { showTestInputCodeDialog = false },
+            onDismissRequest = dismissEntry,
             containerColor = cardColor,
-            title = { Text(stringResource(R.string.admin_scan_test_code), color = textColor) },
+            title = { Text(entryMaterial?.nombre ?: stringResource(R.string.inventory_manual_code), color = textColor) },
             text = {
                 Column {
-                    Text(stringResource(R.string.admin_enter_barcode_test), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
+                    Text(stringResource(R.string.inventory_code_hint), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = testCodeInputText,
@@ -568,19 +639,20 @@ fun AlmacenScreen() {
                 Button(
                     onClick = {
                         val code = testCodeInputText.trim()
-                        showTestInputCodeDialog = false
-                        testCodeInputText = ""
+                        val target = entryMaterialId
+                        dismissEntry()
                         if (code.isNotEmpty()) {
-                            procesarCodigoEscaneado(code)
+                            procesarCodigoEscaneado(code, target)
                         }
                     },
+                    enabled = testCodeInputText.isNotBlank() && !isLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
                     Text( stringResource(R.string.admin_process_code), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTestInputCodeDialog = false }) {
+                TextButton(onClick = dismissEntry) {
                     Text(stringResource(R.string.admin_cancel), color = textColor)
                 }
             }
@@ -604,7 +676,7 @@ fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color
 @Composable
 fun InsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
     val isCritico = insumo.cantidadActual <= insumo.nivelCritico
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     val parsedColor = remember(insumo.colorHex, isCritico) {

@@ -41,7 +41,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import java.net.URLEncoder
+import java.math.BigDecimal
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import java.text.NumberFormat
 
 // 1. Data Class Proveedor
 data class Proveedor(
@@ -63,9 +67,9 @@ fun PedidosScreen() {
     var materiasPrimas by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var proveedores by remember { mutableStateOf<List<Proveedor>>(emptyList()) }
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
 
     // Escucha en tiempo real de materia_prima y proveedores
     LaunchedEffect(Unit) {
@@ -211,10 +215,16 @@ fun PedidosScreen() {
 // 4. Pestaña 1: 'Pedidos' (Sugerencias Automáticas WMS)
 @Composable
 fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List<Proveedor>, isDarkMode: Boolean) {
-    val context = LocalContext.current
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     
+    var restockId by remember { mutableStateOf<String?>(null) }
+    val selected = insumosCriticos.firstOrNull { it.id == restockId }
+    val supplier = proveedores.firstOrNull { selected != null && it.materiaPrimaId == selected.id }
+    if (selected != null && supplier != null) {
+        RestockDialog(selected, supplier, onClose = { restockId = null })
+    }
+
     if (insumosCriticos.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
@@ -280,23 +290,7 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                             val limiteAlcanzado = insumo.alertasEnviadas >= 3
                             
                             Button(
-                                onClick = {
-                                    // Incrementa alertas enviadas en Firestore
-                                    FirebaseFirestore.getInstance().collection("materia_prima")
-                                        .document(insumo.id)
-                                        .update("alertasEnviadas", FieldValue.increment(1))
-
-                                    // Lanza el Intent de WhatsApp
-                                    try {
-                                        val mensaje = localizedText(TextR.string.pan_supplier_message, insumo.nombre, insumo.unidadMedida)
-                                        val encodedMessage = URLEncoder.encode(mensaje, "UTF-8")
-                                        val uri = Uri.parse("https://api.whatsapp.com/send?phone=${proveedor.telefono}&text=$encodedMessage")
-                                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, context.getString(R.string.admin_error_open_whatsapp), Toast.LENGTH_SHORT).show()
-                                    }
-                                },
+                                onClick = { restockId = insumo.id },
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !limiteAlcanzado,
                                 colors = ButtonDefaults.buttonColors(
@@ -332,11 +326,109 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
     }
 }
 
+@Composable
+private fun RestockDialog(material: MateriaPrima, supplier: Proveedor, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    val unit = material.unidadMedida
+    val stock = BigDecimal.valueOf(material.cantidadActual)
+    val initialTarget = BigDecimal.valueOf(material.existenciaObjetivo ?: material.nivelCritico)
+    val initialPackage = material.tamanoPaquete?.takeIf { it > 0 }?.let(BigDecimal::valueOf)
+    var targetInput by remember(material.id) {
+        mutableStateOf(initialTarget.max(BigDecimal.ZERO).inventoryInput())
+    }
+    var packageInput by remember(material.id) { mutableStateOf(initialPackage?.inventoryInput().orEmpty()) }
+    var quantityInput by remember(material.id) {
+        mutableStateOf(suggestedRestock(stock, initialTarget, initialPackage).inventoryInput())
+    }
+    var saving by remember(material.id) { mutableStateOf(false) }
+    val target = inputNumber(targetInput)
+    val packageSize = inputNumber(packageInput)?.takeIf { it.signum() > 0 }
+    val validSettings = target != null && target.toDouble() >= material.nivelCritico &&
+        (packageInput.isBlank() || packageSize != null)
+    val quantity = inputNumber(quantityInput)?.takeIf { it.signum() > 0 }
+    val document = remember(material.id) {
+        FirebaseFirestore.getInstance().collection("materia_prima").document(material.id)
+    }
+
+    AlertDialog(
+        onDismissRequest = { if (!saving) onClose() },
+        title = { Text(stringResource(R.string.inventory_restock)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(material.nombre, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.warehouse_stock, "${material.cantidadActual} $unit"))
+                RestockNumber(targetInput, { targetInput = it }, R.string.inventory_target, unit, !saving)
+                RestockNumber(packageInput, { packageInput = it }, R.string.inventory_package, unit, !saving)
+                if (!validSettings) Text(
+                    stringResource(R.string.inventory_restock_validation),
+                    color = MaterialTheme.colorScheme.error
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(enabled = validSettings && !saving, onClick = {
+                        quantityInput = suggestedRestock(stock, checkNotNull(target), packageSize).inventoryInput()
+                    }) { Text(stringResource(R.string.inventory_suggest)) }
+                    TextButton(enabled = validSettings && !saving, onClick = {
+                        saving = true
+                        document.update(mapOf(
+                            "existenciaObjetivo" to checkNotNull(target).toDouble(),
+                            "tamanoPaquete" to (packageSize?.toDouble() ?: FieldValue.delete())
+                        )).addOnSuccessListener {
+                            saving = false
+                            Toast.makeText(context, R.string.inventory_restock_saved, Toast.LENGTH_SHORT).show()
+                        }.addOnFailureListener {
+                            saving = false
+                            Toast.makeText(context, R.string.inventory_restock_error, Toast.LENGTH_SHORT).show()
+                        }
+                    }) { Text(stringResource(R.string.inventory_save_target)) }
+                }
+                RestockNumber(quantityInput, { quantityInput = it }, R.string.inventory_order_quantity, unit, !saving)
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = quantity != null && !saving && material.alertasEnviadas < 3, onClick = {
+                val amount = quantity ?: return@TextButton
+                val formatted = NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 6 }.format(amount)
+                val message = context.getString(R.string.inventory_supplier_message, material.nombre, formatted, unit)
+                val uri = Uri.parse("https://api.whatsapp.com/send").buildUpon()
+                    .appendQueryParameter("phone", supplier.telefono)
+                    .appendQueryParameter("text", message)
+                    .build()
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    document.update("alertasEnviadas", FieldValue.increment(1))
+                    onClose()
+                } catch (e: android.content.ActivityNotFoundException) {
+                    Toast.makeText(context, R.string.admin_error_open_whatsapp, Toast.LENGTH_SHORT).show()
+                }
+            }) { Text(localizedText(TextR.string.pan_send_whatsapp)) }
+        },
+        dismissButton = {
+            TextButton(enabled = !saving, onClick = onClose) { Text(stringResource(R.string.admin_cancel)) }
+        }
+    )
+}
+
+@Composable
+private fun RestockNumber(value: String, onChange: (String) -> Unit, label: Int, unit: String, enabled: Boolean) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(stringResource(label)) },
+        suffix = { Text(unit) },
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = contrastFieldColors(OutlinedTextFieldDefaults.colors())
+    )
+}
+
 // 5. Pestaña 2: 'Proveedores' (Directorio)
 @Composable
 fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, onEditClick: (Proveedor) -> Unit) {
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
 
     if (proveedores.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -417,7 +509,7 @@ fun AddEditProveedorDialog(
     var isSaving by remember { mutableStateOf(false) }
 
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
 
     AlertDialog(
         onDismissRequest = onDismiss,

@@ -1,5 +1,7 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppHeaderTitle
+
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastErrorColor
@@ -116,7 +118,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text( stringResource(R.string.admin_my_profile), fontWeight = FontWeight.Bold, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) },
+                title = { PanAppHeaderTitle(stringResource(R.string.admin_my_profile)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon( Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
@@ -132,7 +134,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally

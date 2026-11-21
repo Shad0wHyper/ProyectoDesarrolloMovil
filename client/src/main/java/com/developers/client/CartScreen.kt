@@ -1,5 +1,6 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -9,6 +10,7 @@ import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 import com.developers.core.text.paymentMethodLabel
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,6 +54,10 @@ import com.stripe.android.paymentsheet.rememberPaymentSheet
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
 import kotlin.random.Random
+import com.developers.core.sales.SaleQuote
+import com.developers.core.sales.SalesTax
+import com.developers.core.sales.readSalesTax
+import com.developers.core.sales.salesTaxDocument
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +66,7 @@ fun CartScreen(
     onNavigateBack: () -> Unit,
     onPaymentSuccess: () -> Unit
 ) {
-    var selectedPaymentMethod by remember { mutableStateOf("Tarjeta") }
+    var selectedPaymentMethod by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("Tarjeta") }
     var showPaymentSheetManual by remember { mutableStateOf(false) }
 
     // ✨ Estado para controlar el pop-up de error de dirección
@@ -69,12 +75,34 @@ fun CartScreen(
     // ✨ Dirección seleccionada (inicializada exclusivamente con la dirección puesta desde el perfil)
     var selectedAddress by remember(appViewModel.userAddress) { mutableStateOf(appViewModel.userAddress) }
 
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
 
-    val subtotal = appViewModel.cartSubtotal
-    val deliveryFee = if (subtotal > 0) 2.00 else 0.0
-    val taxes = subtotal * 0.08
-    val finalTotal = subtotal + deliveryFee + taxes
+    val db = remember { FirebaseFirestore.getInstance() }
+    var salesTax by remember { mutableStateOf<SalesTax?>(null) }
+    var taxError by remember { mutableStateOf(false) }
+    var retryTax by remember { mutableIntStateOf(0) }
+    DisposableEffect(db, retryTax) {
+        val listener = salesTaxDocument(db).addSnapshotListener(
+            com.google.firebase.firestore.MetadataChanges.INCLUDE
+        ) { snapshot, error ->
+            if (error != null) {
+                salesTax = null
+                taxError = true
+            } else if (snapshot != null) {
+                if (snapshot.metadata.isFromCache || snapshot.metadata.hasPendingWrites()) {
+                    salesTax = null
+                } else {
+                    salesTax = runCatching { readSalesTax(snapshot.data) }.getOrNull()
+                    taxError = salesTax == null
+                }
+            }
+        }
+        onDispose { listener.remove() }
+    }
+    val cartItems = appViewModel.cartItems
+    val deliveryFee = if (appViewModel.cartSubtotal > 0) 2.00 else 0.0
+    val quote = salesTax?.quote(cartItems.map { it.price * it.quantity }, deliveryFee)
+    val finalTotal = quote?.total ?: 0.0
 
     // ✨ LÓGICA DE PROCESAMIENTO (Solo permite la dirección configurada en el perfil)
     fun handleCheckoutProcess() {
@@ -112,22 +140,34 @@ fun CartScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 8.dp,
-                color = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier.wrapContentWidth(Alignment.CenterHorizontally)
+                        .widthIn(max = 720.dp).fillMaxWidth().padding(16.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(appViewModel.getString("total"), style = MaterialTheme.typography.bodyMedium, color = contrastTextColor(Color.Gray, secondary = true))
-                        Text(String.format("$%.2f", finalTotal), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
+                        Text(quote?.let { String.format("$%.2f", it.total) } ?: "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
+                    }
+                    if (quote == null && cartItems.isNotEmpty()) {
+                        if (taxError) {
+                            TextButton(onClick = { taxError = false; retryTax++ }) {
+                                Text(androidx.compose.ui.res.stringResource(R.string.client_sales_tax_retry))
+                            }
+                        } else {
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { handleCheckoutProcess() },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = appViewModel.cartItems.isNotEmpty(),
+                        enabled = cartItems.isNotEmpty() && quote != null,
                         colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                     ) {
                         Text(appViewModel.getString("confirm_order"), modifier = Modifier.padding(vertical = 8.dp))
@@ -140,7 +180,10 @@ fun CartScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 720.dp)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
             item {
@@ -177,14 +220,16 @@ fun CartScreen(
                     }
                 }
             } else {
-                items(appViewModel.cartItems) { cartItem ->
-                    CartItemWidget(
-                        item = cartItem,
-                        isDarkMode = isDarkMode,
-                        onIncrease = { appViewModel.updateQuantity(cartItem.id, cartItem.quantity + 1) },
-                        onDecrease = { appViewModel.updateQuantity(cartItem.id, cartItem.quantity - 1) }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                items(appViewModel.cartItems, key = { it.id }) { cartItem ->
+                    Column(Modifier.animateItem()) {
+                        CartItemWidget(
+                            item = cartItem,
+                            isDarkMode = isDarkMode,
+                            onIncrease = { appViewModel.updateQuantity(cartItem.id, cartItem.quantity + 1) },
+                            onDecrease = { appViewModel.updateQuantity(cartItem.id, cartItem.quantity - 1) }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                 }
             }
 
@@ -210,7 +255,7 @@ fun CartScreen(
                         },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                        containerColor = MaterialTheme.colorScheme.surface
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     border = BorderStroke(
@@ -318,7 +363,7 @@ fun CartScreen(
                                 Text(localizedText(TextR.string.pan_close), color = contrastAccentColor(PanAppPrimary))
                             }
                         },
-                        containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 }
 
@@ -362,7 +407,7 @@ fun CartScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                OrderSummaryWidget(subtotal, deliveryFee, taxes, finalTotal, isDarkMode, appViewModel)
+                quote?.let { OrderSummaryWidget(it.subtotal, it.delivery, it.tax, it.total, isDarkMode, appViewModel) }
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
@@ -374,7 +419,7 @@ fun CartScreen(
             title = { Text(appViewModel.getString("missing_address_title"), fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
             text = { Text(appViewModel.getString("missing_address_desc"), color = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode)) },
             confirmButton = { Button(onClick = { showAddressErrorDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)) { Text(localizedText(TextR.string.pan_understood), color = Color.White) } },
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -382,14 +427,15 @@ fun CartScreen(
     var isProcessingPayment by remember { mutableStateOf(false) }
     var paymentErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    if (showPaymentSheetManual) {
+    if (showPaymentSheetManual && quote != null) {
         ModalBottomSheet(
             onDismissRequest = { if (!isProcessingPayment) showPaymentSheetManual = false },
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkMode) Color.Gray else Color.LightGray) }
         ) {
             PaymentGatewayContent(
                 method = selectedPaymentMethod,
+                total = finalTotal,
                 isDarkMode = isDarkMode,
                 appViewModel = appViewModel,
                 isProcessing = isProcessingPayment,
@@ -401,7 +447,8 @@ fun CartScreen(
                     if (selectedPaymentMethod == "Efectivo") {
                         registrarPedidoEnFirebase(
                             appViewModel = appViewModel,
-                            total = finalTotal,
+                            quote = quote,
+                            items = cartItems,
                             metodo = "OXXO Pay",
                             cardInfo = "Ref: $barcode",
                             onSuccess = onPaymentSuccess,
@@ -419,7 +466,8 @@ fun CartScreen(
                             } else {
                                 registrarPedidoEnFirebase(
                                     appViewModel = appViewModel,
-                                    total = finalTotal,
+                                    quote = quote,
+                                    items = cartItems,
                                     metodo = selectedPaymentMethod,
                                     cardInfo = if (selectedPaymentMethod == "Tarjeta") "**** $last4" else "",
                                     onSuccess = onPaymentSuccess,
@@ -443,7 +491,8 @@ fun CartScreen(
 
 fun registrarPedidoEnFirebase(
     appViewModel: AppViewModel,
-    total: Double,
+    quote: SaleQuote,
+    items: List<CartItem>,
     metodo: String,
     cardInfo: String,
     onSuccess: () -> Unit,
@@ -453,11 +502,15 @@ fun registrarPedidoEnFirebase(
     val db = FirebaseFirestore.getInstance()
     val batch = db.batch()
 
-    val itemsListFirebase = appViewModel.cartItems.map { item ->
+    val itemsListFirebase = items.mapIndexed { index, item ->
         val productRef = db.collection("productos").document(item.id)
-        batch.update(productRef, "stock", FieldValue.increment(-item.quantity.toLong()))
+        batch.update(productRef, mapOf(
+            "stock" to FieldValue.increment(-item.quantity.toLong()),
+            "pedidosRegistrados" to FieldValue.increment(1L)
+        ))
         
-        hashMapOf("nombre" to item.name, "cantidad" to item.quantity, "precio" to item.price)
+        hashMapOf("productoId" to item.id, "nombre" to item.name, "cantidad" to item.quantity,
+            "precio" to item.price, "importe" to quote.lineTotals[index])
     }
 
     val nuevoPedido = hashMapOf(
@@ -466,12 +519,15 @@ fun registrarPedidoEnFirebase(
         "cliente" to appViewModel.userName,
         "direccion" to appViewModel.userAddress,
         "direccionEnvio" to appViewModel.userAddress,
-        "total" to total,
+        "subtotal" to quote.subtotal,
+        "iva" to quote.tax,
+        "envio" to quote.delivery,
+        "total" to quote.total,
         "estado" to if (metodo == "OXXO Pay") "ESPERANDO PAGO" else "PENDIENTE",
         "status" to if (metodo == "OXXO Pay") "ESPERANDO PAGO" else "PENDIENTE",
         "timestamp" to System.currentTimeMillis(),
-        "mainItem" to (appViewModel.cartItems.firstOrNull()?.name ?: "Pedido"),
-        "itemCount" to appViewModel.cartTotalQuantity,
+        "mainItem" to (items.firstOrNull()?.name ?: "Pedido"),
+        "itemCount" to items.sumOf { it.quantity },
         "items" to itemsListFirebase,
         "metodoPago" to metodo,
         "pagado" to (metodo != "OXXO Pay"),
@@ -525,6 +581,7 @@ fun SummaryRow(label: String, value: String, isDarkMode: Boolean) {
 @Composable
 fun PaymentGatewayContent(
     method: String,
+    total: Double,
     isDarkMode: Boolean,
     appViewModel: AppViewModel,
     isProcessing: Boolean = false,
@@ -571,7 +628,7 @@ fun PaymentGatewayContent(
         Text(text = localizedText(TextR.string.pan_selected_method, paymentMethodLabel(method)), style = MaterialTheme.typography.bodyMedium, color = contrastTextColor(Color.Gray, secondary = true))
         
         if (method != "Efectivo") {
-            Text(text = localizedText(TextR.string.pan_your_balance, String.format("$%.2f", appViewModel.userBalance)), style = MaterialTheme.typography.labelLarge, color = if (appViewModel.userBalance < (appViewModel.cartSubtotal + 5.5)) Color.Red else Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+            Text(text = localizedText(TextR.string.pan_your_balance, String.format("$%.2f", appViewModel.userBalance)), style = MaterialTheme.typography.labelLarge, color = if (appViewModel.userBalance < total) Color.Red else Color(0xFF4CAF50), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -708,7 +765,13 @@ fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, 
                     Text(String.format("$%.2f", item.price), color = contrastAccentColor(PanAppPrimary), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onDecrease, modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Remove, contentDescription = localizedText(TextR.string.pan_less), modifier = Modifier.size(16.dp), tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
-                        Text(text = "${item.quantity}", modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode))
+                        Crossfade(item.quantity, modifier = Modifier.padding(horizontal = 12.dp), label = "cart quantity") { quantity ->
+                            Text(
+                                quantity.toString(),
+                                fontWeight = FontWeight.Bold,
+                                color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                            )
+                        }
                         IconButton(onClick = { onIncrease() }, modifier = Modifier.size(28.dp).background(PanAppPrimary, CircleShape)) { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
                     }
                 }
@@ -719,7 +782,7 @@ fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, 
 
 @Composable
 fun PaymentMethodItem(title: String, subtitle: String, icon: ImageVector, isSelected: Boolean, isDarkMode: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(modifier = modifier.height(100.dp), shape = RoundedCornerShape(16.dp), color = if (isSelected) Color(0xFF32324D) else if (isDarkMode) Color(0xFF1E1E1E) else Color.White, border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)), onClick = onClick) {
+    Surface(modifier = modifier.height(100.dp), shape = RoundedCornerShape(16.dp), color = if (isSelected) Color(0xFF32324D) else MaterialTheme.colorScheme.surface, border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)), onClick = onClick) {
         Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(icon, contentDescription = null, tint = if (isSelected) Color.White else contrastTextColor(Color.Gray, secondary = true))
             Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode || isSelected) Color.White else Color.Black)

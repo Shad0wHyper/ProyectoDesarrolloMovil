@@ -42,8 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val EmployeePrimary = Color(0xFF009688)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
@@ -53,20 +51,20 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.emp_portal_title), fontWeight = FontWeight.Bold, color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current) },
+                title = { Text(stringResource(R.string.emp_portal_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
                     Box(
                         modifier = Modifier
                             .padding(end = 16.dp)
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFEEEEEE)),
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Person, contentDescription = localizedText(TextR.string.pan_profile), tint = Color.Gray)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -74,18 +72,18 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
             Text(
                 text = stringResource(R.string.emp_hello_user, viewModel.userName),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = stringResource(R.string.emp_scan_instruction),
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
 
@@ -94,7 +92,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                     .fillMaxWidth()
                     .height(180.dp),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = EmployeePrimary),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
                 onClick = { showDialog = true }
             ) {
                 Column(
@@ -111,7 +109,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                     Text(
                         stringResource(R.string.emp_scan_qr),
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 18.sp
                     )
                 }
@@ -124,16 +122,16 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 12.dp),
-                color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (viewModel.isLoading) {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = EmployeePrimary)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (viewModel.logs.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.emp_no_attendance_logs), color = Color.Gray)
+                    Text(stringResource(R.string.emp_no_attendance_logs), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -181,7 +179,7 @@ fun LogCard(log: LogData) {
     val isEntrada = log.type == "ENTRADA"
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -203,10 +201,10 @@ fun LogCard(log: LogData) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(attendanceLabel(log.type), fontWeight = FontWeight.Bold, color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current)
-                Text(log.dateFormatted, color = Color.Gray, fontSize = 12.sp)
+                Text(attendanceLabel(log.type), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(log.dateFormatted, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
-            Text(log.timeFormatted, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = if (androidx.compose.foundation.isSystemInDarkTheme()) lightColors.onSurface else androidx.compose.material3.LocalContentColor.current)
+            Text(log.timeFormatted, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

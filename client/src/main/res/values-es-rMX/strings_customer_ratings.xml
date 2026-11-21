@@ -1,0 +1,19 @@
+<resources>
+    <string name="client_rating_title">Valoraciones de clientes</string>
+    <string name="client_rating_sign_in">Inicia sesión para valorar este producto.</string>
+    <string name="client_rating_stats_error">No se pudieron cargar las valoraciones.</string>
+    <string name="client_rating_retry">Reintentar</string>
+    <string name="client_rating_none">Aún no hay valoraciones de clientes.</string>
+    <string name="client_rating_average">Promedio: %1$.1f de 5</string>
+    <string name="client_rating_load_error">No se pudo cargar tu valoración.</string>
+    <string name="client_rating_yours">Tu valoración</string>
+    <string name="client_rating_star">Elegir %1$d de 5 estrellas</string>
+    <string name="client_rating_saving">Guardando…</string>
+    <string name="client_rating_save">Guardar valoración</string>
+    <string name="client_rating_saved">Valoración guardada.</string>
+    <string name="client_rating_save_error">No se pudo guardar tu valoración. Inténtalo de nuevo.</string>
+    <plurals name="client_rating_votes">
+        <item quantity="one">%d valoración</item>
+        <item quantity="other">%d valoraciones</item>
+    </plurals>
+</resources>

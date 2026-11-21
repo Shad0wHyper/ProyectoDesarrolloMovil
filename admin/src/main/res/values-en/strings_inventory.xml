@@ -1,0 +1,15 @@
+<resources>
+    <string name="inventory_manual_code">Enter barcode manually</string>
+    <string name="inventory_code_hint">Enter the barcode to register an entry or link a new code.</string>
+    <string name="inventory_entry_unit">Entry unit: %1$s</string>
+    <string name="inventory_restock">Restock order</string>
+    <string name="inventory_target">Target stock</string>
+    <string name="inventory_package">Package size (optional)</string>
+    <string name="inventory_restock_validation">The target must be at least the minimum stock. Enter a positive package size or leave it blank.</string>
+    <string name="inventory_suggest">Suggest quantity</string>
+    <string name="inventory_save_target">Save settings</string>
+    <string name="inventory_restock_saved">Restock settings saved.</string>
+    <string name="inventory_restock_error">Could not save restock settings.</string>
+    <string name="inventory_order_quantity">Quantity to order</string>
+    <string name="inventory_supplier_message">Hello, this is PanApp. We would like to order %2$s %3$s of %1$s. Please confirm availability.</string>
+</resources>

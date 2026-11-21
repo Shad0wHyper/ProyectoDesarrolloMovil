@@ -2,6 +2,11 @@ package com.developers.employee
 
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
+import com.developers.core.ui.PanAppBrand
+import com.developers.core.ui.PanAppDesignTheme
+import com.developers.core.ui.PanAppAccountSettings
+import com.developers.core.ui.PanAppProfileMenu
+import com.developers.core.ui.tabSlideDirection
 
 import android.app.Activity
 import android.os.Bundle
@@ -10,7 +15,9 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -35,37 +42,18 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-val PrimaryBlue = Color(0xFF6B72E2)
+val PrimaryBlue = PanAppBrand
 val CardPink = Color(0xFFED5A85)
 val OnlineGreen = Color(0xFF2ECA7F)
 val OrangePrep = Color(0xFFE88A64)
 val WhatsappGreen = Color(0xFF25D366)
 val DarkPurpleText = Color(0xFF4A4E91)
 
-val darkColors = darkColorScheme(
-    primary = PrimaryBlue,
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color.White,
-    onBackground = Color.White,
-    onSurfaceVariant = Color(0xFFAAAAAA)
-)
-
-val lightColors = lightColorScheme(
-    primary = PrimaryBlue,
-    background = Color(0xFFF5F6FA),
-    surface = Color.White,
-    onSurface = Color.DarkGray,
-    onBackground = Color.Black,
-    onSurfaceVariant = Color(0xFF7A869A)
-)
-
 @Composable
 fun PanAppEmployeeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) darkColors else lightColors
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -76,13 +64,10 @@ fun PanAppEmployeeTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
+    PanAppDesignTheme(darkTheme, content)
 }
 
-enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, ALMACEN, PERFIL, LAUNCHING_WS, HISTORIAL }
+enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, ALMACEN, PERFIL, AJUSTES, LAUNCHING_WS, HISTORIAL }
 
 // class MainActivity removed.
 
@@ -91,33 +76,75 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
     val isDarkTheme = isSystemInDarkTheme()
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
+    var accountOrigin by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
+    var profileOrigin by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
 
-    val bottomNavScreens = remember { 
-        listOf(AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.ALMACEN, AppScreen.PERFIL) 
+    val bottomNavTabs = remember {
+        listOf(AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.ALMACEN)
     }
-    val showBottomBar = bottomNavScreens.contains(currentScreen)
-    val bgColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFF5F6FA)
+    val showBottomBar = currentScreen in bottomNavTabs || currentScreen == AppScreen.PERFIL
+    val bgColor = MaterialTheme.colorScheme.background
 
     BackHandler(enabled = currentScreen != AppScreen.INICIO) {
         currentScreen = when (currentScreen) {
             AppScreen.LAUNCHING_WS -> AppScreen.PEDIDOS
             AppScreen.HISTORIAL -> AppScreen.ASISTENCIA
+            AppScreen.AJUSTES -> accountOrigin
+            AppScreen.PERFIL -> profileOrigin
             else -> AppScreen.INICIO
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = bgColor) {
-            when (currentScreen) {
-                AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it })
-                AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it })
-                AppScreen.PEDIDOS -> PedidosScreen(viewModel, onNavigate = { currentScreen = it }, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
-                AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel, onProfileClick = { currentScreen = AppScreen.PERFIL })
-                AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it }, onLogoutClick = onLogoutClick)
-                AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
-                AppScreen.LAUNCHING_WS -> {
-                    val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
-                    if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
+            AnimatedContent(
+                targetState = currentScreen,
+                transitionSpec = {
+                    val fallback = if (targetState == AppScreen.INICIO ||
+                        initialState == AppScreen.HISTORIAL && targetState == AppScreen.ASISTENCIA ||
+                        initialState == AppScreen.LAUNCHING_WS && targetState == AppScreen.PEDIDOS ||
+                        initialState == AppScreen.AJUSTES && targetState == accountOrigin ||
+                        initialState == AppScreen.PERFIL && targetState == profileOrigin
+                    ) -1 else 1
+                    val direction = tabSlideDirection(bottomNavTabs, initialState, targetState, fallback)
+                    slideInHorizontally { it * direction } togetherWith
+                        slideOutHorizontally { -it * direction }
+                },
+                label = "employeeScreen"
+            ) { screen ->
+                val profileMenu: @Composable () -> Unit = {
+                    PanAppProfileMenu(
+                        onProfile = { profileOrigin = screen; currentScreen = AppScreen.PERFIL },
+                        onSettings = { accountOrigin = screen; currentScreen = AppScreen.AJUSTES },
+                        onLogout = onLogoutClick,
+                        avatar = if (viewModel.userImageUrl.isNotEmpty()) {
+                            { modifier ->
+                                coil.compose.AsyncImage(
+                                    model = viewModel.userImageUrl,
+                                    contentDescription = stringResource(R.string.emp_nav_profile),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    modifier = modifier
+                                )
+                            }
+                        } else null
+                    )
+                }
+                when (screen) {
+                    AppScreen.INICIO -> DashboardScreen(viewModel, onNavigate = { currentScreen = it }, profileMenu = profileMenu)
+                    AppScreen.ASISTENCIA -> AsistenciaScreen(viewModel, onNavigate = { currentScreen = it }, profileMenu = profileMenu)
+                    AppScreen.PEDIDOS -> PedidosScreen(viewModel, profileMenu = profileMenu, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
+                    AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel, profileMenu = profileMenu)
+                    AppScreen.AJUSTES -> PanAppAccountSettings(
+                        onBack = { currentScreen = accountOrigin },
+                        onProfile = { profileOrigin = AppScreen.AJUSTES; currentScreen = AppScreen.PERFIL },
+                        onLogout = onLogoutClick
+                    )
+                    AppScreen.PERFIL -> PerfilScreen(viewModel, onNavigate = { currentScreen = it }, onLogoutClick = onLogoutClick)
+                    AppScreen.HISTORIAL -> FullHistoryScreen(viewModel, onBackClick = { currentScreen = AppScreen.ASISTENCIA })
+                    AppScreen.LAUNCHING_WS -> {
+                        val order = viewModel.pedidosActivos.find { it.id == selectedOrderId }
+                        if (order != null) LaunchingWhatsappScreen(order = order, onBackClick = { currentScreen = AppScreen.PEDIDOS })
+                    }
                 }
             }
         }
@@ -129,36 +156,6 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
                 isDarkMode = isDarkTheme,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
-        }
-    }
-}
-
-@Composable
-internal fun EmployeeProfileButton(viewModel: EmployeeViewModel, onClick: () -> Unit) {
-    val profileLabel = stringResource(R.string.emp_nav_profile)
-    IconButton(onClick = onClick, modifier = Modifier.padding(end = 8.dp)) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            if (viewModel.userImageUrl.isNotEmpty()) {
-                coil.compose.AsyncImage(
-                    model = viewModel.userImageUrl,
-                    contentDescription = profileLabel,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = profileLabel,
-                    tint = contrastTextColor(MaterialTheme.colorScheme.onSurfaceVariant),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
         }
     }
 }
@@ -184,7 +181,7 @@ fun EmployeeFloatingBottomBar(
         )
     }
 
-    val containerBackgroundColor = if (isDarkMode) Color(0xFF2C2C2C) else Color.White
+    val containerBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
     Box(
         modifier = modifier
@@ -230,8 +227,9 @@ fun EmployeeFloatingNavItem(
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
-    val activeBackgroundColor = PrimaryBlue.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) contrastAccentColor(PrimaryBlue) else contrastTextColor(Color.Gray, secondary = true)
+    val colors = MaterialTheme.colorScheme
+    val activeBackgroundColor = colors.primaryContainer
+    val contentColor = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
 
     Surface(
         onClick = onClick,
