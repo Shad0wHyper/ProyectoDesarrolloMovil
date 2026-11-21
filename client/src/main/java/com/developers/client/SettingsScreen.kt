@@ -1,5 +1,9 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppHeaderTitle
+import com.developers.core.ui.PanAppLanguageSelector
+
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 
@@ -38,19 +42,20 @@ fun SettingsScreen(
     onNavigateToNotifications: () -> Unit,
     onLogoutClick: () -> Unit = {}
 ) {
+    val isDarkMode = isPanAppInDarkTheme()
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(appViewModel.getString("settings"), fontWeight = FontWeight.Bold) },
+                title = { PanAppHeaderTitle(appViewModel.getString("settings")) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = appViewModel.getString("close"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (appViewModel.isDarkMode) Color.Black else Color.White,
-                    titleContentColor = contrastTextColor(Color.Black, darkBackground = appViewModel.isDarkMode),
-                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = appViewModel.isDarkMode)
+                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+                    navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
             )
         }
@@ -59,17 +64,18 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (appViewModel.isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
         ) {
             item {
                 SettingsSectionTitle(appViewModel.getString("account"))
+                PanAppLanguageSelector()
                 
                 SettingsClickableItem(
                     title = appViewModel.getString("profile"),
                     subtitle = appViewModel.getString("profile_desc"),
                     icon = Icons.Default.Person,
                     onClick = onNavigateToProfile,
-                    isDarkMode = appViewModel.isDarkMode
+                    isDarkMode = isDarkMode
                 )
                 
                 SettingsClickableItem(
@@ -77,7 +83,7 @@ fun SettingsScreen(
                     subtitle = appViewModel.getString("notif_desc"),
                     icon = Icons.Default.Notifications,
                     onClick = onNavigateToNotifications,
-                    isDarkMode = appViewModel.isDarkMode
+                    isDarkMode = isDarkMode
                 )
 
                 val context = LocalContext.current
@@ -91,7 +97,7 @@ fun SettingsScreen(
                             onLogoutClick()
                         }
                     },
-                    isDarkMode = appViewModel.isDarkMode
+                    isDarkMode = isDarkMode
                 )
             }
         }
@@ -120,7 +126,7 @@ fun SettingsToggleItem(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -153,7 +159,7 @@ fun SettingsClickableItem(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+        color = MaterialTheme.colorScheme.surface,
         onClick = onClick
     ) {
         Row(

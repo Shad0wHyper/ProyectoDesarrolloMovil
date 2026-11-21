@@ -1,0 +1,4 @@
+<resources>
+    <string name="admin_rating_choose_stars">Set rating to %1$d out of 5</string>
+    <string name="admin_rating_value">%1$.1f out of 5</string>
+</resources>

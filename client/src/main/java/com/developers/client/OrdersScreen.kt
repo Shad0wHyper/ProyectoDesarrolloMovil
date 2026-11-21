@@ -1,5 +1,6 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
 
@@ -14,6 +15,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.stringResource
+import java.util.Locale
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,6 +37,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.developers.client.ui.theme.PanAppPrimary
 
+private enum class OrderFilter(val status: String?, val label: Int) {
+    All(null, R.string.client_order_filter_all),
+    AwaitingPayment("ESPERANDO PAGO", R.string.client_order_awaiting_payment),
+    Pending("PENDIENTE", R.string.client_pendiente),
+    OnTheWay("ENVIADO", R.string.client_en_camino),
+    Delivered("ENTREGADO", R.string.client_entregado)
+}
+
+private fun orderStatus(status: String): OrderFilter? =
+    OrderFilter.entries.firstOrNull { it.status == status.trim().uppercase(Locale.ROOT) }
+
+@Composable
+private fun orderStatusLabel(status: String): String =
+    orderStatus(status)?.let { stringResource(it.label) } ?: status
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersScreen(
@@ -39,12 +59,16 @@ fun OrdersScreen(
     onNavigateBack: () -> Unit,
     onNavigateToCart: () -> Unit
 ) {
-    var selectedOrder by remember { mutableStateOf<OrderData?>(null) }
-    val isDarkMode = appViewModel.isDarkMode
+    var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
+    var ratingLine by rememberSaveable(selectedOrderId) { mutableStateOf<Int?>(null) }
+    val isDarkMode = isPanAppInDarkTheme()
+    var filter by rememberSaveable { mutableStateOf(OrderFilter.All) }
     val orderList = appViewModel.ordersList
+    val selectedOrder = orderList.firstOrNull { it.id == selectedOrderId }
+    val filteredOrders = orderList.filter { filter == OrderFilter.All || orderStatus(it.status) == filter }
 
     Scaffold(
-        containerColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8),
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
@@ -66,10 +90,12 @@ fun OrdersScreen(
         Box(modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+            .background(MaterialTheme.colorScheme.background)
         ) {
             LazyColumn(
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = 760.dp)
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(bottom = 120.dp)
@@ -82,21 +108,38 @@ fun OrdersScreen(
                         fontWeight = FontWeight.Bold,
                         color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OrderFilter.entries.forEach { option ->
+                            FilterChip(
+                                selected = filter == option,
+                                onClick = { filter = option },
+                                label = { Text(stringResource(option.label)) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                if (orderList.isEmpty() && appViewModel.currentUserId != "INVITADO") {
+                if (filteredOrders.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(localizedText(TextR.string.pan_no_orders), color = contrastTextColor(Color.Gray, secondary = true))
+                            Text(
+                                if (orderList.isEmpty()) localizedText(TextR.string.pan_no_orders)
+                                else stringResource(R.string.client_order_filter_empty),
+                                color = contrastTextColor(Color.Gray, secondary = true)
+                            )
                         }
                     }
                 } else {
-                    items(orderList, key = { it.id }) { order ->
+                    items(filteredOrders, key = { it.id }) { order ->
                         OrderItemCard(
                             order = order,
                             appViewModel = appViewModel,
-                            onViewDetails = { selectedOrder = order },
+                            onViewDetails = { selectedOrderId = order.id },
                             onReorder = onNavigateToCart
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -105,14 +148,26 @@ fun OrdersScreen(
             }
 
             // ✨ POPUP DE DETALLES DEL PEDIDO
-            if (selectedOrder != null) {
-                val statusKey = when(selectedOrder?.status?.uppercase()) {
-                    "ENVIADO" -> "en_camino"
-                    "ENTREGADO" -> "entregado"
-                    else -> "pendiente"
-                }
+            val canRate = selectedOrder != null && orderStatus(selectedOrder.status) == OrderFilter.Delivered &&
+                appViewModel.currentUserId != "INVITADO" && selectedOrder.userId == appViewModel.currentUserId
+            val selectedRatingItem = ratingLine?.let { selectedOrder?.itemsList?.getOrNull(it) }
+            if (canRate && selectedRatingItem != null && selectedOrder != null) {
                 AlertDialog(
-                    onDismissRequest = { selectedOrder = null },
+                    onDismissRequest = { ratingLine = null },
+                    title = { Text(selectedRatingItem.nombre) },
+                    text = {
+                        Column(Modifier.verticalScroll(rememberScrollState())) {
+                            ProductRating(selectedRatingItem.productoId, selectedOrder.id, checkNotNull(ratingLine)) {
+                                appViewModel.ratingRevision++
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { ratingLine = null }) { Text(appViewModel.getString("close")) } }
+                )
+            } else if (selectedOrder != null) {
+                val statusLabel = orderStatusLabel(selectedOrder?.status.orEmpty())
+                AlertDialog(
+                    onDismissRequest = { selectedOrderId = null },
                     title = { Text("${appViewModel.getString("order_details")} #${selectedOrder?.id?.take(8)?.uppercase()}") },
                     text = {
                         Column {
@@ -122,7 +177,7 @@ fun OrdersScreen(
                             Text(localizedText(TextR.string.pan_order_method, paymentMethodLabel(selectedOrder?.metodoPago.orEmpty())), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(localizedText(TextR.string.pan_order_status, appViewModel.getString(statusKey)), fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
+                                Text(localizedText(TextR.string.pan_order_status, statusLabel), fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
                                 /* ✨ Temporalmente oculto hasta la Fase de Pagos
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
@@ -148,13 +203,21 @@ fun OrdersScreen(
                                     .heightIn(max = 150.dp) // Solo escrolea si compran muchísimo pan
                                     .verticalScroll(rememberScrollState())
                             ) {
-                                selectedOrder?.itemsList?.forEach { item ->
+                                if (canRate && selectedOrder.itemsList.any { it.productoId.isBlank() }) {
+                                    Text(stringResource(R.string.client_catalog_legacy_order))
+                                }
+                                selectedOrder.itemsList.forEachIndexed { index, item ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("- ${item.cantidad}x ${item.nombre}", fontSize = 14.sp)
+                                        Text("- ${item.cantidad}x ${item.nombre}", modifier = Modifier.weight(1f).padding(end = 8.dp), fontSize = 14.sp)
                                         Text(String.format("$%.2f", item.precio * item.cantidad), fontSize = 14.sp, color = contrastTextColor(Color.Gray, secondary = true))
+                                    }
+                                    if (canRate && item.productoId.isNotBlank()) {
+                                        TextButton(onClick = { ratingLine = index }) {
+                                            Text(stringResource(R.string.client_catalog_rate_product))
+                                        }
                                     }
                                 }
                             }
@@ -162,13 +225,13 @@ fun OrdersScreen(
                     },
                     confirmButton = {
                         Button(
-                            onClick = { selectedOrder = null },
+                            onClick = { selectedOrderId = null },
                             colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary)
                         ) {
                             Text(appViewModel.getString("close"), color = Color.White)
                         }
                     },
-                    containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             }
         }
@@ -182,12 +245,12 @@ fun OrderItemCard(
     onViewDetails: () -> Unit,
     onReorder: () -> Unit
 ) {
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -208,11 +271,7 @@ fun OrderItemCard(
                 }
 
                 val statusUpper = order.status.uppercase()
-                val statusKey = when(statusUpper) {
-                    "ENVIADO" -> "en_camino"
-                    "ENTREGADO" -> "entregado"
-                    else -> "pendiente"
-                }
+                val statusLabel = orderStatusLabel(order.status)
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     /* ✨ Temporalmente oculto hasta la Fase de Pagos
@@ -242,7 +301,7 @@ fun OrderItemCard(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = appViewModel.getString(statusKey),
+                            text = statusLabel,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             color = when(statusUpper) {
                                 "ENVIADO" -> Color(0xFF1565C0)

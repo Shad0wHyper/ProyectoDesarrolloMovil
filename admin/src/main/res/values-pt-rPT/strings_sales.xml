@@ -1,0 +1,29 @@
+<resources>
+    <string name="sales_title">Análise de vendas</string>
+    <string name="sales_this_month">Este mês · MXN</string>
+    <string name="sales_error">Não foi possível carregar as vendas.</string>
+    <string name="sales_start">Início: %1$s</string>
+    <string name="sales_end">Fim: %1$s</string>
+    <string name="sales_clear">Limpar filtros</string>
+    <string name="sales_tax_setup">Configurar IVA</string>
+    <string name="sales_day">Dia</string>
+    <string name="sales_week">Semana</string>
+    <string name="sales_month">Mês</string>
+    <string name="sales_retry">Tentar novamente</string>
+    <string name="sales_mxn">%1$s MXN</string>
+    <string name="sales_empty">Sem vendas para estes filtros.</string>
+    <string name="sales_over_time">Vendas ao longo do tempo</string>
+    <string name="sales_top_products">Produtos mais vendidos</string>
+    <string name="sales_no_lines">Não há linhas de produtos registadas.</string>
+    <string name="sales_product_amount">%1$d unidades · %2$s</string>
+    <string name="sales_apply">Aplicar</string>
+    <string name="sales_all_products">Todos os produtos</string>
+    <string name="sales_product_filter">Produto</string>
+    <string name="sales_point">%1$s · %2$s</string>
+    <string name="sales_tax_error">Não foi possível carregar ou guardar a configuração do IVA.</string>
+    <string name="sales_tax_rate">Taxa de IVA (%)</string>
+    <string name="sales_tax_included">Os preços incluem IVA</string>
+    <string name="sales_tax_included_note">O IVA já faz parte do preço do produto.</string>
+    <string name="sales_tax_added_note">O IVA é acrescentado ao subtotal dos produtos.</string>
+    <string name="sales_save">Guardar</string>
+</resources>

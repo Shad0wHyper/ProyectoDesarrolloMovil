@@ -1,0 +1,39 @@
+<resources>
+    <string name="warehouse_title">Estado de almacén</string>
+    <string name="warehouse_error">No se pudo cargar el inventario.</string>
+    <string name="warehouse_no_alerts">Sin alertas</string>
+    <string name="warehouse_expired">Caducados</string>
+    <string name="warehouse_out">Agotados</string>
+    <string name="warehouse_out_single">Agotado</string>
+    <string name="warehouse_expiring">Por caducar</string>
+    <string name="warehouse_low">Stock bajo</string>
+    <string name="warehouse_control">Ir a control de almacén</string>
+    <string name="warehouse_attention">Requieren atención</string>
+    <string name="warehouse_all">Todos</string>
+    <string name="warehouse_search">Buscar por nombre</string>
+    <string name="warehouse_clear">Limpiar filtros</string>
+    <string name="warehouse_retry">Reintentar</string>
+    <string name="warehouse_empty">Sin productos registrados</string>
+    <string name="warehouse_no_matches">Sin coincidencias</string>
+    <string name="warehouse_stock">Existencia disponible: %1$s</string>
+    <string name="warehouse_minimum">Mínimo configurado: %1$s</string>
+    <string name="warehouse_no_minimum">Sin mínimo configurado</string>
+    <string name="warehouse_no_date">Sin fecha registrada</string>
+    <string name="warehouse_lot">Lote: %1$s · %2$s</string>
+    <string name="warehouse_entry">Registrar entrada</string>
+    <string name="warehouse_expires_today">Caduca hoy</string>
+    <string name="warehouse_expired_yesterday">Caducó ayer</string>
+    <string name="warehouse_code_mismatch">Este código no está disponible para el producto seleccionado.</string>
+    <plurals name="warehouse_attention_count">
+        <item quantity="one">%d producto requiere atención</item>
+        <item quantity="other">%d productos requieren atención</item>
+    </plurals>
+    <plurals name="warehouse_expires_days">
+        <item quantity="one">Caduca en %d día</item>
+        <item quantity="other">Caduca en %d días</item>
+    </plurals>
+    <plurals name="warehouse_expired_days">
+        <item quantity="one">Caducó hace %d día</item>
+        <item quantity="other">Caducó hace %d días</item>
+    </plurals>
+</resources>

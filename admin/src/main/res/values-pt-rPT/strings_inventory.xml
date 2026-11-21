@@ -1,0 +1,15 @@
+<resources>
+    <string name="inventory_manual_code">Introduzir código manualmente</string>
+    <string name="inventory_code_hint">Introduza o código de barras para registar uma entrada ou associar um novo código.</string>
+    <string name="inventory_entry_unit">Unidade de entrada: %1$s</string>
+    <string name="inventory_restock">Encomenda de reposição</string>
+    <string name="inventory_target">Stock pretendido</string>
+    <string name="inventory_package">Tamanho da embalagem (opcional)</string>
+    <string name="inventory_restock_validation">O objetivo deve ser igual ou superior ao mínimo. Introduza um tamanho de embalagem positivo ou deixe em branco.</string>
+    <string name="inventory_suggest">Sugerir quantidade</string>
+    <string name="inventory_save_target">Guardar definições</string>
+    <string name="inventory_restock_saved">Definições de reposição guardadas.</string>
+    <string name="inventory_restock_error">Não foi possível guardar as definições de reposição.</string>
+    <string name="inventory_order_quantity">Quantidade a encomendar</string>
+    <string name="inventory_supplier_message">Bom dia, escrevemos da PanApp. Gostaríamos de encomendar %2$s %3$s de %1$s. Pode confirmar a disponibilidade?</string>
+</resources>

@@ -19,6 +19,7 @@ fun attendanceLabel(value: String): String = when (value) {
 }
 
 fun orderStatusLabel(value: String): String = when (value) {
+    "ESPERANDO PAGO" -> localizedText(R.string.pan_status_awaiting_payment)
     "PENDIENTE" -> localizedText(R.string.pan_status_pending)
     "ENVIADO" -> localizedText(R.string.pan_status_shipped)
     "ENTREGADO" -> localizedText(R.string.pan_status_delivered)

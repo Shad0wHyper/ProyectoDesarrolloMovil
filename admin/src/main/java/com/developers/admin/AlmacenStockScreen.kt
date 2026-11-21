@@ -40,8 +40,8 @@ fun AlmacenStockScreen() {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val bgColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     
     // 1. Base de Datos Reactiva (Estado de la Lista)
@@ -297,7 +297,7 @@ fun MaterialStockCard(
     onAjustarClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     // 2. Lógica Dinámica de Estado y Color

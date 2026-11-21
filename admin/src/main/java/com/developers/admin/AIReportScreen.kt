@@ -86,9 +86,9 @@ object RetrofitClient {
 fun AIReportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val topBarColor = MaterialTheme.colorScheme.surface
 
     // Variables de estado para la red
     var isLoading by remember { mutableStateOf(true) }
@@ -253,7 +253,7 @@ fun PredictionCard(
     isDarkMode: Boolean,
     action: @Composable (() -> Unit)? = null
 ) {
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Card(

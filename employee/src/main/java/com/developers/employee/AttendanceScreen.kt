@@ -1,5 +1,7 @@
 package com.developers.employee
 
+import com.developers.core.ui.PanAppHeaderTitle
+
 import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 import com.developers.core.text.attendanceLabel
@@ -38,12 +40,12 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit) {
+fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, profileMenu: @Composable () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.emp_attendance_control), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
-                actions = { EmployeeProfileButton(viewModel, onClick = { onNavigate(AppScreen.PERFIL) }) },
+                title = { PanAppHeaderTitle(stringResource(R.string.emp_attendance_control)) },
+                actions = { profileMenu() },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }

@@ -1,5 +1,6 @@
 package com.developers.client
 
+import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 
@@ -36,7 +37,7 @@ fun AddCardScreen(
     var expiryDate by remember { mutableStateOf("") }
     var cvc by remember { mutableStateOf("") }
     var cardHolderName by remember { mutableStateOf("") }
-    val isDarkMode = appViewModel.isDarkMode
+    val isDarkMode = isPanAppInDarkTheme()
 
     Scaffold(
         topBar = {
@@ -59,7 +60,7 @@ fun AddCardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F8F8))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(24.dp)
         ) {
             // Visual Card Representation

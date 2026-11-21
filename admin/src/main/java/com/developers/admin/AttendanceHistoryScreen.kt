@@ -66,9 +66,9 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     var textBusqueda by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf("TODOS") } // "TODOS", "ENTRADA", "SALIDA"
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
 
     LaunchedEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
@@ -151,7 +151,7 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             },
             containerColor = bgColor
@@ -689,7 +689,7 @@ fun AttendanceFilterPill(
 @Composable
 fun AttendanceItem(record: AttendanceRecord, isDarkMode: Boolean) {
     val isEntrada = record.type == "ENTRADA"
-    val cardColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val cardColor = MaterialTheme.colorScheme.surface
     val accentColor = if (isEntrada) Color(0xFF4CAF50) else Color(0xFFF44336)
     val icon = if (isEntrada) Icons.Outlined.CheckCircle else Icons.Default.AccessTime
 

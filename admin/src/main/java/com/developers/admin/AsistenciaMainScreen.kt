@@ -24,7 +24,7 @@ fun AsistenciaMainScreen() {
     val isDarkMode = isSystemInDarkTheme()
     var tabIndex by remember { mutableIntStateOf(0) } // 0: Historial, 1: Generar QR
 
-    val bgColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF8F9FA)
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Column(

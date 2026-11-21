@@ -1,0 +1,5 @@
+<resources>
+    <string name="pan_menu_profile">Mi Perfil</string>
+    <string name="pan_menu_settings">Ajustes</string>
+    <string name="pan_menu_logout">Cerrar sesión</string>
+</resources>

@@ -10,8 +10,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
@@ -20,31 +18,13 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
-
-private val DarkColorScheme = darkColorScheme(
-    primary = AdminPrimary,
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    onPrimary = Color.White,
-    onBackground = Color.White,
-    onSurface = Color.White
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = AdminPrimary,
-    background = Color(0xFFF8F9FA),
-    surface = Color.White,
-    onPrimary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black
-)
+import com.developers.core.ui.PanAppDesignTheme
 
 @Composable
 fun PanAppAdminTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -55,10 +35,7 @@ fun PanAppAdminTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
+    PanAppDesignTheme(darkTheme, content)
 }
 
 // class MainActivity removed.
@@ -67,8 +44,7 @@ fun PanAppAdminTheme(
 fun AdminMainScreen(viewModel: AdminViewModel, onLogoutClick: () -> Unit) {
     val navController = rememberNavController()
     
-    // El tema y modo oscuro ahora pueden configurarse con PanAppAdminTheme
-    PanAppAdminTheme(darkTheme = viewModel.isDarkMode) {
+    PanAppAdminTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background

@@ -1,0 +1,8 @@
+<resources>
+    <string name="order_stats_title">Estatísticas de encomendas</string>
+    <string name="order_stats_timeline">Encomendas ao longo do tempo</string>
+    <string name="order_stats_status">Encomendas por estado atual</string>
+    <string name="order_stats_empty">Não há encomendas neste intervalo de datas.</string>
+    <string name="order_stats_scope">Usa o intervalo de datas e o período acima.</string>
+    <string name="order_stats_other">Outro estado</string>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="order_stats_title">Estadísticas de pedidos</string>
+    <string name="order_stats_timeline">Pedidos a lo largo del tiempo</string>
+    <string name="order_stats_status">Pedidos por estado actual</string>
+    <string name="order_stats_empty">No hay pedidos en este rango de fechas.</string>
+    <string name="order_stats_scope">Usa el rango de fechas y el periodo de arriba.</string>
+    <string name="order_stats_other">Otro estado</string>
+</resources>

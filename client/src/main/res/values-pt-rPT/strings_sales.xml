@@ -1,0 +1,3 @@
+<resources>
+    <string name="client_sales_tax_retry">Não foi possível carregar o IVA. Tentar novamente</string>
+</resources>

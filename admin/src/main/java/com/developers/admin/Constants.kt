@@ -1,5 +1,5 @@
 package com.developers.admin
 
-import androidx.compose.ui.graphics.Color
+import com.developers.core.ui.PanAppBrand
 
-val AdminPrimary = Color(0xFF6200EE)
+val AdminPrimary = PanAppBrand

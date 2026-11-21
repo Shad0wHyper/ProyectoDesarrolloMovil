@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.PanApp" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.PanApp" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
     <style name="Theme.StartingSplash" parent="Theme.SplashScreen">
         <!-- Fondo de la splash del sistema -->
-        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenBackground">@color/panapp_startup_background</item>
 
         <!-- Hacemos el icono del sistema transparente para que no se encime con el tuyo de Compose -->
         <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>

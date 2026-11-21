@@ -1,5 +1,7 @@
 package com.developers.employee
 
+import com.developers.core.ui.PanAppHeaderTitle
+
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -52,7 +54,7 @@ data class MateriaPrima(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, onProfileClick: () -> Unit) {
+fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> Unit) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
     
@@ -138,13 +140,8 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, onProfileClick: () -> Un
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.emp_warehouse),
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
-                    modifier = Modifier.weight(1f)
-                )
-                EmployeeProfileButton(viewModel, onClick = onProfileClick)
+                PanAppHeaderTitle(stringResource(R.string.emp_warehouse), Modifier.weight(1f))
+                profileMenu()
             }
             Text(
                 text = stringResource(R.string.emp_warehouse_desc),
@@ -218,7 +215,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, onProfileClick: () -> Un
                     Text(stringResource(R.string.emp_understood))
                 }
             },
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
             textContentColor = contrastTextColor(Color.DarkGray, secondary = true, darkBackground = isDarkMode)
         )
@@ -296,7 +293,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, onProfileClick: () -> Un
                     Text(stringResource(R.string.emp_cancel), color = contrastTextColor(Color.Gray, secondary = true))
                 }
             },
-            containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
         )
     }
@@ -337,7 +334,7 @@ fun EmpleadoInsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {

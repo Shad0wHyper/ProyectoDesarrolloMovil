@@ -1,0 +1,5 @@
+<resources>
+    <string name="client_order_filter_all">Todas</string>
+    <string name="client_order_awaiting_payment">A aguardar pagamento</string>
+    <string name="client_order_filter_empty">Não há encomendas para este filtro.</string>
+</resources>

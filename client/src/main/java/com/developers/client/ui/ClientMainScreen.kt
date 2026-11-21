@@ -1,5 +1,7 @@
 package com.developers.client.ui
 
+import com.developers.core.ui.isPanAppInDarkTheme
+
 import com.developers.core.ui.contrastTextColor
 
 import com.developers.core.ui.contrastAccentColor
@@ -29,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.*
 import com.developers.client.ui.theme.PanAppPrimary
+import com.developers.core.ui.tabSlideDirection
 
 @Composable
 fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
@@ -43,7 +46,7 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
     // ✨ 1. SCROLL INFINITO (SUPERPOSICIÓN REAL CON BOX)
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = if (appViewModel.isDarkMode) Color(0xFF121212) else Color.White,
+            containerColor = MaterialTheme.colorScheme.background,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
             NavHost(
@@ -52,11 +55,23 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(if (appViewModel.isDarkMode) Color(0xFF121212) else Color.White),
-                enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
-                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
-                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
-                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+                    .background(MaterialTheme.colorScheme.background),
+                enterTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
+                    slideInHorizontally(initialOffsetX = { it * direction })
+                },
+                exitTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
+                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                },
+                popEnterTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
+                    slideInHorizontally(initialOffsetX = { it * direction })
+                },
+                popExitTransition = {
+                    val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
+                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                }
             ) {
                 composable("home") {
                     HomeScreen(
@@ -171,7 +186,7 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
                         restoreState = true
                     }
                 },
-                isDarkMode = appViewModel.isDarkMode,
+                isDarkMode = isPanAppInDarkTheme(),
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -199,8 +214,8 @@ fun GooglePhotosFloatingBottomBar(
     }
 
     // ✨ 4. PALETA DE COLORES: Blanco en Modo Claro, Gris Oscuro (0xFF2C2C2C) en Modo Oscuro
-    val containerBackgroundColor = if (isDarkMode) Color(0xFF2C2C2C) else Color.White
-    val searchIconColor = if (isDarkMode) Color.White else Color(0xFF2C2C2C)
+    val containerBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val searchIconColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     // ✨ 2. CENTRADO Y 3. ALTURA/ESPACIADO (12.dp)
     Box(
@@ -250,7 +265,7 @@ fun GooglePhotosFloatingBottomBar(
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = appViewModel.getString("nav_search"),
-                        tint = if (currentRoute == "search") PanAppPrimary else searchIconColor,
+                        tint = if (currentRoute == "search") MaterialTheme.colorScheme.primary else searchIconColor,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -268,8 +283,9 @@ fun FloatingNavItem(
     onClick: () -> Unit
 ) {
     // ✨ 4. PALETA DE COLORES Y ESTADOS
-    val activeBackgroundColor = PanAppPrimary.copy(alpha = 0.15f)
-    val contentColor = if (isSelected) contrastAccentColor(PanAppPrimary) else contrastTextColor(Color.Gray, secondary = true)
+    val colors = MaterialTheme.colorScheme
+    val activeBackgroundColor = colors.primaryContainer
+    val contentColor = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
 
     Surface(
         onClick = onClick,

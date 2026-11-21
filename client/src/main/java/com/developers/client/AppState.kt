@@ -27,6 +27,7 @@ import java.io.IOException
 
 // ✨ NUEVO: Modelo para leer los artículos detallados desde Firebase
 data class OrderItemDetail(
+    val productoId: String = "",
     val nombre: String = "",
     val cantidad: Int = 1,
     val precio: Double = 0.0
@@ -57,7 +58,7 @@ data class OrderData(
 )
 
 class AppViewModel : ViewModel() {
-    var isDarkMode by mutableStateOf(false)
+    internal var ratingRevision by mutableStateOf(0)
     var notificationsEnabled by mutableStateOf(true)
 
     // Datos del Usuario
@@ -181,6 +182,7 @@ class AppViewModel : ViewModel() {
                         val itemsRaw = d.get("items") as? List<HashMap<String, Any>> ?: emptyList()
                         val parsedItems = itemsRaw.map { map ->
                             OrderItemDetail(
+                                productoId = map["productoId"] as? String ?: "",
                                 nombre = map["nombre"]?.toString() ?: localizedText(TextR.string.pan_product),
                                 cantidad = (map["cantidad"] as? Number)?.toInt() ?: 1,
                                 precio = (map["precio"] as? Number)?.toDouble() ?: 0.0
@@ -393,7 +395,6 @@ class AppViewModel : ViewModel() {
 
     fun clearCart() { cartItems = emptyList() }
 
-    fun toggleDarkMode(enabled: Boolean) { isDarkMode = enabled }
     fun toggleNotifications(enabled: Boolean) { notificationsEnabled = enabled }
 
     fun registrarTokenFCM() {

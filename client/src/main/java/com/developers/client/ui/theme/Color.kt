@@ -1,8 +1,9 @@
 package com.developers.client.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.developers.core.ui.PanAppBrand
 
-val PanAppPrimary = Color(0xFF6C63FF)
+val PanAppPrimary = PanAppBrand
 val PanAppBackground = Color(0xFFFFFFFF)
 val PanAppTextPrimary = Color(0xFF1A1A1A)
 val PanAppTextSecondary = Color(0xFF757575)
