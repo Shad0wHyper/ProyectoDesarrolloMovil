@@ -1,5 +1,10 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastErrorColor
 
@@ -86,9 +91,7 @@ object RetrofitClient {
 fun AIReportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val isDarkMode = isSystemInDarkTheme()
-    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = MaterialTheme.colorScheme.surface
 
     // Variables de estado para la red
     var isLoading by remember { mutableStateOf(true) }
@@ -122,16 +125,16 @@ fun AIReportScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.admin_ai_prediction_report), fontWeight = FontWeight.Bold, color = textColor) },
+                title = { PanAppScreenTitle(stringResource(R.string.admin_ai_prediction_report), color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = bgColor
+        containerColor = Color.Transparent
     ) { paddingValues ->
 
         if (isLoading) {
@@ -220,6 +223,7 @@ fun AIReportScreen(onBack: () -> Unit) {
 
                 item {
                     Card(
+                        border = panAppGlassBorder(),
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF311B92).copy(alpha = 0.3f) else Color(0xFFEDE7F6)),
                         shape = RoundedCornerShape(12.dp)
@@ -253,13 +257,10 @@ fun PredictionCard(
     isDarkMode: Boolean,
     action: @Composable (() -> Unit)? = null
 ) {
-    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
-    Card(
+    PanAppGlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

@@ -1,5 +1,19 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+import com.developers.core.ui.isPanAppInDarkTheme
+import com.developers.core.ui.panAppFilteredItem
+import com.developers.core.ui.panAppPressMotion
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Tune
+
+import com.developers.core.ui.PanAppGlassFilterChip
+import com.developers.core.ui.PanAppGlassDropdown
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -12,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,7 +40,6 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -62,13 +74,21 @@ data class MateriaPrima(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = null) {
+internal fun AlmacenScreen(
+    warehouse: WarehouseLoad,
+    onRetry: () -> Unit,
+    selectedMaterialId: String? = null,
+    onBack: (() -> Unit)? = null,
+    onManageStock: () -> Unit,
+    profileMenu: @Composable () -> Unit
+) {
     val context = LocalContext.current
-    val isDarkMode = isSystemInDarkTheme()
-    var insumosList by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val isDarkMode = isPanAppInDarkTheme()
+    val insumosList = remember(warehouse) {
+        (warehouse as? WarehouseLoad.Ready)?.items.orEmpty().map { it.material }
+    }
+    val latestWarehouse by rememberUpdatedState(warehouse)
 
-    val bgColor = MaterialTheme.colorScheme.background
     val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
@@ -103,24 +123,6 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
 
     val barcodeScanner = remember { GmsBarcodeScanning.getClient(context) }
 
-    // 2. Lectura en Tiempo Real desde Firebase Firestore (materia_prima)
-    DisposableEffect(Unit) {
-        val db = FirebaseFirestore.getInstance()
-        val listener = db.collection("materia_prima").addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                isLoading = false
-                return@addSnapshotListener
-            }
-            if (snapshot != null) {
-                insumosList = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(MateriaPrima::class.java)?.copy(id = doc.id)
-                }
-                isLoading = false
-            }
-        }
-        onDispose { listener.remove() }
-    }
-
     LaunchedEffect(insumosList, openSelectedEntry) {
         if (openSelectedEntry) {
             val material = insumosList.firstOrNull { it.id == selectedMaterialId }
@@ -140,13 +142,14 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
 
         val db = FirebaseFirestore.getInstance()
 
-        // Buscar si el código ya existe en algún insumo
-        val insumoEncontrado = insumosList.find { insumo ->
+        val materials = (latestWarehouse as? WarehouseLoad.Ready)?.items ?: return
+        val currentMaterials = materials.map { it.material }
+        val insumoEncontrado = currentMaterials.find { insumo ->
             insumo.codigosBarras.contains(codeClean) || insumo.codigoBarras == codeClean
         }
 
         if (targetMaterialId != null && (
-                insumosList.none { it.id == targetMaterialId } ||
+                currentMaterials.none { it.id == targetMaterialId } ||
                     insumoEncontrado?.let { it.id != targetMaterialId } == true
                 )
         ) {
@@ -172,7 +175,7 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
             // SI NO LO ENCUENTRA (Modo Aprendizaje)
             unregisteredCode = codeClean
             modoAprendizajeOpcion = "A"
-            insumoASeleccionar = insumosList.firstOrNull { it.id == targetMaterialId }
+            insumoASeleccionar = currentMaterials.firstOrNull { it.id == targetMaterialId }
             contributionUnit = insumoASeleccionar?.unidadMedida.orEmpty()
             cantidadAportaTextA = ""
             nuevoNombre = ""
@@ -195,119 +198,104 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
             }
     }
 
-    val insumosCriticosCount = remember(insumosList) {
-        insumosList.count { it.cantidadActual <= it.nivelCritico }
-    }
+    val insumosCriticosCount = remember(insumosList) { insumosList.count { it.hasStockAlert() } }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { ejecutarEscaneo() },
-                containerColor = Color(0xFF6200EE),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.padding(bottom = 80.dp) // ✨ Subimos el FAB para que no tape la barra
-            ) {
-                Icon( Icons.Default.QrCodeScanner, contentDescription = stringResource(R.string.admin_scan_barcode), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
-            }
-        },
-        containerColor = bgColor
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .statusBarsPadding() // ✨ Evita empalme con barra de estado
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+    val colors = MaterialTheme.colorScheme
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().background(warehouseBackdrop()).statusBarsPadding(),
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 108.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(key = "header", contentType = "header") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onBack != null) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.admin_back), tint = textColor)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.admin_back))
                     }
                 }
+                Column(Modifier.weight(1f)) {
+                    PanAppScreenTitle(localizedText(TextR.string.pan_warehouse_control), maxLines = 2)
+                    Text(
+                        stringResource(R.string.warehouse_scan_subtitle),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.primary
+                    )
+                }
+                profileMenu()
+            }
+        }
+        item(key = "stats", contentType = "stats") {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StockStatCard(Modifier.weight(1f), localizedText(TextR.string.pan_critical_supplies), insumosCriticosCount, colors.error)
+                StockStatCard(Modifier.weight(1f), localizedText(TextR.string.pan_total_supplies), insumosList.size, colors.primary)
+            }
+        }
+        item(key = "actions", contentType = "actions") {
+            PanAppGlassCard(shape = MaterialTheme.shapes.extraLarge) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val interactions = remember { MutableInteractionSource() }
+                    Button(
+                        onClick = ::ejecutarEscaneo,
+                        enabled = warehouse is WarehouseLoad.Ready,
+                        modifier = Modifier.fillMaxWidth().panAppPressMotion(interactions),
+                        interactionSource = interactions,
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.admin_scan_barcode))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        WarehouseAction(
+                            text = stringResource(R.string.warehouse_manual_entry),
+                            icon = Icons.Default.Keyboard,
+                            onClick = { entryMaterialId = null; showTestInputCodeDialog = true },
+                            modifier = Modifier.weight(1f),
+                            enabled = warehouse is WarehouseLoad.Ready
+                        )
+                        WarehouseAction(
+                            text = stringResource(R.string.warehouse_manage_stock),
+                            icon = Icons.Default.Tune,
+                            onClick = onManageStock,
+                            modifier = Modifier.weight(1f),
+                            highlighted = true
+                        )
+                    }
+                }
+            }
+        }
+        item(key = "materials", contentType = "heading") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
+                    localizedText(TextR.string.pan_raw_materials),
                     modifier = Modifier.weight(1f),
-                    text = localizedText(TextR.string.pan_warehouse_control),
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = textColor
+                    style = MaterialTheme.typography.titleMedium
                 )
-
-                OutlinedButton(
-                    onClick = { entryMaterialId = null; showTestInputCodeDialog = true },
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = if (isDarkMode) Color.LightGray else Color.Gray)
-                ) {
-                    Text( stringResource(R.string.inventory_manual_code), fontSize = 12.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
+                Badge(containerColor = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
+                    Text(insumosList.size.toString())
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Tarjetas de Estadísticas
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StockStatCard(
-                    modifier = Modifier.weight(1f),
-                    label = localizedText(TextR.string.pan_critical_supplies),
-                    value = insumosCriticosCount.toString(),
-                    color = Color(0xFFF44336),
-                    isDarkMode = isDarkMode
-                )
-                StockStatCard(
-                    modifier = Modifier.weight(1f),
-                    label = localizedText(TextR.string.pan_total_supplies),
-                    value = insumosList.size.toString(),
-                    color = Color(0xFF2196F3),
-                    isDarkMode = isDarkMode
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = localizedText(TextR.string.pan_raw_materials),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = textColor
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = contrastAccentColor(AdminPrimary))
-                }
-            } else if (insumosList.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(stringResource(R.string.admin_no_raw_materials_firestore), color = contrastTextColor(Color.Gray, secondary = true))
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(insumosList, key = { it.id }) { insumo ->
-                        InsumoCard(insumo, isDarkMode)
-                    }
-                    item { Spacer(modifier = Modifier.height(100.dp)) } // ✨ Espacio para la barra flotante
+        }
+        if (warehouse == WarehouseLoad.Loading) {
+            item(key = "loading") {
+                Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
             }
+        } else if (warehouse == WarehouseLoad.Error) {
+            item(key = "error") {
+                Column {
+                    Text(stringResource(R.string.warehouse_stock_load_error), color = colors.error)
+                    TextButton(onClick = onRetry) { Text(stringResource(R.string.warehouse_stock_retry)) }
+                }
+            }
+        } else if (insumosList.isEmpty()) {
+            item(key = "empty") {
+                Text(stringResource(R.string.admin_no_raw_materials_firestore), color = colors.onSurfaceVariant)
+            }
+        }
+        items(insumosList, key = { it.id }, contentType = { "material" }) { insumo ->
+            InsumoCard(insumo, modifier = panAppFilteredItem())
         }
     }
 
@@ -344,7 +332,7 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
 
                     // Selector de opción
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
+                        PanAppGlassFilterChip(
                             selected = modoAprendizajeOpcion == "A",
                             onClick = { modoAprendizajeOpcion = "A" },
                             label = { Text( stringResource(R.string.admin_link_to_supply), fontSize = 11.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) },
@@ -355,7 +343,7 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
                                 selectedContainerColor = AdminPrimary
                             )
                         )
-                        FilterChip(
+                        PanAppGlassFilterChip(
                             selected = modoAprendizajeOpcion == "B",
                             onClick = { modoAprendizajeOpcion = "B" },
                             label = { Text( stringResource(R.string.admin_register_new), fontSize = 11.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current)) },
@@ -389,10 +377,10 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
                                     unfocusedBorderColor = Color.Gray
                                 ))
                             )
-                            DropdownMenu(
+                            PanAppGlassDropdown(
                                 expanded = expandedDropdownInsumo,
                                 onDismissRequest = { expandedDropdownInsumo = false },
-                                modifier = Modifier.fillMaxWidth(0.8f).background(cardColor)
+                                modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 insumosList.forEach { item ->
                                     DropdownMenuItem(
@@ -433,7 +421,7 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
                                     TextButton(onClick = { expandedContributionUnit = true }) {
                                         Text(stringResource(R.string.inventory_entry_unit, contributionUnit))
                                     }
-                                    DropdownMenu(expandedContributionUnit, { expandedContributionUnit = false }) {
+                                    PanAppGlassDropdown(expandedContributionUnit, { expandedContributionUnit = false }) {
                                         compatible.forEach { unit ->
                                             DropdownMenuItem(text = { Text(unit) }, onClick = {
                                                 contributionUnit = unit
@@ -502,7 +490,7 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
                                         unfocusedBorderColor = Color.Gray
                                     ))
                                 )
-                                DropdownMenu(expanded = expandedDropdownUnidad, onDismissRequest = { expandedDropdownUnidad = false }, modifier = Modifier.background(cardColor)) {
+                                PanAppGlassDropdown(expanded = expandedDropdownUnidad, onDismissRequest = { expandedDropdownUnidad = false }, modifier = Modifier) {
                                     unidadesDisponibles.forEach { und ->
                                         DropdownMenuItem(text = { Text(und, color = textColor) }, onClick = { nuevaUnidad = und; expandedDropdownUnidad = false })
                                     }
@@ -645,7 +633,7 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
                             procesarCodigoEscaneado(code, target)
                         }
                     },
-                    enabled = testCodeInputText.isNotBlank() && !isLoading,
+                    enabled = testCodeInputText.isNotBlank() && warehouse is WarehouseLoad.Ready,
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
                 ) {
                     Text( stringResource(R.string.admin_process_code), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
@@ -661,78 +649,38 @@ fun AlmacenScreen(selectedMaterialId: String? = null, onBack: (() -> Unit)? = nu
 }
 
 @Composable
-fun StockStatCard(modifier: Modifier, label: String, value: String, color: Color, isDarkMode: Boolean) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(value, style = MaterialTheme.typography.headlineMedium, color = contrastTextColor(color), fontWeight = FontWeight.Bold)
-            Text(label, style = MaterialTheme.typography.labelMedium, color = contrastTextColor(color))
+private fun StockStatCard(modifier: Modifier, label: String, value: Int, color: Color) {
+    PanAppGlassCard(modifier, shape = MaterialTheme.shapes.extraLarge) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(value.toString(), style = MaterialTheme.typography.headlineSmall, color = color)
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-fun InsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
-    val isCritico = insumo.cantidadActual <= insumo.nivelCritico
-    val cardColor = MaterialTheme.colorScheme.surface
-    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-
-    val parsedColor = remember(insumo.colorHex, isCritico) {
-        if (isCritico) {
-            Color(0xFFF44336) // Rojo de alerta
-        } else {
-            try {
-                Color(android.graphics.Color.parseColor(insumo.colorHex))
-            } catch (e: Exception) {
-                Color(0xFF4CAF50) // Verde por defecto
-            }
-        }
-    }
-
-    val progress = remember(insumo.cantidadActual, insumo.nivelCritico) {
-        val maxEstimado = if (insumo.nivelCritico > 0) insumo.nivelCritico * 5.0 else maxOf(insumo.cantidadActual, 1.0)
-        (insumo.cantidadActual / maxEstimado).coerceIn(0.0, 1.0).toFloat()
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
+private fun InsumoCard(insumo: MateriaPrima, modifier: Modifier = Modifier) {
+    val color = warehouseStockColor(insumo)
+    val codes = remember(insumo.codigoBarras, insumo.codigosBarras) { insumo.warehouseBarcodes().size }
+    PanAppGlassCard(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(parsedColor.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Inventory, contentDescription = null, tint = parsedColor)
+            Box(Modifier.size(8.dp).background(color, CircleShape))
+            Column(Modifier.weight(1f)) {
+                Text(insumo.nombre, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.warehouse_material_meta, warehouseQuantity(insumo.nivelCritico), insumo.unidadMedida, codes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(insumo.nombre, fontWeight = FontWeight.Bold, color = textColor)
-                Text(stringResource(R.string.admin_stock_with_unit, insumo.cantidadActual.toString(), insumo.unidadMedida), color = contrastTextColor(Color.Gray, secondary = true), fontSize = 14.sp)
-                
-                // Mostrar resumen de códigos asociados
-                if (insumo.codigosBarras.isNotEmpty()) {
-                    Text(stringResource(R.string.admin_barcodes_list, insumo.codigosBarras.joinToString(", ")), color = contrastTextColor(Color.LightGray, secondary = true), fontSize = 11.sp, maxLines = 1)
-                } else if (insumo.codigoBarras.isNotEmpty()) {
-                    Text(stringResource(R.string.admin_code_short, insumo.codigoBarras), color = contrastTextColor(Color.LightGray, secondary = true), fontSize = 11.sp)
-                }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(warehouseQuantity(insumo.cantidadActual), style = MaterialTheme.typography.titleMedium, color = color)
+                Text(insumo.unidadMedida, style = MaterialTheme.typography.labelSmall)
             }
-            CircularProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.size(32.dp),
-                color = parsedColor,
-                strokeWidth = 4.dp,
-                trackColor = Color.LightGray.copy(alpha = 0.3f)
-            )
         }
     }
 }

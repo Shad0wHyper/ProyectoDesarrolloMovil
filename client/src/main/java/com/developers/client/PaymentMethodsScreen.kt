@@ -1,5 +1,9 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -40,16 +44,17 @@ fun PaymentMethodsScreen(
     val isDarkMode = isPanAppInDarkTheme()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(localizedText(TextR.string.pan_payment_methods), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(localizedText(TextR.string.pan_payment_methods)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedText(TextR.string.pan_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
@@ -69,7 +74,6 @@ fun PaymentMethodsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp)
         ) {
             item {
@@ -85,13 +89,9 @@ fun PaymentMethodsScreen(
             // ✨ MOSTRAR TARJETA REAL GUARDADA (Si existe en el ViewModel)
             if (appViewModel.hasSavedCard) {
                 item {
-                    Card(
+                    PanAppGlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp),

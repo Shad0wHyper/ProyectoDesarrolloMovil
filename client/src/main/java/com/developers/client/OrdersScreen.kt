@@ -1,5 +1,13 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppFilteredItem
+
+import com.developers.core.ui.PanAppGlassFilterChip
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -37,9 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.developers.client.ui.theme.PanAppPrimary
 
-private enum class OrderFilter(val status: String?, val label: Int) {
+private enum class OrderFilter(val status: String?, val label: Int?) {
     All(null, R.string.client_order_filter_all),
-    AwaitingPayment("ESPERANDO PAGO", R.string.client_order_awaiting_payment),
+    AwaitingPayment("ESPERANDO PAGO", null),
     Pending("PENDIENTE", R.string.client_pendiente),
     OnTheWay("ENVIADO", R.string.client_en_camino),
     Delivered("ENTREGADO", R.string.client_entregado)
@@ -49,8 +57,10 @@ private fun orderStatus(status: String): OrderFilter? =
     OrderFilter.entries.firstOrNull { it.status == status.trim().uppercase(Locale.ROOT) }
 
 @Composable
-private fun orderStatusLabel(status: String): String =
-    orderStatus(status)?.let { stringResource(it.label) } ?: status
+private fun orderStatusLabel(status: String): String? {
+    val knownStatus = orderStatus(status) ?: return status
+    return knownStatus.label?.let { stringResource(it) }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,17 +72,19 @@ fun OrdersScreen(
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
     var ratingLine by rememberSaveable(selectedOrderId) { mutableStateOf<Int?>(null) }
     val isDarkMode = isPanAppInDarkTheme()
-    var filter by rememberSaveable { mutableStateOf(OrderFilter.All) }
+    var savedFilter by rememberSaveable { mutableStateOf(OrderFilter.All) }
+    // A previous version could save the awaiting-payment filter.
+    val filter = savedFilter.takeIf { it.label != null } ?: OrderFilter.All
     val orderList = appViewModel.ordersList
     val selectedOrder = orderList.firstOrNull { it.id == selectedOrderId }
     val filteredOrders = orderList.filter { filter == OrderFilter.All || orderStatus(it.status) == filter }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(appViewModel.getString("my_orders"), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(appViewModel.getString("my_orders")) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = appViewModel.getString("close"))
@@ -90,7 +102,6 @@ fun OrdersScreen(
         Box(modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .background(MaterialTheme.colorScheme.background)
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -114,10 +125,11 @@ fun OrdersScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OrderFilter.entries.forEach { option ->
-                            FilterChip(
+                            val label = option.label ?: return@forEach
+                            PanAppGlassFilterChip(
                                 selected = filter == option,
-                                onClick = { filter = option },
-                                label = { Text(stringResource(option.label)) }
+                                onClick = { savedFilter = option },
+                                label = { Text(stringResource(label)) }
                             )
                         }
                     }
@@ -125,8 +137,8 @@ fun OrdersScreen(
                 }
 
                 if (filteredOrders.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    item(key = "emptyOrderFilter") {
+                        Box(modifier = panAppFilteredItem().fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Text(
                                 if (orderList.isEmpty()) localizedText(TextR.string.pan_no_orders)
                                 else stringResource(R.string.client_order_filter_empty),
@@ -138,6 +150,7 @@ fun OrdersScreen(
                     items(filteredOrders, key = { it.id }) { order ->
                         OrderItemCard(
                             order = order,
+                            modifier = panAppFilteredItem(),
                             appViewModel = appViewModel,
                             onViewDetails = { selectedOrderId = order.id },
                             onReorder = onNavigateToCart
@@ -175,8 +188,8 @@ fun OrdersScreen(
                             Text(localizedText(TextR.string.pan_shipping_to, selectedOrder?.direccionEnvio.toString()), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
                             Text(localizedText(TextR.string.pan_order_total, selectedOrder?.total.toString()))
                             Text(localizedText(TextR.string.pan_order_method, paymentMethodLabel(selectedOrder?.metodoPago.orEmpty())), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (statusLabel != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(localizedText(TextR.string.pan_order_status, statusLabel), fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
                                 /* ✨ Temporalmente oculto hasta la Fase de Pagos
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -241,18 +254,15 @@ fun OrdersScreen(
 @Composable
 fun OrderItemCard(
     order: OrderData,
+    modifier: Modifier = Modifier,
     appViewModel: AppViewModel,
     onViewDetails: () -> Unit,
     onReorder: () -> Unit
 ) {
     val isDarkMode = isPanAppInDarkTheme()
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    PanAppGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -273,7 +283,7 @@ fun OrderItemCard(
                 val statusUpper = order.status.uppercase()
                 val statusLabel = orderStatusLabel(order.status)
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (statusLabel != null) {
                     /* ✨ Temporalmente oculto hasta la Fase de Pagos
                     // ✨ Badge de Pago
                     Surface(

@@ -1,5 +1,7 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -35,7 +37,6 @@ fun SuccessScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -57,11 +58,10 @@ fun SuccessScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text(
+        PanAppScreenTitle(
             text = localizedText(TextR.string.pan_payment_success),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+            color = contrastTextColor(Color.Black, darkBackground = isDarkMode),
+            maxLines = 2
         )
 
         Spacer(modifier = Modifier.height(16.dp))

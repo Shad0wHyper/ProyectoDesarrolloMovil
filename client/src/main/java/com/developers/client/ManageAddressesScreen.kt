@@ -1,5 +1,9 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
@@ -43,16 +47,17 @@ fun ManageAddressesScreen(
     var newAddress by remember { mutableStateOf("") }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(localizedText(TextR.string.pan_my_addresses), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(localizedText(TextR.string.pan_my_addresses)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedText(TextR.string.pan_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
@@ -72,7 +77,6 @@ fun ManageAddressesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp)
         ) {
             item {
@@ -166,16 +170,11 @@ fun AddressItem(
     onSelect: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
+    PanAppGlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onSelect() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else null,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

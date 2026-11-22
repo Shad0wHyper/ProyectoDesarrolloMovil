@@ -7,10 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.SideEffect
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -48,11 +45,7 @@ class MainActivity : AppCompatActivity() {
             }
             PanAppTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    Column(Modifier.fillMaxSize().statusBarsPadding()) {
-                        Box(Modifier.weight(1f)) {
-                            AppNavigation()
-                        }
-                    }
+                    AppNavigation()
                 }
             }
         }

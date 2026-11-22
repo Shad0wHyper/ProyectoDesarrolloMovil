@@ -1,5 +1,16 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.developers.core.ui.PanAppMotion
+import com.developers.core.ui.PanAppGlassFilterChip
+
+import com.developers.core.ui.PanAppGlassDropdown
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 
@@ -67,9 +78,7 @@ fun PedidosScreen() {
     var materiasPrimas by remember { mutableStateOf<List<MateriaPrima>>(emptyList()) }
     var proveedores by remember { mutableStateOf<List<Proveedor>>(emptyList()) }
 
-    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = MaterialTheme.colorScheme.surface
 
     // Escucha en tiempo real de materia_prima y proveedores
     LaunchedEffect(Unit) {
@@ -114,7 +123,7 @@ fun PedidosScreen() {
                 Icon( Icons.Default.Add, contentDescription = stringResource(R.string.admin_add_supplier), tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
             }
         },
-        containerColor = bgColor
+        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier
@@ -132,10 +141,8 @@ fun PedidosScreen() {
                     .padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                PanAppScreenTitle(
                     text = localizedText(TextR.string.pan_orders),
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
                     color = textColor
                 )
                 Spacer(modifier = Modifier.weight(1f))
@@ -160,43 +167,30 @@ fun PedidosScreen() {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Pill 1: Sugerencias
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5)) else Color.Transparent,
-                    border = if (tabIndex == 0) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
-                    modifier = Modifier.clickable { tabIndex = 0 }
-                ) {
-                    Text(
-                        text = localizedText(TextR.string.pan_suggestions),
-                        color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-
-                // Pill 2: Proveedores
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5)) else Color.Transparent,
-                    border = if (tabIndex == 1) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
-                    modifier = Modifier.clickable { tabIndex = 1 }
-                ) {
-                    Text(
-                        text = localizedText(TextR.string.pan_suppliers),
-                        color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
+                PanAppGlassFilterChip(
+                    selected = tabIndex == 0,
+                    onClick = { tabIndex = 0 },
+                    label = { Text(localizedText(TextR.string.pan_suggestions)) }
+                )
+                PanAppGlassFilterChip(
+                    selected = tabIndex == 1,
+                    onClick = { tabIndex = 1 },
+                    label = { Text(localizedText(TextR.string.pan_suppliers)) }
+                )
             }
 
-            if (tabIndex == 0) {
-                TabPedidosSugerencias(insumosCriticos, proveedores, isDarkMode)
-            } else {
-                TabProveedoresDirectorio(proveedores, isDarkMode) { prov ->
-                    proveedorAEditar = prov
-                    showProveedorDialog = true
+            Crossfade(
+                targetState = tabIndex,
+                animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing),
+                label = "supplierTab"
+            ) { tab ->
+                if (tab == 0) {
+                    TabPedidosSugerencias(insumosCriticos, proveedores, isDarkMode)
+                } else {
+                    TabProveedoresDirectorio(proveedores, isDarkMode) { prov ->
+                        proveedorAEditar = prov
+                        showProveedorDialog = true
+                    }
                 }
             }
         }
@@ -216,7 +210,6 @@ fun PedidosScreen() {
 @Composable
 fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List<Proveedor>, isDarkMode: Boolean) {
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = MaterialTheme.colorScheme.surface
     
     var restockId by remember { mutableStateOf<String?>(null) }
     val selected = insumosCriticos.firstOrNull { it.id == restockId }
@@ -246,10 +239,8 @@ fun TabPedidosSugerencias(insumosCriticos: List<MateriaPrima>, proveedores: List
                 val proveedor = proveedores.find { it.materiaPrimaId == insumo.id }
                 
                 if (proveedor != null) {
-                    Card(
+                    PanAppGlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = cardColor),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -428,7 +419,6 @@ private fun RestockNumber(value: String, onChange: (String) -> Unit, label: Int,
 @Composable
 fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, onEditClick: (Proveedor) -> Unit) {
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val cardColor = MaterialTheme.colorScheme.surface
 
     if (proveedores.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -447,10 +437,8 @@ fun TabProveedoresDirectorio(proveedores: List<Proveedor>, isDarkMode: Boolean, 
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(proveedores, key = { it.id }) { prov ->
-                Card(
+                PanAppGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = cardColor),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
@@ -554,10 +542,10 @@ fun AddEditProveedorDialog(
                             focusedTextColor = textColor
                         ))
                     )
-                    DropdownMenu(
+                    PanAppGlassDropdown(
                         expanded = expandedDropdown,
                         onDismissRequest = { expandedDropdown = false },
-                        modifier = Modifier.fillMaxWidth(0.8f).background(cardColor)
+                        modifier = Modifier.fillMaxWidth(0.8f)
                     ) {
                         materiasPrimas.forEach { insumo ->
                             DropdownMenuItem(

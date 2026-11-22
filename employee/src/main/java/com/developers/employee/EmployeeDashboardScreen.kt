@@ -1,5 +1,10 @@
 package com.developers.employee
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 import com.developers.core.text.attendanceLabel
@@ -51,7 +56,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.emp_portal_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                title = { PanAppScreenTitle(stringResource(R.string.emp_portal_title), color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
                     Box(
                         modifier = Modifier
@@ -88,6 +93,7 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
             )
 
             Card(
+                border = panAppGlassBorder(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp),
@@ -177,10 +183,8 @@ fun EmployeeDashboardScreen(viewModel: EmployeeViewModel) {
 @Composable
 fun LogCard(log: LogData) {
     val isEntrada = log.type == "ENTRADA"
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    PanAppGlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),

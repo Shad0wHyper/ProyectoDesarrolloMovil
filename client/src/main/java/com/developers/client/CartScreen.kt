@@ -1,5 +1,22 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.developers.core.ui.panAppPanelColor
+import com.developers.core.ui.panAppPressMotion
+
+import com.developers.core.ui.PanAppGlassSheet
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
@@ -11,6 +28,8 @@ import com.developers.core.R as TextR
 import com.developers.core.text.paymentMethodLabel
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.developers.core.ui.PanAppMotion
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -121,16 +140,17 @@ fun CartScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(appViewModel.getString("cart"), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(appViewModel.getString("cart")) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = appViewModel.getString("close"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
@@ -180,7 +200,6 @@ fun CartScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .wrapContentWidth(Alignment.CenterHorizontally)
                 .widthIn(max = 720.dp)
                 .fillMaxWidth()
@@ -247,21 +266,12 @@ fun CartScreen(
                 var showAddressDialog by remember { mutableStateOf(false) }
 
                 // ✨ TARJETA VISUAL DE LA DIRECCIÓN DEL PERFIL (SIN CAMPO DE TEXTO MANUAL)
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = appViewModel.userAddressesList.size > 1) {
-                            showAddressDialog = true
-                        },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    border = BorderStroke(
-                        1.dp,
-                        if (selectedAddress.isNotBlank()) PanAppPrimary.copy(alpha = 0.4f) else contrastErrorColor(Color.Red).copy(alpha = 0.5f)
-                    )
+                PanAppGlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = if (appViewModel.userAddressesList.size > 1) {
+                        { showAddressDialog = true }
+                    } else null,
+                    shape = MaterialTheme.shapes.large
                 ) {
                     Row(
                         modifier = Modifier
@@ -294,20 +304,26 @@ fun CartScreen(
                                 color = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            if (selectedAddress.isNotBlank()) {
-                                Text(
-                                    text = selectedAddress,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-                                )
-                            } else {
-                                Text(
-                                    text = localizedText(TextR.string.pan_no_address),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = contrastErrorColor(Color.Red)
-                                )
+                            Crossfade(
+                                targetState = selectedAddress,
+                                animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
+                                label = "deliveryAddress"
+                            ) { address ->
+                                if (address.isNotBlank()) {
+                                    Text(
+                                        text = address,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                                    )
+                                } else {
+                                    Text(
+                                        text = localizedText(TextR.string.pan_no_address),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = contrastErrorColor(Color.Red)
+                                    )
+                                }
                             }
                         }
 
@@ -323,48 +339,39 @@ fun CartScreen(
                     }
                 }
 
-                // ✨ DIÁLOGO PARA ELEGIR ENTRE LAS DIRECCIONES GUARDADAS EN EL PERFIL
                 if (showAddressDialog && appViewModel.userAddressesList.isNotEmpty()) {
-                    AlertDialog(
-                        onDismissRequest = { showAddressDialog = false },
-                        title = { Text(localizedText(TextR.string.pan_my_addresses), fontWeight = FontWeight.Bold, color = contrastTextColor(Color.Black, darkBackground = isDarkMode)) },
-                        text = {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                appViewModel.userAddressesList.forEach { addr ->
-                                    val isSelected = (addr == selectedAddress)
-                                    ListItem(
-                                        headlineContent = {
-                                            Text(
-                                                addr,
-                                                fontSize = 14.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (isSelected) contrastAccentColor(PanAppPrimary) else contrastTextColor(Color.Black, darkBackground = isDarkMode)
-                                            )
-                                        },
-                                        leadingContent = {
-                                            RadioButton(
-                                                selected = isSelected,
-                                                onClick = null,
-                                                colors = RadioButtonDefaults.colors(selectedColor = PanAppPrimary)
-                                            )
-                                        },
-                                        modifier = Modifier.clickable {
-                                            selectedAddress = addr
-                                            appViewModel.userAddress = addr
+                    PanAppGlassSheet(onDismissRequest = { showAddressDialog = false }) {
+                        Column(
+                            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp)
+                        ) {
+                            Text(
+                                localizedText(TextR.string.pan_my_addresses),
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                            appViewModel.userAddressesList.forEach { address ->
+                                val selected = address == selectedAddress
+                                ListItem(
+                                    headlineContent = { Text(address) },
+                                    leadingContent = { RadioButton(selected = selected, onClick = null) },
+                                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                    modifier = Modifier.clip(MaterialTheme.shapes.medium).selectable(
+                                        selected = selected,
+                                        role = Role.RadioButton,
+                                        onClick = {
+                                            selectedAddress = address
+                                            appViewModel.userAddress = address
                                             showAddressDialog = false
                                         }
                                     )
-                                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                                }
+                                )
                             }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showAddressDialog = false }) {
-                                Text(localizedText(TextR.string.pan_close), color = contrastAccentColor(PanAppPrimary))
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                            TextButton(
+                                onClick = { showAddressDialog = false },
+                                modifier = Modifier.align(Alignment.End)
+                            ) { Text(localizedText(TextR.string.pan_close)) }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -383,25 +390,25 @@ fun CartScreen(
                 Column {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("card"), "Visa / Mastercard", Icons.Outlined.CreditCard,
-                            selectedPaymentMethod == "Tarjeta", isDarkMode, Modifier.weight(1f)
+                            appViewModel.getString("card"), Icons.Outlined.CreditCard,
+                            selectedPaymentMethod == "Tarjeta", Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Tarjeta" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
-                            appViewModel.getString("transfer"), "SPEI / Bank", Icons.Outlined.AccountBalance,
-                            selectedPaymentMethod == "Transferencia", isDarkMode, Modifier.weight(1f)
+                            appViewModel.getString("transfer"), Icons.Outlined.AccountBalance,
+                            selectedPaymentMethod == "Transferencia", Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Transferencia" }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         PaymentMethodItem(
-                            appViewModel.getString("cash"), "OXXO Pay", Icons.Outlined.Payments,
-                            selectedPaymentMethod == "Efectivo", isDarkMode, Modifier.weight(1f)
+                            appViewModel.getString("cash"), Icons.Outlined.Payments,
+                            selectedPaymentMethod == "Efectivo", Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Efectivo" }
                         Spacer(modifier = Modifier.width(12.dp))
                         PaymentMethodItem(
-                            appViewModel.getString("local_pay"), "Google Pay", Icons.Outlined.Storefront,
-                            selectedPaymentMethod == "Pago Local", isDarkMode, Modifier.weight(1f)
+                            appViewModel.getString("local_pay"), Icons.Outlined.Storefront,
+                            selectedPaymentMethod == "Pago Local", Modifier.weight(1f)
                         ) { selectedPaymentMethod = "Pago Local" }
                     }
                 }
@@ -428,10 +435,8 @@ fun CartScreen(
     var paymentErrorMessage by remember { mutableStateOf<String?>(null) }
 
     if (showPaymentSheetManual && quote != null) {
-        ModalBottomSheet(
-            onDismissRequest = { if (!isProcessingPayment) showPaymentSheetManual = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkMode) Color.Gray else Color.LightGray) }
+        PanAppGlassSheet(
+            onDismissRequest = { if (!isProcessingPayment) showPaymentSheetManual = false }
         ) {
             PaymentGatewayContent(
                 method = selectedPaymentMethod,
@@ -553,6 +558,7 @@ fun registrarPedidoEnFirebase(
 @Composable
 fun OrderSummaryWidget(subtotal: Double, delivery: Double, taxes: Double, total: Double, isDarkMode: Boolean, appViewModel: AppViewModel) {
     Card(
+        border = panAppGlassBorder(),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF0F0F0).copy(alpha = 0.5f))
@@ -753,7 +759,7 @@ fun PaymentGatewayContent(
 
 @Composable
 fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, onDecrease: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F8F8).copy(alpha = 0.5f))) {
+    Card(border = panAppGlassBorder(), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F8F8).copy(alpha = 0.5f))) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(item.imageUrl).crossfade(true).build(), contentDescription = item.name, contentScale = ContentScale.Crop, modifier = Modifier.size(70.dp).clip(RoundedCornerShape(12.dp)).background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)))
             Spacer(modifier = Modifier.width(16.dp))
@@ -765,7 +771,12 @@ fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, 
                     Text(String.format("$%.2f", item.price), color = contrastAccentColor(PanAppPrimary), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onDecrease, modifier = Modifier.size(28.dp).background(if (isDarkMode) Color.DarkGray else Color(0xFFEEEEEE), CircleShape)) { Icon(Icons.Default.Remove, contentDescription = localizedText(TextR.string.pan_less), modifier = Modifier.size(16.dp), tint = contrastTextColor(Color.Black, darkBackground = isDarkMode)) }
-                        Crossfade(item.quantity, modifier = Modifier.padding(horizontal = 12.dp), label = "cart quantity") { quantity ->
+                        Crossfade(
+                            item.quantity,
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
+                            label = "cart quantity"
+                        ) { quantity ->
                             Text(
                                 quantity.toString(),
                                 fontWeight = FontWeight.Bold,
@@ -781,11 +792,34 @@ fun CartItemWidget(item: CartItem, isDarkMode: Boolean, onIncrease: () -> Unit, 
 }
 
 @Composable
-fun PaymentMethodItem(title: String, subtitle: String, icon: ImageVector, isSelected: Boolean, isDarkMode: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(modifier = modifier.height(100.dp), shape = RoundedCornerShape(16.dp), color = if (isSelected) Color(0xFF32324D) else MaterialTheme.colorScheme.surface, border = if (isSelected) BorderStroke(2.dp, PanAppPrimary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)), onClick = onClick) {
-        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(icon, contentDescription = null, tint = if (isSelected) Color.White else contrastTextColor(Color.Gray, secondary = true))
-            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall, color = if (isDarkMode || isSelected) Color.White else Color.Black)
+private fun PaymentMethodItem(title: String, icon: ImageVector, isSelected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val interactions = remember { MutableInteractionSource() }
+    val spec = tween<Color>(PanAppMotion.EnterMillis, easing = PanAppMotion.easing)
+    val fill by animateColorAsState(
+        if (isSelected) colors.primaryContainer else panAppPanelColor(),
+        animationSpec = spec,
+        label = "paymentFill"
+    )
+    val outline by animateColorAsState(
+        if (isSelected) colors.primary else colors.outlineVariant,
+        animationSpec = spec,
+        label = "paymentOutline"
+    )
+
+    Surface(
+        selected = isSelected,
+        onClick = onClick,
+        modifier = modifier.height(100.dp).panAppPressMotion(interactions),
+        interactionSource = interactions,
+        shape = MaterialTheme.shapes.large,
+        color = fill,
+        contentColor = colors.onSurface,
+        border = BorderStroke(1.dp, outline)
+    ) {
+        Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(icon, contentDescription = null, tint = if (isSelected) colors.primary else colors.onSurfaceVariant)
+            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -1,5 +1,12 @@
 package com.developers.client
 
+import com.developers.core.ui.panAppFilteredItem
+
+import com.developers.core.ui.PanAppGlassSheet
+
+import com.developers.core.ui.PanAppGlassCard
+
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
@@ -7,6 +14,8 @@ import com.developers.core.ui.contrastAccentColor
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.developers.core.ui.PanAppMotion
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -24,6 +33,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,11 +59,11 @@ fun SearchScreen(
     onNavigateToCart: () -> Unit
 ) {
     val isDarkMode = isPanAppInDarkTheme()
-    var query by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
     val catalog = rememberCatalogProducts()
     val allProducts = catalog.products
     val isLoading = catalog.loading
-    var sort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(CatalogSort.Default) }
+    var sort by rememberSaveable { mutableStateOf(CatalogSort.Default) }
     val ratings = rememberCatalogRatings(allProducts, appViewModel.currentUserId, appViewModel.ratingRevision)
 
     val focusRequester = remember { FocusRequester() }
@@ -71,15 +81,20 @@ fun SearchScreen(
         }
     }
 
-    val searchResults = remember(query, allProducts) {
+    val searchLocale = Locale.getDefault()
+    val searchResults = remember(query, allProducts, searchLocale) {
         if (query.isBlank()) {
             emptyList()
         } else {
+            val normalizedQuery = query.lowercase(searchLocale)
             allProducts.filter {
-                it.nombre.lowercase(Locale.getDefault()).contains(query.lowercase(Locale.getDefault())) ||
-                it.categoria.lowercase(Locale.getDefault()).contains(query.lowercase(Locale.getDefault()))
+                it.nombre.lowercase(searchLocale).contains(normalizedQuery) ||
+                    it.categoria.lowercase(searchLocale).contains(normalizedQuery)
             }
         }
+    }
+    val rankedResults = remember(searchResults, sort, ratings) {
+        rankProducts(searchResults, sort, ratings)
     }
 
     Scaffold(
@@ -87,7 +102,6 @@ fun SearchScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars))
                 
@@ -143,6 +157,7 @@ fun SearchScreen(
                         Crossfade(
                             appViewModel.cartTotalQuantity,
                             modifier = Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp),
+                            animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
                             label = "search cart badge"
                         ) { count ->
                             if (count > 0) Badge { Text(count.toString()) }
@@ -151,7 +166,7 @@ fun SearchScreen(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { padding ->
         Box(
             modifier = Modifier
@@ -184,29 +199,6 @@ fun SearchScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
-            } else if (searchResults.isEmpty()) {
-                // Sin resultados
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        "🍞",
-                        fontSize = 60.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "${appViewModel.getString("search_not_found")} '$query'",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-                    )
-                    Text(
-                        appViewModel.getString("search_try_again"),
-                        color = contrastTextColor(Color.Gray, secondary = true)
-                    )
-                }
             } else {
                 // Resultados
                 LazyVerticalGrid(
@@ -216,12 +208,50 @@ fun SearchScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                    item(
+                        key = "searchSort",
+                        contentType = "sort",
+                        span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }
+                    ) {
                         CatalogSortChips(sort, onSelect = { sort = it })
                     }
-                    items(rankProducts(searchResults, sort, ratings), key = { it.id }) { product ->
+                    if (searchResults.isEmpty()) {
+                        item(
+                            key = "emptySearch",
+                            contentType = "empty",
+                            span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }
+                        ) {
+                        Column(
+                            modifier = panAppFilteredItem().fillMaxWidth().heightIn(min = 240.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "🍞",
+                                fontSize = 60.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "${appViewModel.getString("search_not_found")} '$query'",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = contrastTextColor(Color.Black, darkBackground = isDarkMode)
+                            )
+                            Text(
+                                appViewModel.getString("search_try_again"),
+                                color = contrastTextColor(Color.Gray, secondary = true)
+                            )
+                        }
+                        }
+                    }
+                    items(
+                        items = rankedResults,
+                        key = { it.id },
+                        contentType = { "product" }
+                    ) { product ->
                         SearchProductCard(
                             product = product,
+                            modifier = panAppFilteredItem(),
                             rating = ratings[product.id],
                             isDarkMode = isDarkMode,
                             onClick = {
@@ -237,10 +267,9 @@ fun SearchScreen(
     }
 
     if (showBottomSheet && selectedProduct != null) {
-        ModalBottomSheet(
+        PanAppGlassSheet(
             onDismissRequest = { showBottomSheet = false },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface
+            sheetState = sheetState
         ) {
             ProductDetailBottomSheetContent(
                 product = selectedProduct!!,
@@ -258,26 +287,22 @@ fun SearchScreen(
 @Composable
 fun SearchProductCard(
     product: Product,
+    modifier: Modifier = Modifier,
     rating: CatalogRating? = null,
     isDarkMode: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    val shape = MaterialTheme.shapes.large
+    PanAppGlassCard(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = shape
     ) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(140.dp)
-                    .background(Color(0xFFF3F4F6))
             ) {
                 if (product.imagenUrl.isNotEmpty()) {
                     AsyncImage(
@@ -293,7 +318,7 @@ fun SearchProductCard(
                 CatalogPhotoRating(rating, Modifier.align(Alignment.BottomEnd))
             }
             
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                 Text(
                     text = product.nombre,
                     fontWeight = FontWeight.Bold,

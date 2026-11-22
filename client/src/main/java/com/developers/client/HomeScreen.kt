@@ -1,5 +1,19 @@
 package com.developers.client
 
+import com.developers.core.ui.panAppFilteredItem
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.developers.core.ui.panAppPanelColor
+import com.developers.core.ui.panAppPressMotion
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+
+import com.developers.core.ui.PanAppGlassSheet
+
+import com.developers.core.ui.PanAppGlassCard
+
+
 import com.developers.core.ui.PanAppLogo
 import com.developers.core.ui.PanAppProfileMenu
 
@@ -12,6 +26,8 @@ import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.developers.core.ui.PanAppMotion
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -109,14 +125,13 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         // ✨ 1. CONTENEDOR PRINCIPAL QUE OCUPA TODA LA PANTALLA
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
         ) {
             // ✨ 2. TOP ROW (HEADER) ALINEADO PERFECTAMENTE CON EL STATUS BAR
             Row(
@@ -127,7 +142,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PanAppLogo()
+                PanAppLogo(Modifier.size(40.dp))
 
                 // ACCIONES DERECHA: CARRITO Y PERFIL
                 Row(
@@ -137,7 +152,7 @@ fun HomeScreen(
                     IconButton(onClick = onNavigateToCart) {
                         BadgedBox(
                             badge = {
-                                Crossfade(appViewModel.cartTotalQuantity, label = "cart badge") { count ->
+                                Crossfade(appViewModel.cartTotalQuantity, animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing), label = "cart badge") { count ->
                                     if (count > 0) Badge { Text(count.toString()) }
                                 }
                             }
@@ -196,10 +211,10 @@ fun HomeScreen(
                             name = translatedName,
                             icon = icon,
                             isSelected = pagerState.currentPage == index,
-                            isDarkMode = isDarkMode
+                            modifier = Modifier.weight(1f, fill = false),
                         ) {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
+                                pagerState.animateScrollToPage(index, animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing))
                             }
                         }
                     }
@@ -215,13 +230,13 @@ fun HomeScreen(
             ) { pageIndex ->
                 val currentCat = categories[pageIndex]
 
-                // ✨ OPTIMIZACIÓN ULTRA 120Hz: MEMORIZAR LISTA FILTRADA PARA EVITAR RE-FILTRAR EN CADA FRAME DE SCROLL
-                val filteredProducts = rankProducts(
+                val categoryProducts = remember(allProducts, currentCat) {
                     if (currentCat == "TODO") allProducts
-                    else allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) },
-                    sort,
-                    ratings
-                )
+                    else allProducts.filter { it.categoria.equals(currentCat, ignoreCase = true) }
+                }
+                val filteredProducts = remember(categoryProducts, sort, ratings) {
+                    rankProducts(categoryProducts, sort, ratings)
+                }
 
                 val currentCategoryDisplayName = when (currentCat) {
                     "PANES" -> catBreads
@@ -245,10 +260,6 @@ fun HomeScreen(
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = contrastAccentColor(PanAppPrimary))
                         }
-                    } else if (filteredProducts.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(localizedText(TextR.string.pan_empty_category), color = contrastTextColor(Color.Gray, secondary = true))
-                        }
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(150.dp),
@@ -257,6 +268,20 @@ fun HomeScreen(
                             contentPadding = PaddingValues(bottom = 110.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
+                            if (filteredProducts.isEmpty()) {
+                                item(
+                                    key = "emptyCategory",
+                                    contentType = "empty",
+                                    span = { GridItemSpan(maxLineSpan) }
+                                ) {
+                                    Box(
+                                        panAppFilteredItem().fillMaxWidth().heightIn(min = 180.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(localizedText(TextR.string.pan_empty_category), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
                             items(
                                 items = filteredProducts,
                                 key = { product -> product.id },
@@ -268,7 +293,8 @@ fun HomeScreen(
                                     isDarkMode = isDarkMode,
                                     appViewModel = appViewModel,
                                     onClick = onCardClick,
-                                    rating = ratings[product.id]
+                                    rating = ratings[product.id],
+                                    modifier = panAppFilteredItem()
                                 )
                             }
                         }
@@ -283,11 +309,9 @@ fun HomeScreen(
         val product = selectedProduct!!
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-        ModalBottomSheet(
+        PanAppGlassSheet(
             onDismissRequest = { selectedProduct = null },
             sheetState = sheetState,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
             scrimColor = Color.Black.copy(alpha = 0.6f)
         ) {
             ProductDetailBottomSheetContent(
@@ -304,30 +328,56 @@ fun HomeScreen(
 }
 
 @Composable
-fun CategoryItem(name: String, icon: ImageVector, isSelected: Boolean, isDarkMode: Boolean, onClick: () -> Unit) {
+fun CategoryItem(
+    name: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val colors = MaterialTheme.colorScheme
+    val interactions = remember { MutableInteractionSource() }
+    val spec = tween<Color>(PanAppMotion.EnterMillis, easing = PanAppMotion.easing)
+    val fill by animateColorAsState(
+        if (isSelected) colors.primaryContainer else panAppPanelColor(),
+        animationSpec = spec,
+        label = "categoryFill"
+    )
+    val outline by animateColorAsState(
+        if (isSelected) colors.primary else colors.outlineVariant,
+        animationSpec = spec,
+        label = "categoryOutline"
+    )
+    val shape = MaterialTheme.shapes.medium
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(70.dp).clickable(onClick = onClick)
+        modifier = modifier.width(70.dp)
+            .panAppPressMotion(interactions)
+            .clip(shape)
+            .selectable(
+                selected = isSelected,
+                role = Role.Tab,
+                interactionSource = interactions,
+                indication = null,
+                onClick = onClick
+            )
     ) {
         Surface(
             modifier = Modifier.size(60.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = if (isSelected) PanAppPrimary else if (isDarkMode) Color(0xFF1E1E1E) else Color(0xFFF8F8F8)
+            shape = shape,
+            color = fill,
+            border = BorderStroke(1.dp, outline)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = name,
-                    tint = if (isSelected) Color.White else contrastTextColor(Color.Gray, secondary = true)
-                )
+                Icon(icon, contentDescription = null, tint = colors.onSurface)
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
-            text = name,
+            name,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) PanAppPrimary else contrastTextColor(Color.Gray, secondary = true)
+            color = if (isSelected) colors.primary else colors.onSurfaceVariant
         )
     }
 }
@@ -355,15 +405,12 @@ fun ProductCard(
             .build()
     }
 
-    Card(
+    val shape = MaterialTheme.shapes.large
+    PanAppGlassCard(
+        onClick = onClick,
         modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .fillMaxWidth(),
+        shape = shape
     ) {
         Column {
             Box(modifier = Modifier.height(120.dp).fillMaxWidth()) {
@@ -373,7 +420,6 @@ fun ProductCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(if (isDarkMode) Color(0xFF2C2C2C) else Color(0xFFF5F5F5))
                 )
 
                 if (product.isNuevo) {
@@ -393,7 +439,7 @@ fun ProductCard(
 
                 CatalogPhotoRating(rating, Modifier.align(Alignment.BottomEnd))
             }
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                 Text(
                     text = product.nombre,
                     fontWeight = FontWeight.Bold,
@@ -413,19 +459,7 @@ fun ProductCard(
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    IconButton(
-                        onClick = { appViewModel.addToCart(product) },
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(PanAppPrimary, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = localizedText(TextR.string.pan_add_cart),
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    CartAddIconButton(onClick = { appViewModel.addToCart(product) })
                 }
             }
         }

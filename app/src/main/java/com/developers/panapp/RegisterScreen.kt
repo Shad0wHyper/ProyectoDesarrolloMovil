@@ -1,5 +1,11 @@
 package com.developers.panapp
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.panAppPanelColor
+import androidx.compose.foundation.border
+
 import com.developers.core.ui.contrastFieldColors
 
 import android.widget.Toast
@@ -121,7 +127,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
                     modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(panAppPanelColor())
+                        .border(panAppGlassBorder(), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -142,11 +149,10 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToTerms: () -> Unit)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
+                PanAppScreenTitle(
                     text = stringResource(id = R.string.register_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 2
                 )
 
                 Text(

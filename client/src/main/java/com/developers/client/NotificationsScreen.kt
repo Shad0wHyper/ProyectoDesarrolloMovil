@@ -1,5 +1,7 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
 import com.developers.core.ui.isPanAppInDarkTheme
 
 import com.developers.core.ui.contrastTextColor
@@ -28,16 +30,17 @@ fun NotificationsScreen(
     val isDarkMode = isPanAppInDarkTheme()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(appViewModel.getString("notifications"), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(appViewModel.getString("notifications")) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = appViewModel.getString("close"))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
@@ -48,7 +51,6 @@ fun NotificationsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

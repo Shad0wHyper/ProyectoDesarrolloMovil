@@ -1,5 +1,9 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.contrastTextColor
 
 import com.developers.core.text.localizedText
@@ -61,11 +65,9 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val bgColor = MaterialTheme.colorScheme.background
     val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val secondaryTextColor = contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode)
-    val topBarColor = MaterialTheme.colorScheme.surface
 
     // Estado para el popup de QR ampliado
     var mostrarQrGrande by remember { mutableStateOf(false) }
@@ -110,7 +112,6 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
             qrSalida = qrSalida,
             isSaving = isSaving,
             isDarkMode = isDarkMode,
-            bgColor = bgColor,
             secondaryTextColor = secondaryTextColor,
             onGenerarClick = { generarNuevasClaves() },
             onQrClick = { contenido, color ->
@@ -122,14 +123,14 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.admin_qr_generator_title), fontWeight = FontWeight.Bold, color = textColor) },
+                    title = { PanAppScreenTitle(stringResource(R.string.admin_qr_generator_title), color = textColor) },
                     navigationIcon = {
                         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor) }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             },
-            containerColor = bgColor
+            containerColor = Color.Transparent
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
                 QrGeneratorContent(
@@ -137,7 +138,6 @@ fun QrGeneratorScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
                     qrSalida = qrSalida,
                     isSaving = isSaving,
                     isDarkMode = isDarkMode,
-                    bgColor = bgColor,
                     secondaryTextColor = secondaryTextColor,
                     onGenerarClick = { generarNuevasClaves() },
                     onQrClick = { contenido, color ->
@@ -201,13 +201,12 @@ fun QrGeneratorContent(
     qrSalida: String,
     isSaving: Boolean,
     isDarkMode: Boolean,
-    bgColor: Color,
     secondaryTextColor: Color,
     onGenerarClick: () -> Unit,
     onQrClick: (String, Color) -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().background(bgColor).padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -228,8 +227,7 @@ fun QrGeneratorContent(
 fun QrCardView(modifier: Modifier, title: String, color: Color, qrContent: String, isDarkMode: Boolean, onClick: () -> Unit) {
     val context = LocalContext.current
     val qrBitmap = generarQrConLogo(context, qrContent, color)
-    val cardBg = MaterialTheme.colorScheme.surface
-    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = cardBg), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), shape = RoundedCornerShape(16.dp)) {
+    PanAppGlassCard(modifier = modifier.clickable { onClick() }, shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, fontWeight = FontWeight.Bold, color = color, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(16.dp))

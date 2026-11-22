@@ -1,6 +1,26 @@
 package com.developers.admin
 
-import com.developers.core.ui.PanAppHeaderTitle
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppFilteredItem
+
+import androidx.compose.animation.AnimatedVisibility
+import com.developers.core.ui.PanAppFloatingTab
+import com.developers.core.ui.panAppScreenEnter
+import com.developers.core.ui.panAppScreenExit
+import com.developers.core.ui.panAppRevealIn
+import com.developers.core.ui.panAppRevealOut
+
+import com.developers.core.ui.PanAppGlassSheet
+import com.developers.core.ui.PanAppGlassDropdown
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
+import com.developers.core.ui.PanAppLogo
+import com.developers.core.ui.PanAppRole
+import com.developers.core.ui.panAppRoleBackdrop
+import com.developers.core.ui.panAppNavigationColor
 import com.developers.core.ui.PanAppProfileMenu
 import com.developers.core.ui.PanAppAccountSettings
 
@@ -17,12 +37,6 @@ import com.developers.core.text.stockStatusLabel
 import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import com.developers.admin.R
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,12 +58,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalConfiguration
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -93,7 +110,6 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
     val showBottomBar = bottomNavRoutes.contains(currentRoute)
 
     // ✨ Colores adaptativos para el fondo
-    val bgColor = MaterialTheme.colorScheme.background
 
     // ✨ Variable para guardar el pan que queremos editar
     var productoAEditar by remember { mutableStateOf<Producto?>(null) }
@@ -162,7 +178,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                     )
                 }
             },
-            containerColor = bgColor,
+            containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             NavHost(
@@ -171,22 +187,22 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .background(bgColor),
+                    .background(panAppRoleBackdrop(PanAppRole.Admin)),
                 enterTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
-                    slideInHorizontally(initialOffsetX = { it * direction })
+                    panAppScreenEnter(direction)
                 },
                 exitTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
-                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                    panAppScreenExit(direction)
                 },
                 popEnterTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
-                    slideInHorizontally(initialOffsetX = { it * direction })
+                    panAppScreenEnter(direction)
                 },
                 popExitTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
-                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                    panAppScreenExit(direction)
                 }
             ) {
                 composable(AdminScreen.Dashboard.route) {
@@ -206,6 +222,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                             onAlmacenClick = { navController.navigate(AdminScreen.Almacen.route) },
                             onWarehouseStatusClick = { navController.navigate(AdminScreen.WarehouseStatus.route) { launchSingleTop = true } },
                             onSalesClick = { navController.navigate(AdminScreen.Sales.route) },
+                            onWeeklySalesClick = { navController.navigate(AdminScreen.WeeklySales.route) { launchSingleTop = true } },
                             onAddClick = {
                                 productoAEditar = null
                                 navController.navigate(AdminScreen.AddProduct.route)
@@ -245,9 +262,25 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                     val previous = navController.previousBackStackEntry
                         ?.takeIf { it.destination.route == AdminScreen.WarehouseStatus.route }
                     AlmacenScreen(
+                        warehouse = viewModel.warehouse,
+                        onRetry = viewModel::retryWarehouse,
                         selectedMaterialId = previous?.savedStateHandle?.get<String>("warehouseMaterial"),
-                        onBack = previous?.let { { navController.popBackStack(); Unit } }
+                        onBack = previous?.let { { navController.popBackStack(); Unit } },
+                        onManageStock = { navController.navigate(AdminScreen.WarehouseStock.route) { launchSingleTop = true } },
+                        profileMenu = {
+                            PanAppProfileMenu(
+                                onProfile = { navController.navigate(AdminScreen.Profile.route) { launchSingleTop = true } },
+                                onSettings = { navController.navigate(AdminScreen.Settings.route) { launchSingleTop = true } },
+                                onLogout = onLogoutClick,
+                                avatar = viewModel.userImageUrl.takeIf { it.isNotBlank() }?.let { url ->
+                                    { modifier -> AsyncImage(model = url, contentDescription = stringResource(TextR.string.pan_menu_profile), modifier = modifier, contentScale = ContentScale.Crop) }
+                                }
+                            )
+                        }
                     )
+                }
+                composable(AdminScreen.WarehouseStock.route) {
+                    AlmacenStockScreen(viewModel, onBack = { navController.popBackStack() })
                 }
                 composable(AdminScreen.WarehouseStatus.route) { entry ->
                     WarehouseStatusScreen(
@@ -264,6 +297,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 }
                 composable(AdminScreen.Pedidos.route) { PedidosScreen() }
                 composable(AdminScreen.Sales.route) { SalesAnalysisScreen(onBack = { navController.popBackStack() }) }
+                composable(AdminScreen.WeeklySales.route) { WeeklySalesScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.IAReport.route) { AIReportScreen(onBack = { navController.popBackStack() }) }
                 composable(AdminScreen.AddProduct.route) {
                     AddProductScreen(
@@ -278,6 +312,7 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                 composable(AdminScreen.Asistencia.route) { AsistenciaMainScreen() }
                 composable(AdminScreen.Settings.route) {
                     PanAppAccountSettings(
+                        role = PanAppRole.Admin,
                         onBack = { navController.popBackStack() },
                         onProfile = { navController.navigate(AdminScreen.Profile.route) { launchSingleTop = true } },
                         onLogout = onLogoutClick
@@ -289,9 +324,8 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
 
         // ✨ HOJA DE NOTIFICACIONES
         if (showNotificationsSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showNotificationsSheet = false },
-                containerColor = bgColor
+            PanAppGlassSheet(
+                onDismissRequest = { showNotificationsSheet = false }
             ) {
                 Column(
                     modifier = Modifier
@@ -339,7 +373,12 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
         }
 
         // ✨ BARRA FLOTANTE ESTILO CLIENTE
-        if (showBottomBar) {
+        AnimatedVisibility(
+            visible = showBottomBar,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = panAppRevealIn(),
+            exit = panAppRevealOut()
+        ) {
             AdminFloatingBottomBar(
                 currentRoute = currentRoute,
                 globalCriticosCount = globalCriticosCount,
@@ -358,7 +397,6 @@ fun DashboardAdminScreen(navController: NavHostController, viewModel: AdminViewM
                     }
                 },
                 isDarkMode = isDarkMode,
-                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
@@ -377,6 +415,7 @@ fun DashboardContent(
     onAlmacenClick: () -> Unit,
     onAddClick: () -> Unit,
     onSalesClick: () -> Unit,
+    onWeeklySalesClick: () -> Unit,
     onWarehouseStatusClick: () -> Unit,
     onDecreaseStock: (Producto) -> Unit,
     onEditClick: (Producto) -> Unit,
@@ -402,9 +441,8 @@ fun DashboardContent(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // ✨ Pasamos la acción al TopBar
         item { 
             AdminTopBar(
                 viewModel = viewModel,
@@ -423,6 +461,7 @@ fun DashboardContent(
                 warehouse = viewModel.warehouse,
                 onGestionarPedidosClick = onGestionarPedidosClick,
                 onSalesClick = onSalesClick,
+                onWeeklySalesClick = onWeeklySalesClick,
                 onWarehouseStatusClick = onWarehouseStatusClick
             )
         }
@@ -446,15 +485,16 @@ fun DashboardContent(
         }
 
         if (productosFiltrados.isEmpty()) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            item(key = "emptyProductFilter") {
+                Box(modifier = panAppFilteredItem().fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.admin_no_products), color = contrastTextColor(Color.Gray, secondary = true))
                 }
             }
         } else {
-            items(productosFiltrados) { producto ->
+            items(productosFiltrados, key = { it.id }) { producto ->
                 ProductoCard(
                     producto = producto,
+                    modifier = panAppFilteredItem(),
                     onInventarioClick = onAlmacenClick,
                     onDarDeBajaClick = { onDecreaseStock(producto) },
                     onEditClick = { onEditClick(producto) }
@@ -486,195 +526,188 @@ fun AdminTopBar(
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     hasNotifications: Boolean
-) { // ✨ Recibe el evento del QR, Historial, Notificaciones y Perfil
-    val context = LocalContext.current
-    val isDarkMode = isSystemInDarkTheme()
-    val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = MaterialTheme.colorScheme.surface
-
+) {
+    val colors = MaterialTheme.colorScheme
     val photoUrl = viewModel.userImageUrl
-
-    TopAppBar(
-        modifier = Modifier.statusBarsPadding(), // ✨ Añadido para evitar empalme en el Dashboard
-        title = { PanAppHeaderTitle(localizedText(TextR.string.pan_administration)) },
-        actions = {
-            Box(modifier = Modifier.padding(8.dp).clickable(onClick = onNotificationClick)) {
-                Icon(
-                    imageVector = Icons.Outlined.Notifications,
-                    contentDescription = stringResource(R.string.admin_notifications_desc),
-                    modifier = Modifier.size(28.dp),
-                    tint = textColor
+    Row(
+        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        PanAppLogo(Modifier.size(40.dp))
+        Column(Modifier.weight(1f)) {
+            PanAppScreenTitle(
+                localizedText(TextR.string.pan_administration),
+            )
+            if (viewModel.userName.isNotBlank()) {
+                Text(
+                    viewModel.userName,
+                    color = colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+            }
+        }
+        Surface(
+            onClick = onNotificationClick,
+            shape = CircleShape,
+            color = colors.surface.copy(alpha = 0.72f),
+            modifier = Modifier.size(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Notifications, stringResource(R.string.admin_notifications_desc))
                 if (hasNotifications) {
-                    Surface(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .align(Alignment.TopEnd),
-                        color = Color.Red,
-                        shape = CircleShape,
-                        border = BorderStroke(1.dp, if (isDarkMode) Color(0xFF1E1E1E) else Color.White)
-                    ) {}
+                    Box(
+                        Modifier.align(Alignment.TopEnd).padding(6.dp).size(8.dp)
+                            .background(colors.error, CircleShape)
+                    )
                 }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            PanAppProfileMenu(
-                onProfile = onProfileClick,
-                onSettings = onSettingsClick,
-                onLogout = onLogoutClick,
-                avatar = if (photoUrl.isNotEmpty()) {
-                    { modifier ->
-                        coil.compose.AsyncImage(
-                            model = photoUrl,
-                            contentDescription = stringResource(R.string.admin_profile_photo),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                            modifier = modifier
-                        )
-                    }
-                } else null
-            )
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+        }
+        PanAppProfileMenu(
+            onProfile = onProfileClick,
+            onSettings = onSettingsClick,
+            onLogout = onLogoutClick,
+            avatar = if (photoUrl.isNotEmpty()) {
+                { modifier ->
+                    coil.compose.AsyncImage(
+                        model = photoUrl,
+                        contentDescription = stringResource(R.string.admin_profile_photo),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = modifier
+                    )
+                }
+            } else null
+        )
+    }
+}
+
+
+@Composable
+fun AIPredictionsSection(onClick: () -> Unit) {
+    DashboardShortcut(
+        localizedText(TextR.string.pan_predictions),
+        localizedText(TextR.string.pan_predictions_description),
+        Icons.Default.AutoAwesome, Color(0xFF6539AD), Color.White, onClick
     )
 }
 
 @Composable
-fun AIPredictionsSection(onClick: () -> Unit) {
-    val isDarkMode = isSystemInDarkTheme()
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF4527A0) else Color(0xFF673AB7)),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = localizedText(TextR.string.pan_predictions),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = localizedText(TextR.string.pan_predictions_description),
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color.White
-            )
-        }
-    }
-}
-
-@Composable
 fun ProduccionDiariaCard(onClick: () -> Unit) {
-    val isDarkMode = isSystemInDarkTheme()
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF283593) else Color(0xFF3F51B5)),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Factory,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = localizedText(TextR.string.pan_production_manager),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = localizedText(TextR.string.pan_production_description),
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color.White
-            )
-        }
-    }
+    DashboardShortcut(
+        localizedText(TextR.string.pan_production_manager),
+        localizedText(TextR.string.pan_production_description),
+        Icons.Default.Factory, Color(0xFF414EA4), Color.White, onClick
+    )
 }
 
-
 @Composable
-internal fun ResumenHoySection(warehouse: WarehouseLoad, onGestionarPedidosClick: () -> Unit, onSalesClick: () -> Unit, onWarehouseStatusClick: () -> Unit) {
-    val isDarkMode = isSystemInDarkTheme()
-    Column(modifier = Modifier.fillMaxWidth()) {
+private fun DashboardShortcut(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    background: Color,
+    foreground: Color,
+    onClick: () -> Unit,
+    badge: Int = 0
+) {
+    Card(
+        border = panAppGlassBorder(),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = background, contentColor = foreground),
+        shape = MaterialTheme.shapes.large
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SalesSummaryCard(Modifier.weight(1f), onSalesClick)
-            
-            WarehouseSummaryCard(warehouse, Modifier.weight(1f), onWarehouseStatusClick)
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(
-            onClick = onGestionarPedidosClick,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDarkMode) Color(0xFF1E3A5F) else Color(0xFFE3F2FD),
-                contentColor = if (isDarkMode) Color(0xFFBBDEFB) else Color(0xFF1976D2)
-            ),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            Icon( Icons.AutoMirrored.Filled.Chat, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text( stringResource(R.string.admin_manage_orders), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
-                Text( stringResource(R.string.admin_send_whatsapp), fontSize = 12.sp, color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
+            Box(
+                Modifier.size(40.dp).background(foreground.copy(alpha = 0.16f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp)) }
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = foreground.copy(alpha = 0.84f))
             }
-            Icon( Icons.Default.ChevronRight, contentDescription = null, tint = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
+            if (badge > 0) Badge(containerColor = foreground, contentColor = background) { Text(badge.toString()) }
+            Icon(Icons.Default.ChevronRight, contentDescription = null)
         }
+    }
+}
+
+@Composable
+internal fun ResumenHoySection(
+    warehouse: WarehouseLoad,
+    onGestionarPedidosClick: () -> Unit,
+    onSalesClick: () -> Unit,
+    onWeeklySalesClick: () -> Unit,
+    onWarehouseStatusClick: () -> Unit
+) {
+    val sales = rememberSales(0)
+    val currentMonth = YearMonth.now(salesZone)
+    var monthChoice by rememberSaveable { mutableStateOf<String?>(null) }
+    var showMonths by remember { mutableStateOf(false) }
+    val selectedMonth = monthChoice?.let(YearMonth::parse) ?: currentMonth
+    val ready = sales as? SalesLoad.Ready
+    val months = remember(ready, currentMonth) {
+        (ready?.sales.orEmpty().map { YearMonth.from(it.date) } + currentMonth).distinct().sortedDescending()
+    }
+    val locale = LocalConfiguration.current.locales[0]
+    val monthFormat = remember(locale) { DateTimeFormatter.ofPattern("LLLL yyyy", locale) }
+    val colors = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.align(Alignment.End)) {
+            Surface(
+                onClick = { showMonths = true },
+                color = colors.surface.copy(alpha = 0.76f),
+                shape = CircleShape
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.DateRange, null, Modifier.size(16.dp), tint = colors.primary)
+                    Text(selectedMonth.format(monthFormat), style = MaterialTheme.typography.labelLarge)
+                    Icon(Icons.Default.ArrowDropDown, null, Modifier.size(16.dp))
+                }
+            }
+            PanAppGlassDropdown(expanded = showMonths, onDismissRequest = { showMonths = false }) {
+                months.forEach { month ->
+                    DropdownMenuItem(
+                        text = { Text(month.format(monthFormat)) },
+                        onClick = {
+                            monthChoice = month.takeUnless { it == currentMonth }?.toString()
+                            showMonths = false
+                        },
+                        trailingIcon = if (month == selectedMonth) {
+                            { Icon(Icons.Default.Check, contentDescription = null) }
+                        } else null
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SalesSummaryCard(sales, selectedMonth, Modifier.weight(1f).fillMaxHeight(), onSalesClick)
+            WarehouseSummaryCard(warehouse, Modifier.weight(1f).fillMaxHeight(), onWarehouseStatusClick)
+        }
+        WeeklySalesCard(sales, onWeeklySalesClick)
+        val dark = isSystemInDarkTheme()
+        DashboardShortcut(
+            stringResource(R.string.admin_manage_orders),
+            stringResource(R.string.admin_send_whatsapp),
+            Icons.AutoMirrored.Filled.Chat,
+            if (dark) Color(0xFF21374E) else Color(0xFFDCECF9),
+            if (dark) Color(0xFFC4E5FF) else Color(0xFF174972),
+            onGestionarPedidosClick,
+            badge = ready?.orders?.count { it.status == "PENDIENTE" } ?: 0
+        )
     }
 }
 
@@ -690,13 +723,10 @@ fun ResumenCard(
     isAlert: Boolean = false,
     isDarkMode: Boolean
 ) {
-    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    PanAppGlassCard(
+        modifier = modifier
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Icon(icon, contentDescription = null, tint = iconColor)
@@ -773,18 +803,16 @@ fun GestionProductosSection(
 @Composable
 fun ProductoCard(
     producto: Producto,
+    modifier: Modifier = Modifier,
     onInventarioClick: () -> Unit,
     onDarDeBajaClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
     val isDarkMode = isSystemInDarkTheme()
-    val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    PanAppGlassCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column {
             Row(
@@ -891,6 +919,7 @@ fun AlertaSuministrosCard(insumosCriticosNombres: List<String>, onClick: () -> U
     val verbo = if (insumosCriticosNombres.size == 1) localizedText(TextR.string.pan_is) else localizedText(TextR.string.pan_are)
 
     Card(
+        border = panAppGlassBorder(),
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFFB71C1C).copy(alpha = 0.2f) else Color(0xFFFFEBEE))
     ) {
@@ -945,7 +974,7 @@ fun AdminFloatingBottomBar(
         Triple(AdminScreen.Pedidos.route, stringResource(TextR.string.pan_orders), Icons.Default.ChatBubble),
         Triple(AdminScreen.Asistencia.route, stringResource(TextR.string.pan_attendance), Icons.Default.HowToReg)
     )
-    val containerBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val containerBackgroundColor = panAppNavigationColor()
 
     BoxWithConstraints(
         modifier = modifier
@@ -961,8 +990,9 @@ fun AdminFloatingBottomBar(
 
         Surface(
             shape = CircleShape,
-            color = containerBackgroundColor,
-            shadowElevation = 8.dp
+            color = Color.Transparent,
+            modifier = Modifier.background(containerBackgroundColor, CircleShape),
+            border = panAppGlassBorder()
         ) {
             Row(
                 modifier = Modifier.padding(surfacePadding),
@@ -975,7 +1005,7 @@ fun AdminFloatingBottomBar(
                         globalCriticosCount
                     } else 0
 
-                    AdminFloatingNavItem(
+                    PanAppFloatingTab(
                         title = title,
                         icon = icon,
                         isSelected = isSelected,
@@ -990,71 +1020,6 @@ fun AdminFloatingBottomBar(
     }
 }
 
-@Composable
-private fun AdminFloatingNavItem(
-    title: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    badgeCount: Int,
-    itemWidth: Dp,
-    selectedWidth: Dp,
-    onClick: () -> Unit
-) {
-    val colors = MaterialTheme.colorScheme
-    val activeBackgroundColor = colors.primaryContainer
-    val contentColor = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
-
-    val width by animateDpAsState(
-        targetValue = if (isSelected) selectedWidth else itemWidth,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "adminTabWidth"
-    )
-    Surface(
-        selected = isSelected,
-        onClick = onClick,
-        modifier = Modifier.width(width).heightIn(min = 48.dp),
-        shape = CircleShape,
-        color = if (isSelected) activeBackgroundColor else Color.Transparent,
-        contentColor = contentColor
-    ) {
-        Row(
-            modifier = Modifier
-                .animateContentSize()
-                .padding(horizontal = 10.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            BadgedBox(
-                badge = {
-                    if (badgeCount > 0) {
-                        Badge(containerColor = Color.Red, contentColor = Color.White) {
-                            Text( badgeCount.toString(), color = contrastTextColor(androidx.compose.material3.LocalContentColor.current))
-                        }
-                    }
-                }
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = contentColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            
-            if (isSelected && width >= itemWidth + 24.dp) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun NotificationItem(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColor: Color, text: String, textColor: Color) {

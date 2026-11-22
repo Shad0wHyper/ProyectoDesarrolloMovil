@@ -1,5 +1,7 @@
 package com.developers.client
 
+import com.developers.core.ui.panAppGlassBorder
+
 import com.developers.core.ui.contrastFieldColors
 
 import com.developers.core.text.localizedText
@@ -101,6 +103,7 @@ fun PaymentDialogUI(total: String, merchant: String, onSuccess: (String) -> Unit
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
         Card(
+            border = panAppGlassBorder(),
             modifier = Modifier.fillMaxWidth(0.9f).padding(16.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)

@@ -1,5 +1,11 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppGlassDropdown
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -62,10 +68,8 @@ fun AddProductScreen(
     onSuccessSave: () -> Unit
 ) {
     val isDarkMode = isSystemInDarkTheme()
-    val bgColor = MaterialTheme.colorScheme.background
     val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = MaterialTheme.colorScheme.surface
 
     // Relleno de campos iniciales
     var nombre by remember { mutableStateOf(productoAEditar?.nombre ?: "") }
@@ -127,22 +131,21 @@ fun AddProductScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (productoAEditar != null) stringResource(R.string.admin_edit_product) else stringResource(R.string.admin_add_product), fontWeight = FontWeight.Bold, color = textColor) },
+                title = { PanAppScreenTitle(if (productoAEditar != null) stringResource(R.string.admin_edit_product) else stringResource(R.string.admin_add_product), color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = bgColor
+        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(bgColor)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -217,7 +220,7 @@ fun AddProductScreen(
                         focusedTextColor = textColor
                     ))
                 )
-                DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f).background(cardColor)) {
+                PanAppGlassDropdown(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.fillMaxWidth(0.85f)) {
                     categoriasDisponibles.forEach { cat ->
                         DropdownMenuItem(text = { Text(categoryLabel(cat), fontWeight = FontWeight.Medium, color = textColor) }, onClick = { categoriaSeleccionada = cat; expandedDropdown = false })
                     }
@@ -244,10 +247,9 @@ fun AddProductScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 3. SECCIÓN: CONSTRUCTOR DE RECETAS (REEMPLAZO DEL STOCK MANUAL)
-            Card(
+            PanAppGlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = cardColor)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.admin_recipe_title), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = textColor)
@@ -275,10 +277,10 @@ fun AddProductScreen(
                                 focusedTextColor = textColor
                             ))
                         )
-                        DropdownMenu(
+                        PanAppGlassDropdown(
                             expanded = expandedInsumoDropdown,
                             onDismissRequest = { expandedInsumoDropdown = false },
-                            modifier = Modifier.fillMaxWidth(0.85f).background(cardColor)
+                            modifier = Modifier.fillMaxWidth(0.85f)
                         ) {
                             if (insumosDisponibles.isEmpty()) {
                                 DropdownMenuItem(
@@ -392,7 +394,7 @@ fun AddProductScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // MARCAR COMO NUEVO
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = cardColor)) {
+            PanAppGlassCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
                 Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         Text(stringResource(R.string.admin_mark_as_new), fontWeight = FontWeight.Bold, color = textColor)

@@ -1,5 +1,12 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.developers.core.ui.PanAppMotion
+import com.developers.core.ui.PanAppGlassFilterChip
+
 import com.developers.core.ui.contrastTextColor
 
 import androidx.compose.ui.res.stringResource
@@ -24,13 +31,11 @@ fun AsistenciaMainScreen() {
     val isDarkMode = isSystemInDarkTheme()
     var tabIndex by remember { mutableIntStateOf(0) } // 0: Historial, 1: Generar QR
 
-    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgColor)
             .statusBarsPadding() // ✨ Evita que el título se empalme con la barra de estado
     ) {
         // ✨ Cabecera
@@ -40,10 +45,8 @@ fun AsistenciaMainScreen() {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
+            PanAppScreenTitle(
                 text = stringResource(R.string.admin_nav_attendance),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
                 color = textColor
             )
         }
@@ -55,42 +58,30 @@ fun AsistenciaMainScreen() {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Pill 1: Historial
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5)) else Color.Transparent,
-                border = if (tabIndex == 0) null else BorderStroke(1.dp, Color.LightGray),
-                modifier = Modifier.clickable { tabIndex = 0 }
-            ) {
-                Text(
-                    text = stringResource(R.string.admin_attendance_history),
-                    color = if (tabIndex == 0) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
-            }
-
-            // Pill 2: Generador QR
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary.copy(alpha = 0.2f) else Color(0xFFF3E5F5)) else Color.Transparent,
-                border = if (tabIndex == 1) null else BorderStroke(1.dp, Color.LightGray),
-                modifier = Modifier.clickable { tabIndex = 1 }
-            ) {
-                Text(
-                    text = stringResource(R.string.admin_qr_attendance),
-                    color = if (tabIndex == 1) (if (isDarkMode) AdminPrimary else Color(0xFF6200EE)) else contrastTextColor(Color.Gray, secondary = true),
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
-            }
+            PanAppGlassFilterChip(
+                selected = tabIndex == 0,
+                onClick = { tabIndex = 0 },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.admin_attendance_history)) }
+            )
+            PanAppGlassFilterChip(
+                selected = tabIndex == 1,
+                onClick = { tabIndex = 1 },
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.admin_qr_attendance)) }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // ✨ Contenido
-        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-            if (tabIndex == 0) {
+        Crossfade(
+            targetState = tabIndex,
+            modifier = Modifier.fillMaxSize().weight(1f),
+            animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing),
+            label = "attendanceTab"
+        ) { tab ->
+            if (tab == 0) {
                 AttendanceHistoryScreen(onBack = {}, isInsideTab = true) 
             } else {
                 QrGeneratorScreen(onBack = {}, isInsideTab = true)

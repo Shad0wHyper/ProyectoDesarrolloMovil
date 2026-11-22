@@ -1,5 +1,6 @@
 package com.developers.admin
 
+
 import com.developers.core.ui.PanAppHeaderTitle
 
 import com.developers.core.ui.contrastFieldColors
@@ -116,6 +117,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { PanAppHeaderTitle(stringResource(R.string.admin_my_profile)) },
@@ -125,7 +127,7 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White
+                    containerColor = Color.Transparent
                 )
             )
         }
@@ -134,7 +136,6 @@ fun AdminProfileScreen(viewModel: AdminViewModel, onBack: () -> Unit, onLogoutCl
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally

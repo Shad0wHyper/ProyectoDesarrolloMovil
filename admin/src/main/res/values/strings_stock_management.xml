@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="warehouse_scan_subtitle">Barcode inventory control</string>
+    <string name="warehouse_manage_stock">Manage stock</string>
+    <string name="warehouse_stock_title">Stock management</string>
+    <string name="warehouse_material_meta">Min: %1$s %2$s · Linked codes: %3$d</string>
+    <string name="warehouse_filter_all">All</string>
+    <string name="warehouse_filter_alerts">Alerts</string>
+    <string name="warehouse_filter_available">In stock</string>
+    <string name="warehouse_search_material">Search by name or barcode</string>
+    <string name="warehouse_stock_empty">No materials match your filters.</string>
+    <string name="warehouse_stock_load_error">Could not load inventory.</string>
+    <string name="warehouse_stock_retry">Retry</string>
+    <string name="warehouse_edit_material">Edit material</string>
+    <string name="warehouse_adjust_current">Current stock: %1$s %2$s</string>
+    <string name="warehouse_adjust_remove">Subtract</string>
+    <string name="warehouse_adjust_add">Add</string>
+    <string name="warehouse_stock_unit_option">Unit: %1$s</string>
+    <string name="warehouse_initial_quantity">Initial quantity (%1$s)</string>
+    <string name="warehouse_adjust_quantity">Amount to adjust (%1$s)</string>
+    <string name="warehouse_adjust_insufficient">You cannot subtract more than the available stock.</string>
+    <string name="warehouse_stock_save_error">Could not save changes. Try again.</string>
+    <string name="warehouse_manual_entry">Manual entry</string>
+</resources>

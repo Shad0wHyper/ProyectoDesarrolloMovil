@@ -1,14 +1,21 @@
 package com.developers.client.ui
 
-import com.developers.core.ui.isPanAppInDarkTheme
+import androidx.compose.animation.AnimatedVisibility
+import com.developers.core.ui.PanAppFloatingTab
+import com.developers.core.ui.panAppPressMotion
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.developers.core.ui.panAppScreenEnter
+import com.developers.core.ui.panAppScreenExit
+import com.developers.core.ui.panAppRevealIn
+import com.developers.core.ui.panAppRevealOut
+
+import com.developers.core.ui.panAppNavigationColor
+import com.developers.core.ui.panAppGlassBorder
+
 
 import com.developers.core.ui.contrastTextColor
 
-import com.developers.core.ui.contrastAccentColor
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -21,8 +28,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -30,7 +35,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.*
-import com.developers.client.ui.theme.PanAppPrimary
 import com.developers.core.ui.tabSlideDirection
 
 @Composable
@@ -46,7 +50,7 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
     // ✨ 1. SCROLL INFINITO (SUPERPOSICIÓN REAL CON BOX)
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
             NavHost(
@@ -54,23 +58,22 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
                 startDestination = "home",
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(MaterialTheme.colorScheme.background),
+                    .padding(innerPadding),
                 enterTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
-                    slideInHorizontally(initialOffsetX = { it * direction })
+                    panAppScreenEnter(direction)
                 },
                 exitTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, 1)
-                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                    panAppScreenExit(direction)
                 },
                 popEnterTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
-                    slideInHorizontally(initialOffsetX = { it * direction })
+                    panAppScreenEnter(direction)
                 },
                 popExitTransition = {
                     val direction = tabSlideDirection(bottomNavRoutes, initialState.destination.route, targetState.destination.route, -1)
-                    slideOutHorizontally(targetOffsetX = { -it * direction })
+                    panAppScreenExit(direction)
                 }
             ) {
                 composable("home") {
@@ -173,7 +176,12 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
         }
 
         // BARRA FLOTANTE EN CAPA SUPERIOR
-        if (showBottomBar) {
+        AnimatedVisibility(
+            visible = showBottomBar,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = panAppRevealIn(),
+            exit = panAppRevealOut()
+        ) {
             GooglePhotosFloatingBottomBar(
                 appViewModel = appViewModel,
                 currentRoute = currentRoute,
@@ -186,10 +194,16 @@ fun ClientMainScreen(appViewModel: AppViewModel, onLogoutClick: () -> Unit) {
                         restoreState = true
                     }
                 },
-                isDarkMode = isPanAppInDarkTheme(),
-                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+
+        CartAddedFeedback(
+            additions = appViewModel.cartAdditions,
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 0.dp)
+                .padding(bottom = if (showBottomBar) 88.dp else 16.dp)
+        )
     }
 }
 
@@ -200,7 +214,6 @@ fun GooglePhotosFloatingBottomBar(
     appViewModel: AppViewModel,
     currentRoute: String,
     onNavigate: (String) -> Unit,
-    isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     val navHome = appViewModel.getString("nav_home")
@@ -214,8 +227,10 @@ fun GooglePhotosFloatingBottomBar(
     }
 
     // ✨ 4. PALETA DE COLORES: Blanco en Modo Claro, Gris Oscuro (0xFF2C2C2C) en Modo Oscuro
-    val containerBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
-    val searchIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val containerBackgroundColor = panAppNavigationColor()
+    val colors = MaterialTheme.colorScheme
+    val searchSelected = currentRoute == "search"
+    val searchInteractions = remember { MutableInteractionSource() }
 
     // ✨ 2. CENTRADO Y 3. ALTURA/ESPACIADO (12.dp)
     Box(
@@ -231,8 +246,9 @@ fun GooglePhotosFloatingBottomBar(
             // 1. Píldora Principal de Navegación (Centrada)
             Surface(
                 shape = CircleShape,
-                color = containerBackgroundColor,
-                shadowElevation = 8.dp
+                color = Color.Transparent,
+                modifier = Modifier.background(containerBackgroundColor, CircleShape),
+                border = panAppGlassBorder()
             ) {
                 Row(
                     modifier = Modifier.padding(6.dp),
@@ -242,11 +258,10 @@ fun GooglePhotosFloatingBottomBar(
                     bottomNavItems.forEach { (route, title, icon) ->
                         val isSelected = currentRoute == route
 
-                        FloatingNavItem(
+                        PanAppFloatingTab(
                             title = title,
                             icon = icon,
                             isSelected = isSelected,
-                            isDarkMode = isDarkMode,
                             onClick = { onNavigate(route) }
                         )
                     }
@@ -257,15 +272,17 @@ fun GooglePhotosFloatingBottomBar(
             Surface(
                 onClick = { onNavigate("search") },
                 shape = CircleShape,
-                color = containerBackgroundColor,
-                shadowElevation = 8.dp,
-                modifier = Modifier.size(52.dp)
+                color = if (searchSelected) colors.primary else Color.Transparent,
+                contentColor = if (searchSelected) colors.onPrimary else colors.onSurfaceVariant,
+                interactionSource = searchInteractions,
+                border = panAppGlassBorder(),
+                modifier = Modifier.size(52.dp).panAppPressMotion(searchInteractions)
+                    .background(containerBackgroundColor, CircleShape)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = appViewModel.getString("nav_search"),
-                        tint = if (currentRoute == "search") MaterialTheme.colorScheme.primary else searchIconColor,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -274,47 +291,4 @@ fun GooglePhotosFloatingBottomBar(
     }
 }
 
-@Composable
-fun FloatingNavItem(
-    title: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    isDarkMode: Boolean,
-    onClick: () -> Unit
-) {
-    // ✨ 4. PALETA DE COLORES Y ESTADOS
-    val colors = MaterialTheme.colorScheme
-    val activeBackgroundColor = colors.primaryContainer
-    val contentColor = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
 
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = if (isSelected) activeBackgroundColor else Color.Transparent,
-        contentColor = contentColor
-    ) {
-        Row(
-            modifier = Modifier
-                .animateContentSize()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (isSelected) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = contrastAccentColor(PanAppPrimary),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = contentColor
-            )
-        }
-    }
-}

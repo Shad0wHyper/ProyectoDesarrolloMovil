@@ -1,5 +1,9 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+
 import com.developers.core.ui.isPanAppInDarkTheme
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
@@ -40,16 +44,17 @@ fun AddCardScreen(
     val isDarkMode = isPanAppInDarkTheme()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(localizedText(TextR.string.pan_add_card), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(localizedText(TextR.string.pan_add_card)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = localizedText(TextR.string.pan_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
@@ -60,11 +65,11 @@ fun AddCardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .padding(24.dp)
         ) {
             // Visual Card Representation
             Card(
+                border = panAppGlassBorder(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),

@@ -1,5 +1,9 @@
 package com.developers.panapp
 
+import com.developers.core.ui.PanAppMotion
+import com.developers.core.ui.panAppRevealIn
+import com.developers.core.ui.panAppRevealOut
+
 import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 
@@ -13,12 +17,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.developers.client.AppViewModel
 import com.developers.client.ui.ClientMainScreen
@@ -34,6 +41,9 @@ import com.developers.employee.EmployeeViewModel
 import com.developers.employee.EmployeeMainScreen
 import com.developers.admin.AdminViewModel
 import com.developers.admin.AdminMainScreen
+import com.developers.core.ui.PanAppRole
+import com.developers.core.ui.panAppStatusBarColor
+import com.developers.core.ui.panAppRoleBackdrop
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -43,6 +53,14 @@ import kotlinx.coroutines.delay
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val route = backStackEntry?.destination?.route
+    val role = when (route) {
+        "admin_graph" -> PanAppRole.Admin
+        "client_graph" -> PanAppRole.Client
+        "employee_graph" -> PanAppRole.Employee
+        else -> null
+    }
     val context = LocalContext.current
 
     // Instancia global de Auth
@@ -66,20 +84,27 @@ fun AppNavigation() {
         }
     }
 
+    val backdrop = when {
+        route == "login" -> Modifier.loginAurora()
+        role == PanAppRole.Client -> Modifier.background(panAppRoleBackdrop(PanAppRole.Client))
+        else -> Modifier.background(panAppStatusBarColor(role))
+    }
+
     NavHost(
         navController = navController,
+        modifier = Modifier.fillMaxSize().then(backdrop).statusBarsPadding(),
         startDestination = "splash", // Regla 1: Splash es el Rey
-        enterTransition = { fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.9f) },
-        exitTransition = { fadeOut(animationSpec = tween(500)) },
-        popEnterTransition = { fadeIn(animationSpec = tween(500)) },
-        popExitTransition = { fadeOut(animationSpec = tween(500)) }
+        enterTransition = { panAppRevealIn() },
+        exitTransition = { panAppRevealOut() },
+        popEnterTransition = { panAppRevealIn() },
+        popExitTransition = { panAppRevealOut() }
     ) {
         
         // 1. Splash Screen
         composable(
             route = "splash",
             enterTransition = { fadeIn(animationSpec = tween(0)) },
-            exitTransition = { fadeOut(animationSpec = tween(500)) }
+            exitTransition = { fadeOut(animationSpec = tween(PanAppMotion.ExitMillis, easing = PanAppMotion.easing)) }
         ) {
             SplashScreen(
                 onNextScreen = {
