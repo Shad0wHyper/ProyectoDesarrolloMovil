@@ -1,5 +1,18 @@
 package com.developers.employee
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import com.developers.core.ui.PanAppMotion
+
+import com.developers.core.ui.PanAppGlassFilterChip
+import com.developers.core.ui.PanAppGlassDropdown
+
+import com.developers.core.ui.panAppGlassBorder
+
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.PanAppHeaderTitle
 
 import com.developers.core.ui.contrastAccentColor
@@ -59,14 +72,14 @@ import com.google.firebase.storage.FirebaseStorage
 @Composable
 fun DashboardScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, profileMenu: @Composable () -> Unit) {
     Scaffold(
-        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_nav_home)) }, actions = { profileMenu() }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        containerColor = MaterialTheme.colorScheme.background
+        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_nav_home)) }, actions = { profileMenu() }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)) },
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(16.dp)) {
+            PanAppGlassCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text(stringResource(R.string.emp_hello_user, viewModel.userName), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
-                    Text(stringResource(R.string.emp_active_shift), color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+                    Text(stringResource(R.string.emp_hello_user, viewModel.userName), style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.emp_active_shift), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             Text(stringResource(R.string.emp_quick_access), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp))
@@ -90,11 +103,10 @@ fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> U
         "ENVIADO" to stringResource(R.string.emp_dispatch_filter_on_the_way),
         "ENTREGADO" to stringResource(R.string.emp_dispatch_filter_delivered)
     )
-    val pedidosFiltrados = viewModel.pedidosActivos.filter { it.estado == estadoSeleccionado }
 
     Scaffold(
-        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_dispatch_queue)) }, actions = { profileMenu() }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        containerColor = MaterialTheme.colorScheme.background
+        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_dispatch_queue)) }, actions = { profileMenu() }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)) },
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Row(
@@ -105,7 +117,7 @@ fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> U
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 filtros.forEach { (estado, etiqueta) ->
-                    FilterChip(
+                    PanAppGlassFilterChip(
                         selected = estadoSeleccionado == estado,
                         onClick = { estadoSeleccionado = estado },
                         label = { Text(etiqueta) },
@@ -116,23 +128,31 @@ fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> U
                 }
             }
 
-            if (pedidosFiltrados.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                    Text(
-                        stringResource(R.string.emp_dispatch_empty_filter),
-                        color = contrastTextColor(Color.Gray, secondary = true),
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(pedidosFiltrados, key = { it.id }) { order ->
-                        OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
+            Crossfade(
+                targetState = estadoSeleccionado,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing),
+                label = "dispatchFilter"
+            ) { status ->
+                val pedidosFiltrados = viewModel.pedidosActivos.filter { it.estado == status }
+                if (pedidosFiltrados.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            stringResource(R.string.emp_dispatch_empty_filter),
+                            color = contrastTextColor(Color.Gray, secondary = true),
+                            modifier = Modifier.padding(16.dp)
+                        )
                     }
-                    item { Spacer(modifier = Modifier.height(60.dp)) }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(pedidosFiltrados, key = { it.id }) { order ->
+                            OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
+                        }
+                        item { Spacer(modifier = Modifier.height(60.dp)) }
+                    }
                 }
             }
         }
@@ -157,6 +177,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
     val dateFormateada = if (pedido.fecha > 0) SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(pedido.fecha)) else localizedText(TextR.string.pan_recent)
 
     Card(
+        border = panAppGlassBorder(),
         modifier = Modifier.fillMaxWidth().border(if (isEntregado) 2.dp else 0.dp, if (isEntregado) statusColor else Color.Transparent, RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(containerColor = if (isEntregado) statusColor.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
@@ -188,7 +209,7 @@ fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching:
                         }
                     }
 
-                    DropdownMenu(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    PanAppGlassDropdown(expanded = expandedDropdown, onDismissRequest = { expandedDropdown = false }, modifier = Modifier) {
                         opcionesEstado.forEach { estadoItem ->
                             DropdownMenuItem(
                                 text = { Text(orderStatusLabel(estadoItem), fontWeight = FontWeight.Bold) },
@@ -257,11 +278,11 @@ fun LaunchingWhatsappScreen(order: PedidoFirebase, onBackClick: () -> Unit) {
         } catch (e: Exception) { Toast.makeText(context, context.getString(R.string.emp_error_whatsapp), Toast.LENGTH_SHORT).show() }
     }
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.emp_whatsapp_opening_title), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        containerColor = MaterialTheme.colorScheme.background
+        topBar = { TopAppBar(title = { PanAppScreenTitle(stringResource(R.string.emp_whatsapp_opening_title), color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)) },
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Card(modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F0EA))) {
+            Card(border = panAppGlassBorder(), modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F0EA))) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(WhatsappGreen), contentAlignment = Alignment.Center) { Icon(Icons.Default.Call, null, tint = Color.White, modifier = Modifier.size(50.dp)) } }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -306,11 +327,11 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_my_profile)) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
-        containerColor = MaterialTheme.colorScheme.background
+        topBar = { TopAppBar(title = { PanAppHeaderTitle(stringResource(R.string.emp_my_profile)) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)) },
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
+            PanAppGlassCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
                 Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     
                     // SECCIÓN FOTO DE PERFIL
@@ -422,9 +443,15 @@ fun PerfilScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, 
 
 @Composable
 fun DashboardButton(modifier: Modifier, icon: ImageVector, text: String, onClick: () -> Unit) {
-    Card(modifier = modifier.clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    PanAppGlassCard(onClick = onClick, modifier = modifier, shape = MaterialTheme.shapes.large) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+            val accent = MaterialTheme.colorScheme.primary
+            Box(
+                Modifier.size(40.dp).background(accent.copy(alpha = 0.16f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
+            }
             Text(text, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 8.dp), textAlign = TextAlign.Center)
         }
     }

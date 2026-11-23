@@ -1,5 +1,11 @@
 package com.developers.panapp
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.panAppPanelColor
+import androidx.compose.foundation.border
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,10 +71,8 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
-                Text(
+                PanAppScreenTitle(
                     text = stringResource(id = R.string.terms_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -121,7 +125,8 @@ fun TermsScreen(onNavigateBack: () -> Unit) {
                         modifier = Modifier
                             .size(70.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .background(panAppPanelColor())
+                            .border(panAppGlassBorder(), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(

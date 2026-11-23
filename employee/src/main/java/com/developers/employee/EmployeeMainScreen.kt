@@ -1,7 +1,18 @@
 package com.developers.employee
 
+import androidx.compose.animation.AnimatedVisibility
+import com.developers.core.ui.PanAppFloatingTab
+import com.developers.core.ui.panAppScreenEnter
+import com.developers.core.ui.panAppScreenExit
+import com.developers.core.ui.panAppRevealIn
+import com.developers.core.ui.panAppRevealOut
+
+import com.developers.core.ui.PanAppRole
+import com.developers.core.ui.panAppRoleBackdrop
+import com.developers.core.ui.panAppNavigationColor
+import com.developers.core.ui.panAppGlassBorder
+
 import com.developers.core.ui.contrastTextColor
-import com.developers.core.ui.contrastAccentColor
 import com.developers.core.ui.PanAppBrand
 import com.developers.core.ui.PanAppDesignTheme
 import com.developers.core.ui.PanAppAccountSettings
@@ -16,10 +27,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -34,9 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -73,7 +79,6 @@ enum class AppScreen { INICIO, ASISTENCIA, PEDIDOS, ALMACEN, PERFIL, AJUSTES, LA
 
 @Composable
 fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) {
-    val isDarkTheme = isSystemInDarkTheme()
     var currentScreen by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
     var selectedOrderId by rememberSaveable { mutableStateOf<String?>(null) }
     var accountOrigin by rememberSaveable { mutableStateOf(AppScreen.INICIO) }
@@ -83,7 +88,7 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
         listOf(AppScreen.INICIO, AppScreen.ASISTENCIA, AppScreen.PEDIDOS, AppScreen.ALMACEN)
     }
     val showBottomBar = currentScreen in bottomNavTabs || currentScreen == AppScreen.PERFIL
-    val bgColor = MaterialTheme.colorScheme.background
+    val backdrop = panAppRoleBackdrop(PanAppRole.Employee)
 
     BackHandler(enabled = currentScreen != AppScreen.INICIO) {
         currentScreen = when (currentScreen) {
@@ -96,7 +101,7 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Surface(modifier = Modifier.fillMaxSize(), color = bgColor) {
+        Surface(modifier = Modifier.fillMaxSize().background(backdrop), color = Color.Transparent) {
             AnimatedContent(
                 targetState = currentScreen,
                 transitionSpec = {
@@ -107,8 +112,7 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
                         initialState == AppScreen.PERFIL && targetState == profileOrigin
                     ) -1 else 1
                     val direction = tabSlideDirection(bottomNavTabs, initialState, targetState, fallback)
-                    slideInHorizontally { it * direction } togetherWith
-                        slideOutHorizontally { -it * direction }
+                    panAppScreenEnter(direction) togetherWith panAppScreenExit(direction)
                 },
                 label = "employeeScreen"
             ) { screen ->
@@ -135,6 +139,7 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
                     AppScreen.PEDIDOS -> PedidosScreen(viewModel, profileMenu = profileMenu, onSendWhatsapp = { order -> selectedOrderId = order.id; currentScreen = AppScreen.LAUNCHING_WS })
                     AppScreen.ALMACEN -> EmpleadoAlmacenScreen(viewModel, profileMenu = profileMenu)
                     AppScreen.AJUSTES -> PanAppAccountSettings(
+                        role = PanAppRole.Employee,
                         onBack = { currentScreen = accountOrigin },
                         onProfile = { profileOrigin = AppScreen.AJUSTES; currentScreen = AppScreen.PERFIL },
                         onLogout = onLogoutClick
@@ -149,12 +154,15 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
             }
         }
 
-        if (showBottomBar) {
+        AnimatedVisibility(
+            visible = showBottomBar,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = panAppRevealIn(),
+            exit = panAppRevealOut()
+        ) {
             EmployeeFloatingBottomBar(
                 currentScreen = currentScreen,
                 onNavigate = { currentScreen = it },
-                isDarkMode = isDarkTheme,
-                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
@@ -164,7 +172,6 @@ fun EmployeeMainScreen(viewModel: EmployeeViewModel, onLogoutClick: () -> Unit) 
 fun EmployeeFloatingBottomBar(
     currentScreen: AppScreen,
     onNavigate: (AppScreen) -> Unit,
-    isDarkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     val navHome = stringResource(R.string.emp_nav_home)
@@ -181,23 +188,28 @@ fun EmployeeFloatingBottomBar(
         )
     }
 
-    val containerBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val containerBackgroundColor = panAppNavigationColor()
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
-            .wrapContentWidth()
             .navigationBarsPadding()
-            .padding(bottom = 12.dp, start = 12.dp, end = 12.dp)
+            .padding(bottom = 12.dp, start = 16.dp, end = 16.dp)
     ) {
+        val spacing = 4.dp
+        val padding = 6.dp
+        val available = (this.maxWidth - padding * 2 - spacing * (bottomNavItems.size - 1)).coerceAtLeast(0.dp)
+        val itemWidth = minOf(52.dp, available / bottomNavItems.size)
+        val selectedWidth = minOf(152.dp, available - itemWidth * (bottomNavItems.size - 1))
         Surface(
             shape = CircleShape,
-            color = containerBackgroundColor,
-            shadowElevation = 8.dp
+            color = Color.Transparent,
+            modifier = Modifier.background(containerBackgroundColor, CircleShape),
+            border = panAppGlassBorder()
         ) {
             Row(
-                modifier = Modifier.padding(6.dp),
+                modifier = Modifier.padding(padding),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 bottomNavItems.forEach { (screen, title, icon) ->
                     val isSelected = when(screen) {
@@ -206,11 +218,12 @@ fun EmployeeFloatingBottomBar(
                         else -> currentScreen == screen
                     }
 
-                    EmployeeFloatingNavItem(
+                    PanAppFloatingTab(
                         title = title,
                         icon = icon,
                         isSelected = isSelected,
-                        isDarkMode = isDarkMode,
+                        itemWidth = itemWidth,
+                        selectedWidth = selectedWidth,
                         onClick = { onNavigate(screen) }
                     )
                 }
@@ -219,48 +232,4 @@ fun EmployeeFloatingBottomBar(
     }
 }
 
-@Composable
-fun EmployeeFloatingNavItem(
-    title: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    isDarkMode: Boolean,
-    onClick: () -> Unit
-) {
-    val colors = MaterialTheme.colorScheme
-    val activeBackgroundColor = colors.primaryContainer
-    val contentColor = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
 
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = if (isSelected) activeBackgroundColor else Color.Transparent,
-        contentColor = contentColor
-    ) {
-        Row(
-            modifier = Modifier
-                .animateContentSize()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = contentColor,
-                modifier = Modifier.size(20.dp)
-            )
-            
-            if (isSelected) {
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor,
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}

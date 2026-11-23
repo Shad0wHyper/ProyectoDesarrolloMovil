@@ -1,5 +1,11 @@
 package com.developers.panapp
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.panAppPanelColor
+import androidx.compose.foundation.border
+
 import com.developers.core.ui.contrastFieldColors
 
 import com.developers.core.text.localizedText
@@ -146,7 +152,8 @@ fun LoginScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground
     ) {
         Column(
             modifier = Modifier
@@ -166,7 +173,8 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(panAppPanelColor())
+                    .border(panAppGlassBorder(), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -187,12 +195,11 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
+            PanAppScreenTitle(
                 text = stringResource(id = R.string.login_welcome_back),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
 
             Text(

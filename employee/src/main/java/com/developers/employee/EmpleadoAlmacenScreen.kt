@@ -1,5 +1,8 @@
 package com.developers.employee
 
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.PanAppHeaderTitle
 
 import com.developers.core.ui.contrastFieldColors
@@ -128,7 +131,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, profileMenu: @Composable
                 Icon(Icons.Default.QrCodeScanner, contentDescription = localizedText(TextR.string.pan_scan_product))
             }
         },
-        containerColor = if (isDarkMode) Color(0xFF121212) else Color(0xFFF5F6FA)
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -302,6 +305,7 @@ fun EmpleadoAlmacenScreen(viewModel: EmployeeViewModel, profileMenu: @Composable
 @Composable
 fun EmpleadoStockStatCard(modifier: Modifier, label: String, value: String, color: Color) {
     Card(
+        border = panAppGlassBorder(),
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
     ) {
@@ -332,10 +336,8 @@ fun EmpleadoInsumoCard(insumo: MateriaPrima, isDarkMode: Boolean) {
         (insumo.cantidadActual / maxEstimado).coerceIn(0.0, 1.0).toFloat()
     }
 
-    Card(
+    PanAppGlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(

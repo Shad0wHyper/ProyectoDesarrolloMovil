@@ -1,5 +1,13 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppFilteredItem
+
+import com.developers.core.ui.PanAppGlassFilterChip
+
+import com.developers.core.ui.PanAppGlassCard
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -66,7 +74,6 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     var textBusqueda by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf("TODOS") } // "TODOS", "ENTRADA", "SALIDA"
 
-    val bgColor = MaterialTheme.colorScheme.background
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = MaterialTheme.colorScheme.surface
 
@@ -145,16 +152,16 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.admin_attendance_history), fontWeight = FontWeight.Bold, color = textColor) },
+                    title = { PanAppScreenTitle(stringResource(R.string.admin_attendance_history), color = textColor) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             },
-            containerColor = bgColor
+            containerColor = Color.Transparent
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
                 AttendanceContent(
@@ -615,20 +622,17 @@ fun AttendanceContent(
             AttendanceFilterPill(
                 text = localizedText(TextR.string.pan_all),
                 isSelected = filtroSeleccionado == "TODOS",
-                onClick = { onFiltroChange("TODOS") },
-                isDarkMode = isDarkMode
+                onClick = { onFiltroChange("TODOS") }
             )
             AttendanceFilterPill(
                 text = localizedText(TextR.string.pan_entries),
                 isSelected = filtroSeleccionado == "ENTRADA",
-                onClick = { onFiltroChange("ENTRADA") },
-                isDarkMode = isDarkMode
+                onClick = { onFiltroChange("ENTRADA") }
             )
             AttendanceFilterPill(
                 text = localizedText(TextR.string.pan_exits),
                 isSelected = filtroSeleccionado == "SALIDA",
-                onClick = { onFiltroChange("SALIDA") },
-                isDarkMode = isDarkMode
+                onClick = { onFiltroChange("SALIDA") }
             )
         }
 
@@ -642,14 +646,14 @@ fun AttendanceContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (registrosFiltrados.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    item(key = "emptyAttendanceFilter") {
+                        Box(modifier = panAppFilteredItem().fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Text(stringResource(R.string.admin_no_records), color = contrastTextColor(Color.Gray, secondary = true))
                         }
                     }
                 } else {
                     items(registrosFiltrados, key = { it.id }) { record ->
-                        AttendanceItem(record, isDarkMode)
+                        Box(panAppFilteredItem()) { AttendanceItem(record, isDarkMode) }
                     }
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) } // Margen para la navbar flotante
@@ -659,45 +663,27 @@ fun AttendanceContent(
 }
 
 @Composable
-fun AttendanceFilterPill(
+private fun AttendanceFilterPill(
     text: String,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    isDarkMode: Boolean
+    onClick: () -> Unit
 ) {
-    val selectedColor = AdminPrimary
-    val unselectedColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFEEEEEE)
-    val contentColor = if (isSelected) Color.White else (contrastTextColor(Color.Gray, secondary = true, darkBackground = isDarkMode))
-
-    Surface(
+    PanAppGlassFilterChip(
+        selected = isSelected,
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) selectedColor else unselectedColor,
-        modifier = Modifier.height(36.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(
-                text = text,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = contentColor
-            )
-        }
-    }
+        label = { Text(text) }
+    )
 }
 
 @Composable
 fun AttendanceItem(record: AttendanceRecord, isDarkMode: Boolean) {
     val isEntrada = record.type == "ENTRADA"
-    val cardColor = MaterialTheme.colorScheme.surface
     val accentColor = if (isEntrada) Color(0xFF4CAF50) else Color(0xFFF44336)
     val icon = if (isEntrada) Icons.Outlined.CheckCircle else Icons.Default.AccessTime
 
-    Card(
+    PanAppGlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),

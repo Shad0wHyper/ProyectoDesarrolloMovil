@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="warehouse_scan_subtitle">Controlo de inventário por código de barras</string>
+    <string name="warehouse_manage_stock">Gerir stock</string>
+    <string name="warehouse_stock_title">Gestão de stock</string>
+    <string name="warehouse_material_meta">Mín.: %1$s %2$s · Códigos associados: %3$d</string>
+    <string name="warehouse_filter_all">Todos</string>
+    <string name="warehouse_filter_alerts">Alertas</string>
+    <string name="warehouse_filter_available">Em stock</string>
+    <string name="warehouse_search_material">Pesquisar por nome ou código</string>
+    <string name="warehouse_stock_empty">Nenhum material corresponde aos filtros.</string>
+    <string name="warehouse_stock_load_error">Não foi possível carregar o inventário.</string>
+    <string name="warehouse_stock_retry">Tentar novamente</string>
+    <string name="warehouse_edit_material">Editar material</string>
+    <string name="warehouse_adjust_current">Stock atual: %1$s %2$s</string>
+    <string name="warehouse_adjust_remove">Subtrair</string>
+    <string name="warehouse_adjust_add">Somar</string>
+    <string name="warehouse_stock_unit_option">Unidade: %1$s</string>
+    <string name="warehouse_initial_quantity">Quantidade inicial (%1$s)</string>
+    <string name="warehouse_adjust_quantity">Quantidade a ajustar (%1$s)</string>
+    <string name="warehouse_adjust_insufficient">Não pode subtrair mais do que o stock disponível.</string>
+    <string name="warehouse_stock_save_error">Não foi possível guardar as alterações. Tente novamente.</string>
+    <string name="warehouse_manual_entry">Entrada manual</string>
+</resources>

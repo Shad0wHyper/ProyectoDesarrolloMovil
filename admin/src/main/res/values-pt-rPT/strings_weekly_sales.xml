@@ -1,0 +1,7 @@
+<resources>
+    <string name="weekly_sales_title">Vendas da semana</string>
+    <plurals name="weekly_sales_paid_orders">
+        <item quantity="one">%d encomenda paga</item>
+        <item quantity="other">%d encomendas pagas</item>
+    </plurals>
+</resources>

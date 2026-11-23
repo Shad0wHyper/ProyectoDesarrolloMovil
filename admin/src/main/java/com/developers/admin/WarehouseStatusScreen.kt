@@ -1,9 +1,22 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppFilteredItem
+
+import com.developers.core.ui.PanAppMotion
+
+import com.developers.core.ui.PanAppGlassFilterChip
+
+import com.developers.core.ui.PanAppGlassCard
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
@@ -55,28 +68,29 @@ private fun businessDate(): LocalDate = produceState(LocalDate.now(salesZone)) {
 @Composable
 internal fun WarehouseSummaryCard(state: WarehouseLoad, modifier: Modifier, onClick: () -> Unit) {
     val today = businessDate()
-    val count = (state as? WarehouseLoad.Ready)?.items?.count { it.alerts(today).isNotEmpty() }
-    val hasAlerts = (count ?: 0) > 0
-    val (alertBackground, alertContent) = warehouseAlertColors(WarehouseAlert.Low)
+    val items = (state as? WarehouseLoad.Ready)?.items.orEmpty()
+    val count = items.count { it.alerts(today).isNotEmpty() }
     val colors = MaterialTheme.colorScheme
-    Card(
-        onClick = onClick, modifier = modifier, shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (hasAlerts) alertBackground else colors.primaryContainer,
-            contentColor = if (hasAlerts) alertContent else colors.onPrimaryContainer
-        )
+    val accent = if (count > 0) colors.error else colors.primary
+    PanAppGlassCard(
+        onClick = onClick,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(if (hasAlerts) Icons.Default.Warning else Icons.Default.Inventory2, contentDescription = null)
-            Text(stringResource(R.string.warehouse_title), style = MaterialTheme.typography.titleMedium)
+            Box(Modifier.size(32.dp).background(accent.copy(alpha = 0.16f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(if (count > 0) Icons.Default.Warning else Icons.Default.Inventory2, null, Modifier.size(18.dp), tint = accent)
+            }
+            Text(stringResource(R.string.warehouse_title), color = colors.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             when (state) {
                 WarehouseLoad.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                WarehouseLoad.Error -> Text(stringResource(R.string.warehouse_error))
-                is WarehouseLoad.Ready -> {
-                    val count = state.items.count { it.alerts(today).isNotEmpty() }
-                    Text(if (count == 0) stringResource(R.string.warehouse_no_alerts)
-                    else pluralStringResource(R.plurals.warehouse_attention_count, count, count))
-                }
+                WarehouseLoad.Error -> Text(stringResource(R.string.warehouse_error), color = colors.error)
+                is WarehouseLoad.Ready -> Text(
+                    if (count == 0) stringResource(R.string.warehouse_no_alerts)
+                    else pluralStringResource(R.plurals.warehouse_attention_count, count, count),
+                    color = if (count > 0) accent else colors.onSurface,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }
@@ -117,9 +131,9 @@ internal fun WarehouseStatusScreen(
         }.thenBy { it.material.nombre.lowercase() })
     }
 
-    Scaffold(topBar = {
+    Scaffold(containerColor = Color.Transparent, topBar = {
         TopAppBar(
-            title = { Text(stringResource(R.string.warehouse_title), fontWeight = FontWeight.Bold) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),            title = { PanAppScreenTitle(stringResource(R.string.warehouse_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.admin_back))
@@ -158,7 +172,7 @@ internal fun WarehouseStatusScreen(
                                 }
                                 Crossfade(
                                     targetState = if (state is WarehouseLoad.Ready) counts.getValue(alert).toString() else "—",
-                                    animationSpec = tween(220),
+                                    animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
                                     label = "warehouse count"
                                 ) { value ->
                                     Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -178,9 +192,9 @@ internal fun WarehouseStatusScreen(
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !all, onClick = { all = false },
+                    PanAppGlassFilterChip(selected = !all, onClick = { all = false },
                         label = { Text(stringResource(R.string.warehouse_attention)) })
-                    FilterChip(selected = all, onClick = { all = true },
+                    PanAppGlassFilterChip(selected = all, onClick = { all = true },
                         label = { Text(stringResource(R.string.warehouse_all)) })
                 }
                 OutlinedTextField(
@@ -201,18 +215,18 @@ internal fun WarehouseStatusScreen(
                     TextButton(onClick = onRetry) { Text(stringResource(R.string.warehouse_retry)) }
                 }
                 is WarehouseLoad.Ready -> {
-                    if (shown.isEmpty()) item {
+                    if (shown.isEmpty()) item(key = "emptyWarehouseFilter") {
                         val message = when {
                             inventory.isEmpty() -> R.string.warehouse_empty
                             search.isNotBlank() || filter != null -> R.string.warehouse_no_matches
                             else -> R.string.warehouse_no_alerts
                         }
-                        Text(stringResource(message))
+                        Text(stringResource(message), modifier = panAppFilteredItem())
                     }
                     items(shown, key = { it.material.id }) { entry ->
-                        Card(
+                        PanAppGlassCard(
                             onClick = { selectedId = entry.material.id },
-                            modifier = Modifier.fillMaxWidth().animateItem(),
+                            modifier = panAppFilteredItem().fillMaxWidth(),
                             shape = RoundedCornerShape(18.dp)
                         ) {
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

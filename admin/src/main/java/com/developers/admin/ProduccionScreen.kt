@@ -1,5 +1,11 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppGlassDropdown
+
+import com.developers.core.ui.panAppGlassBorder
+
 import com.developers.core.ui.contrastFieldColors
 import com.developers.core.ui.contrastTextColor
 import com.developers.core.ui.contrastAccentColor
@@ -47,10 +53,8 @@ fun ProduccionScreen(onBack: () -> Unit) {
     val scrollState = rememberScrollState()
     val isDarkMode = isSystemInDarkTheme()
 
-    val bgColor = MaterialTheme.colorScheme.background
     val cardColor = MaterialTheme.colorScheme.surface
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
-    val topBarColor = MaterialTheme.colorScheme.surface
 
     var productosList by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
@@ -205,16 +209,16 @@ fun ProduccionScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.admin_prod_registry), fontWeight = FontWeight.Bold, color = textColor) },
+                title = { PanAppScreenTitle(stringResource(R.string.admin_prod_registry), color = textColor) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.admin_back), tint = textColor)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = bgColor
+        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier
@@ -226,6 +230,7 @@ fun ProduccionScreen(onBack: () -> Unit) {
         ) {
             // Encabezado Ilustrativo
             Card(
+                border = panAppGlassBorder(),
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = if (isDarkMode) Color(0xFF1A237E).copy(alpha = 0.3f) else Color(0xFFE8EAF6)),
                 shape = RoundedCornerShape(16.dp)
@@ -275,12 +280,11 @@ fun ProduccionScreen(onBack: () -> Unit) {
                             focusedTextColor = textColor
                         ))
                     )
-                    DropdownMenu(
+                    PanAppGlassDropdown(
                         expanded = expandedDropdown,
                         onDismissRequest = { expandedDropdown = false },
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
-                            .background(cardColor)
                     ) {
                         if (productosList.isEmpty()) {
                             DropdownMenuItem(

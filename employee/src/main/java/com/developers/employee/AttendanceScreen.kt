@@ -1,5 +1,10 @@
 package com.developers.employee
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.PanAppHeaderTitle
 
 import com.developers.core.text.localizedText
@@ -42,11 +47,12 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 @Composable
 fun AsistenciaScreen(viewModel: EmployeeViewModel, onNavigate: (AppScreen) -> Unit, profileMenu: @Composable () -> Unit) {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { PanAppHeaderTitle(stringResource(R.string.emp_attendance_control)) },
                 actions = { profileMenu() },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { paddingValues ->
@@ -89,13 +95,13 @@ fun AttendanceScannerControl(viewModel: EmployeeViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(localizedText(TextR.string.pan_branch_scanner), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), onClick = { procesarEscaneo("ENTRADA") }) {
+            PanAppGlassCard(modifier = Modifier.weight(1f), onClick = { procesarEscaneo("ENTRADA") }) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.ArrowOutward, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(localizedText(TextR.string.pan_clock_in), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
             }
-            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = CardPink), onClick = { procesarEscaneo("SALIDA") }) {
+            Card(border = panAppGlassBorder(), modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = CardPink), onClick = { procesarEscaneo("SALIDA") }) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.ArrowDownward, null, tint = Color.White)
                     Text(localizedText(TextR.string.pan_clock_out), fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
@@ -110,7 +116,7 @@ fun AttendanceScannerControl(viewModel: EmployeeViewModel) {
 fun DigitalIdCard(userName: String) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.emp_digital_id), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
+        PanAppGlassCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
             Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(R.string.emp_senior_baker), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                 val dashPathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f)
@@ -148,7 +154,7 @@ fun RenderLogItem(log: LogData) {
     val iconColor = if (isEntrada) PrimaryBlue else CardPink
     val icon = if (isEntrada) Icons.Outlined.CheckCircle else Icons.Default.AccessTime
 
-    Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    PanAppGlassCard(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(iconBg), contentAlignment = Alignment.Center) {
                 Icon(imageVector = icon, null, tint = iconColor, modifier = Modifier.size(20.dp))
@@ -169,11 +175,12 @@ fun RenderLogItem(log: LogData) {
 @Composable
 fun FullHistoryScreen(viewModel: EmployeeViewModel, onBackClick: () -> Unit) {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.emp_full_history), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                title = { PanAppScreenTitle(stringResource(R.string.emp_full_history), color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { paddingValues ->

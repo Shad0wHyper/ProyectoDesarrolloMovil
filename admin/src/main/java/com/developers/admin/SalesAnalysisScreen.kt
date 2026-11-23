@@ -1,9 +1,18 @@
 package com.developers.admin
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppMotion
+
+import com.developers.core.ui.PanAppGlassFilterChip
+
+import com.developers.core.ui.PanAppGlassCard
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
@@ -43,24 +52,41 @@ import java.time.format.FormatStyle
 
 
 @Composable
-internal fun SalesSummaryCard(modifier: Modifier, onClick: () -> Unit) {
-    val state = rememberSales(0)
-    val month = java.time.YearMonth.now(salesZone)
-    Card(
+internal fun SalesSummaryCard(state: SalesLoad, month: java.time.YearMonth, modifier: Modifier, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val accent = colors.tertiary
+    val monthSales = remember(state, month) {
+        (state as? SalesLoad.Ready)?.sales.orEmpty().filter { java.time.YearMonth.from(it.date) == month }
+    }
+    PanAppGlassCard(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        shape = MaterialTheme.shapes.large
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null)
-            Text(stringResource(R.string.admin_total_sales), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.sales_this_month), style = MaterialTheme.typography.labelMedium)
+            Box(Modifier.size(32.dp).background(accent.copy(alpha = 0.16f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.AutoMirrored.Filled.TrendingUp, null, Modifier.size(18.dp), tint = accent)
+            }
+            Text(stringResource(R.string.admin_total_sales), color = colors.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             when (state) {
                 SalesLoad.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                SalesLoad.Error -> Text(stringResource(R.string.sales_error))
-                is SalesLoad.Ready -> Text(state.sales.filter { java.time.YearMonth.from(it.date) == month }.sumOf { it.total }.mxn(),
-                    style = MaterialTheme.typography.titleLarge)
+                SalesLoad.Error -> Text(stringResource(R.string.sales_error), color = colors.error)
+                is SalesLoad.Ready -> {
+                    Crossfade(
+                        targetState = monthSales.sumOf { it.total } to monthSales.size,
+                        animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
+                        label = "monthlySales"
+                    ) { (total, count) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(total.mxn(), style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                androidx.compose.ui.res.pluralStringResource(R.plurals.weekly_sales_paid_orders, count, count),
+                                color = colors.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -92,16 +118,16 @@ internal fun SalesAnalysisScreen(onBack: () -> Unit) {
     val barProgress = remember { Animatable(0f) }
     LaunchedEffect(report.products) {
         barProgress.snapTo(0f)
-        barProgress.animateTo(1f, tween(480))
+        barProgress.animateTo(1f, tween(680, easing = PanAppMotion.easing))
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.sales_title), fontWeight = FontWeight.Bold) },
+                title = { PanAppScreenTitle(stringResource(R.string.sales_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Transparent
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -145,7 +171,7 @@ internal fun SalesAnalysisScreen(onBack: () -> Unit) {
                                 SalesPeriod.Week -> R.string.sales_week
                                 SalesPeriod.Month -> R.string.sales_month
                             }
-                            FilterChip(selected = period == option, onClick = { period = option },
+                            PanAppGlassFilterChip(selected = period == option, onClick = { period = option },
                                 label = { Text(stringResource(label)) })
                         }
                     }
@@ -158,15 +184,30 @@ internal fun SalesAnalysisScreen(onBack: () -> Unit) {
                     TextButton(onClick = { retry++ }) { Text(stringResource(R.string.sales_retry)) }
                 }
                 is SalesLoad.Ready -> {
-                    item { OrderStatistics(orderStatistics, dateFormat, locale) }
-                    if (report.timeline.isEmpty()) item { SalesPanel { Text(stringResource(R.string.sales_empty)) } }
-                    else {
-                        item {
+                    item {
+                        Crossfade(
+                            targetState = orderStatistics,
+                            animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
+                            label = "orderStatisticsFilter"
+                        ) { results -> OrderStatistics(results, dateFormat, locale) }
+                    }
+                    item {
+                        Crossfade(
+                            targetState = report.timeline,
+                            animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing),
+                            label = "salesTimelineFilter"
+                        ) { points ->
                             SalesPanel {
-                                Text(stringResource(R.string.sales_over_time), style = MaterialTheme.typography.titleLarge)
-                                TimelineChart(report.timeline, dateFormat)
+                                if (points.isEmpty()) {
+                                    Text(stringResource(R.string.sales_empty))
+                                } else {
+                                    Text(stringResource(R.string.sales_over_time), style = MaterialTheme.typography.titleLarge)
+                                    TimelineChart(points, dateFormat)
+                                }
                             }
                         }
+                    }
+                    if (report.timeline.isNotEmpty()) {
                         item { Text(stringResource(R.string.sales_top_products), style = MaterialTheme.typography.titleLarge) }
                         if (report.products.isEmpty()) item { Text(stringResource(R.string.sales_no_lines)) }
                         val maxUnits = report.products.maxOfOrNull { it.units } ?: 1L
@@ -246,7 +287,7 @@ private fun SalesTotal(total: Long) {
             Icon(Icons.Default.BarChart, contentDescription = null, modifier = Modifier.size(34.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(stringResource(R.string.admin_total_sales), style = MaterialTheme.typography.titleMedium)
-                Crossfade(targetState = total, animationSpec = tween(220), label = "sales total") { value ->
+                Crossfade(targetState = total, animationSpec = tween(PanAppMotion.ControlMillis, easing = PanAppMotion.easing), label = "sales total") { value ->
                     Text(
                         stringResource(R.string.sales_mxn, value.mxn()),
                         style = MaterialTheme.typography.headlineMedium,
@@ -260,7 +301,7 @@ private fun SalesTotal(total: Long) {
 
 @Composable
 private fun SalesPanel(content: @Composable ColumnScope.() -> Unit) {
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), tonalElevation = 1.dp) {
+    PanAppGlassCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
@@ -342,7 +383,7 @@ private fun TimelineChart(
     val progress = remember { Animatable(0f) }
     LaunchedEffect(points) {
         progress.snapTo(0f)
-        progress.animateTo(1f, tween(600))
+        progress.animateTo(1f, tween(780, easing = PanAppMotion.easing))
     }
     Canvas(Modifier.fillMaxWidth().height(170.dp).padding(vertical = 10.dp, horizontal = 6.dp)) {
         fun y(amount: Double) = size.height * ((high - amount) / (high - low)).toFloat()

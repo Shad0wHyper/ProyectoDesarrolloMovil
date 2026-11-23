@@ -1,5 +1,15 @@
 package com.developers.panapp
 
+import com.developers.core.ui.PanAppScreenTitle
+
+import com.developers.core.ui.PanAppMotion
+
+import com.developers.core.ui.PanAppGlassCard
+
+import com.developers.core.ui.panAppGlassBorder
+import com.developers.core.ui.panAppPanelColor
+import androidx.compose.foundation.border
+
 import com.developers.core.ui.contrastFieldColors
 
 import android.widget.Toast
@@ -90,10 +100,8 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
-                    Text(
+                    PanAppScreenTitle(
                         text = stringResource(id = R.string.forgot_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(start = 8.dp)
                     )
@@ -107,7 +115,8 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                     modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(panAppPanelColor())
+                        .border(panAppGlassBorder(), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -246,8 +255,8 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
             // MODAL DINÁMICO CON ANIMACIÓN
             AnimatedVisibility(
                 visible = showModal,
-                enter = fadeIn(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(300))
+                enter = fadeIn(animationSpec = tween(PanAppMotion.ExitMillis, easing = PanAppMotion.easing)),
+                exit = fadeOut(animationSpec = tween(PanAppMotion.ExitMillis, easing = PanAppMotion.easing))
             ) {
                 Box(
                     modifier = Modifier
@@ -256,22 +265,21 @@ fun ForgotPasswordScreen(onNavigateBack: () -> Unit) {
                         .clickable { /* Evita clics detrás del modal */ },
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    Card(
+                    PanAppGlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .fillMaxHeight(0.6f)
                             .animateEnterExit(
                                 enter = slideInVertically(
                                     initialOffsetY = { it },
-                                    animationSpec = tween(durationMillis = 400)
+                                    animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing)
                                 ),
                                 exit = slideOutVertically(
                                     targetOffsetY = { it },
-                                    animationSpec = tween(durationMillis = 400)
+                                    animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing)
                                 )
                             ),
-                        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
                     ) {
                         Column(
                             modifier = Modifier

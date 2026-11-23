@@ -1,5 +1,9 @@
 package com.developers.client
 
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
 import com.developers.core.text.localizedText
 import com.developers.core.R as TextR
 
@@ -58,6 +62,12 @@ data class OrderData(
 )
 
 class AppViewModel : ViewModel() {
+    private val _cartAdditions = MutableSharedFlow<String>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    internal val cartAdditions = _cartAdditions.asSharedFlow()
+
     internal var ratingRevision by mutableStateOf(0)
     var notificationsEnabled by mutableStateOf(true)
 
@@ -370,6 +380,7 @@ class AppViewModel : ViewModel() {
         } else {
             cartItems = cartItems + CartItem(product.id, product.nombre, product.categoria, product.precio, product.imagenUrl, 1)
         }
+        _cartAdditions.tryEmit(product.nombre)
     }
 
     fun increaseQuantity(itemId: String) {

@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.android.gms.tasks.Task
+import java.math.BigDecimal
 
 class AdminViewModel : ViewModel() {
     var currentUserId by mutableStateOf("INVITADO")
@@ -83,6 +85,68 @@ class AdminViewModel : ViewModel() {
                 insumosCriticosNombres = criticos
                 globalCriticosCount = criticos.size
             }
+        }
+    }
+
+    internal var isSavingWarehouseStock by mutableStateOf(false)
+        private set
+
+    internal fun saveWarehouseMaterial(
+        id: String?,
+        name: String,
+        unit: String,
+        minimum: BigDecimal,
+        initialQuantity: BigDecimal?,
+        onResult: (Int?) -> Unit
+    ) {
+        if (isSavingWarehouseStock) return
+        val materials = FirebaseFirestore.getInstance().collection("materia_prima")
+        val fields = mutableMapOf<String, Any>("nombre" to name, "nivelCritico" to minimum.toDouble())
+        val task = if (id == null) {
+            fields["unidadMedida"] = unit
+            fields["cantidadActual"] = requireNotNull(initialQuantity).toDouble()
+            fields["codigoBarras"] = ""
+            fields["codigosBarras"] = emptyList<String>()
+            fields["cantidadesPorCodigo"] = emptyMap<String, Double>()
+            fields["colorHex"] = "#4CAF50"
+            materials.document().set(fields)
+        } else {
+            materials.document(id).update(fields)
+        }
+        observeWarehouseWrite(task, onResult)
+    }
+
+    internal fun adjustWarehouseStock(material: MateriaPrima, delta: BigDecimal, onResult: (Int?) -> Unit) {
+        if (isSavingWarehouseStock) return
+        val db = FirebaseFirestore.getInstance()
+        val ref = db.collection("materia_prima").document(material.id)
+        val task = db.runTransaction { transaction ->
+            val snapshot = transaction.get(ref)
+            check(snapshot.exists() && (snapshot.getString("unidadMedida") ?: "g") == material.unidadMedida)
+            val current = snapshot.getDouble("cantidadActual") ?: 0.0
+            val updated = current.toBigDecimal().add(delta)
+            if (updated.signum() < 0) {
+                false
+            } else {
+                val quantity = updated.toDouble()
+                check(quantity.isFinite() && quantity != current)
+                transaction.update(ref, "cantidadActual", quantity)
+                true
+            }
+        }
+        observeWarehouseWrite(task, onResult)
+    }
+
+    private fun observeWarehouseWrite(task: Task<*>, onResult: (Int?) -> Unit) {
+        isSavingWarehouseStock = true
+        task.addOnCompleteListener { result ->
+            isSavingWarehouseStock = false
+            val error = when {
+                !result.isSuccessful -> R.string.warehouse_stock_save_error
+                result.result == false -> R.string.warehouse_adjust_insufficient
+                else -> null
+            }
+            onResult(error)
         }
     }
 

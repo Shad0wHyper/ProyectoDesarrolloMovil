@@ -1,5 +1,4 @@
 <resources>
     <string name="client_order_filter_all">All</string>
-    <string name="client_order_awaiting_payment">Awaiting payment</string>
     <string name="client_order_filter_empty">No orders match this filter.</string>
 </resources>

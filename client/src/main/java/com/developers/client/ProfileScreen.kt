@@ -1,5 +1,7 @@
 package com.developers.client
 
+import com.developers.core.ui.PanAppGlassCard
+
 import com.developers.core.ui.PanAppHeaderTitle
 
 import com.developers.core.ui.isPanAppInDarkTheme
@@ -97,6 +99,7 @@ fun ProfileScreen(
     )
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { PanAppHeaderTitle(appViewModel.getString("profile")) },
@@ -106,7 +109,7 @@ fun ProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    containerColor = Color.Transparent,
                     titleContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode),
                     navigationIconContentColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
                 )
@@ -117,7 +120,6 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -272,11 +274,9 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 appViewModel.userAddressesList.forEach { addr ->
-                    Card(
+                    PanAppGlassCard(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, if (addr == address) PanAppPrimary else Color.Transparent)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp).clickable { address = addr },
