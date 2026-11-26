@@ -134,7 +134,7 @@ fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> U
                 animationSpec = tween(PanAppMotion.EnterMillis, easing = PanAppMotion.easing),
                 label = "dispatchFilter"
             ) { status ->
-                val pedidosFiltrados = viewModel.pedidosActivos.filter { it.estado == status }
+                val pedidosFiltrados = viewModel.pedidosActivos.filter { orderDispatchFilter(it.estado) == status }
                 if (pedidosFiltrados.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
@@ -148,10 +148,10 @@ fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> U
                         modifier = Modifier.fillMaxSize().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(pedidosFiltrados, key = { it.id }) { order ->
+                        items(pedidosFiltrados, key = { it.path.ifEmpty { it.id } }) { order ->
                             OrderCard(pedido = order, viewModel = viewModel, isLaunching = false, onSendClick = { onSendWhatsapp(order) })
                         }
-                        item { Spacer(modifier = Modifier.height(60.dp)) }
+                        item { Spacer(modifier = Modifier.height(100.dp)) }
                     }
                 }
             }
@@ -162,12 +162,13 @@ fun PedidosScreen(viewModel: EmployeeViewModel, profileMenu: @Composable () -> U
 // ✨ TARJETA DE PEDIDO DINÁMICA CON DROPDOWN Y BLOQUEO DE SEGURIDAD
 @Composable
 fun OrderCard(pedido: PedidoFirebase, viewModel: EmployeeViewModel, isLaunching: Boolean, onSendClick: () -> Unit) {
-    val isEntregado = pedido.estado == "ENTREGADO"
+    val statusBucket = orderDispatchFilter(pedido.estado)
+    val isEntregado = statusBucket == "ENTREGADO"
     var expandedDropdown by remember { mutableStateOf(false) }
     val opcionesEstado = listOf("PENDIENTE", "ENVIADO", "ENTREGADO")
 
     // Colores dinámicos solicitados
-    val statusColor = when (pedido.estado) {
+    val statusColor = when (statusBucket) {
         "PENDIENTE" -> CardPink // Rojo/Rosa
         "ENVIADO" -> Color(0xFFFFA000) // Amarillo/Naranja
         "ENTREGADO" -> Color(0xFF4CAF50) // Verde
@@ -270,7 +271,7 @@ fun LaunchingWhatsappScreen(order: PedidoFirebase, onBackClick: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         delay(1500)
-        val mensajeEstado = if (order.estado == "ENVIADO") context.getString(R.string.emp_whatsapp_msg_shipped) else context.getString(R.string.emp_whatsapp_msg_prep)
+        val mensajeEstado = if (orderDispatchFilter(order.estado) == "ENVIADO") context.getString(R.string.emp_whatsapp_msg_shipped) else context.getString(R.string.emp_whatsapp_msg_prep)
         val message = context.getString(R.string.emp_whatsapp_msg_body, order.clienteNombre, mensajeEstado, order.total.toString())
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply { data = Uri.parse("https://api.whatsapp.com/send?text=${URLEncoder.encode(message, "UTF-8")}") }

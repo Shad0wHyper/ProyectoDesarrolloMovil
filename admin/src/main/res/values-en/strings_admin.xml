@@ -199,4 +199,6 @@
     <string name="admin_payroll_generated">Payroll Excel file generated successfully</string>
     <string name="admin_error_generating_payroll">Error generating payroll file: %1$s</string>
     <string name="admin_share_payroll">Share Payroll Report</string>
+    <string name="admin_attendance_load_error">Could not load attendance history.</string>
+    <string name="admin_retry">Retry</string>
 </resources>

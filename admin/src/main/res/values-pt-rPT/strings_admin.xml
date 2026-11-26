@@ -198,4 +198,6 @@
     <string name="admin_payroll_generated">Arquivo de folha de pagamento gerado com sucesso</string>
     <string name="admin_error_generating_payroll">Erro ao gerar arquivo de folha de pagamento: %1$s</string>
     <string name="admin_share_payroll">Compartilhar Relatório de Folha</string>
+    <string name="admin_attendance_load_error">Não foi possível carregar o histórico de presenças.</string>
+    <string name="admin_retry">Tentar novamente</string>
 </resources>

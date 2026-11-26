@@ -8,7 +8,9 @@ import com.developers.core.ui.PanAppGlassFilterChip
 
 import com.developers.core.ui.PanAppGlassCard
 
+import android.content.ClipData
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.developers.core.ui.contrastFieldColors
@@ -45,94 +47,219 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
-import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
-data class AttendanceRecord(
-    val id: String = "",
-    val employeeName: String = "",
-    val type: String = "",
-    val timestamp: Long = 0L,
-    val dateFormatted: String = "",
-    val timeFormatted: String = ""
-)
+import com.google.firebase.firestore.ListenerRegistration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
     val isDarkMode = isSystemInDarkTheme()
-    var records by remember { mutableStateOf<List<AttendanceRecord>>(emptyList()) }
+    var rawRecords by remember { mutableStateOf<List<AttendanceRecord>>(emptyList()) }
+    var userNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
-    
+    var hasError by remember { mutableStateOf(false) }
+    var reloadTrigger by remember { mutableIntStateOf(0) }
+
     // ✨ Estados de Filtrado
     var textBusqueda by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf("TODOS") } // "TODOS", "ENTRADA", "SALIDA"
 
     val textColor = contrastTextColor(Color.Black, darkBackground = isDarkMode)
     val cardColor = MaterialTheme.colorScheme.surface
+    val fallbackEmployeeName = localizedText(TextR.string.pan_employee)
 
-    LaunchedEffect(Unit) {
+    DisposableEffect(reloadTrigger) {
+        var active = true
+        isLoading = true
+        hasError = false
         val db = FirebaseFirestore.getInstance()
-        
-        // Obtenemos todos los usuarios y sus subcolecciones de asistencias (igual que en el módulo de empleado)
+        val requestedUserLookups = mutableSetOf<String>()
+
+        fun parseAttendanceDoc(
+            doc: DocumentSnapshot,
+            fallbackUserId: String = ""
+        ): AttendanceRecord? = runCatching {
+            val uid = (doc.get("userId") as? String)?.takeIf { it.isNotBlank() }
+                ?: fallbackUserId.takeIf { it.isNotBlank() }
+                ?: doc.reference.parent.parent?.id.orEmpty()
+            val docEmployeeName = (doc.get("employeeName") as? String)?.takeIf { it.isNotBlank() }
+                ?: (doc.get("nombreEmpleado") as? String)?.takeIf { it.isNotBlank() }
+                ?: (doc.get("nombre") as? String)?.takeIf { it.isNotBlank() }
+            val timestamp = parseAttendanceTimestampMillis(
+                doc.get("timestamp"),
+                doc.get("fecha"),
+                doc.get("createdAt")
+            )
+            buildAttendanceRecord(
+                id = doc.id,
+                path = doc.reference.path,
+                userId = uid,
+                rawEmployeeName = docEmployeeName ?: userNames[uid],
+                fallbackEmployeeName = fallbackEmployeeName,
+                rawType = doc.get("type") as? String,
+                rawTipo = doc.get("tipo") as? String,
+                timestamp = timestamp,
+                rawDateFormatted = (doc.get("dateFormatted") as? String) ?: (doc.get("fecha") as? String),
+                rawTimeFormatted = (doc.get("timeFormatted") as? String) ?: (doc.get("hora") as? String)
+            )
+        }.onFailure {
+            Log.e("AttendanceHistory", "Error parsing attendance ${doc.reference.path}", it)
+        }.getOrNull()
+
+        fun resolveMissingNames(items: List<AttendanceRecord>) {
+            items.map { it.userId }
+                .filter { it.isNotBlank() && !userNames.containsKey(it) && requestedUserLookups.add(it) }
+                .forEach { uid ->
+                    db.collection("usuarios").document(uid).get()
+                        .addOnSuccessListener { userDoc ->
+                            if (!active) return@addOnSuccessListener
+                            val nombre = (userDoc.get("nombre") as? String)?.takeIf { it.isNotBlank() }
+                            if (nombre != null) {
+                                userNames = userNames + (uid to nombre)
+                            }
+                        }
+                }
+        }
+
+        // Precargamos nombres disponibles sin bloquear ni fallar si el listado general no está permitido
         db.collection("usuarios").get().addOnSuccessListener { userSnap ->
-            val allRecords = mutableListOf<AttendanceRecord>()
-            val users = userSnap.documents
-            if (users.isEmpty()) {
+            if (!active) return@addOnSuccessListener
+            val loaded = buildMap {
+                for (userDoc in userSnap.documents) {
+                    val nombre = (userDoc.get("nombre") as? String)?.takeIf { it.isNotBlank() }
+                    if (nombre != null) put(userDoc.id, nombre)
+                }
+            }
+            if (loaded.isNotEmpty()) {
+                userNames = userNames + loaded
+            }
+        }
+
+        var fallbackStarted = false
+        fun runFallbackQueries() {
+            if (fallbackStarted) return
+            fallbackStarted = true
+            val collected = linkedMapOf<String, AttendanceRecord>()
+            var rootDone = false
+            var usersDone = false
+            var anySuccess = false
+
+            fun finishFallback() {
+                if (!active || !rootDone || !usersDone) return
+                if (anySuccess) {
+                    val merged = collected.values.sortedByDescending { it.timestamp }
+                    rawRecords = merged
+                    resolveMissingNames(merged)
+                    hasError = false
+                } else {
+                    hasError = true
+                }
                 isLoading = false
-                return@addOnSuccessListener
             }
 
-            var processed = 0
-            for (userDoc in users) {
-                val userId = userDoc.id
-                val employeeName = userDoc.getString("nombre") ?: localizedText(TextR.string.pan_employee)
+            db.collection("asistencias").get()
+                .addOnSuccessListener { snap ->
+                    anySuccess = true
+                    snap.documents.mapNotNull { parseAttendanceDoc(it) }.forEach { rec ->
+                        collected[rec.key] = rec
+                    }
+                    rootDone = true
+                    finishFallback()
+                }
+                .addOnFailureListener { e ->
+                    Log.e("AttendanceHistory", "Fallback root asistencias failed", e)
+                    rootDone = true
+                    finishFallback()
+                }
 
-                db.collection("usuarios").document(userId).collection("asistencias")
-                    .get()
-                    .addOnSuccessListener { attendanceSnap ->
-                        for (doc in attendanceSnap.documents) {
-                            allRecords.add(
-                                AttendanceRecord(
-                                    id = doc.id,
-                                    employeeName = employeeName,
-                                    type = doc.getString("type") ?: "ENTRADA",
-                                    timestamp = doc.getLong("timestamp") ?: 0L,
-                                    dateFormatted = doc.getString("dateFormatted") ?: "",
-                                    timeFormatted = doc.getString("timeFormatted") ?: ""
-                                )
-                            )
-                        }
-                        processed++
-                        if (processed == users.size) {
-                            records = allRecords.sortedByDescending { it.timestamp }
-                            isLoading = false
+            db.collection("usuarios").get()
+                .addOnSuccessListener { userSnap ->
+                    val users = userSnap.documents
+                    if (users.isEmpty()) {
+                        anySuccess = true
+                        usersDone = true
+                        finishFallback()
+                        return@addOnSuccessListener
+                    }
+                    val namesFromUsers = buildMap {
+                        for (userDoc in users) {
+                            val nombre = (userDoc.get("nombre") as? String)?.takeIf { it.isNotBlank() }
+                            if (nombre != null) put(userDoc.id, nombre)
                         }
                     }
-                    .addOnFailureListener {
-                        processed++
-                        if (processed == users.size) {
-                            records = allRecords.sortedByDescending { it.timestamp }
-                            isLoading = false
-                        }
+                    if (active && namesFromUsers.isNotEmpty()) {
+                        userNames = userNames + namesFromUsers
                     }
+                    var processed = 0
+                    for (userDoc in users) {
+                        val userId = userDoc.id
+                        db.collection("usuarios").document(userId).collection("asistencias")
+                            .get()
+                            .addOnSuccessListener { attendanceSnap ->
+                                anySuccess = true
+                                attendanceSnap.documents.mapNotNull { parseAttendanceDoc(it, userId) }.forEach { rec ->
+                                    collected[rec.key] = rec
+                                }
+                                processed++
+                                if (processed == users.size) {
+                                    usersDone = true
+                                    finishFallback()
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("AttendanceHistory", "Fallback user $userId asistencias failed", e)
+                                processed++
+                                if (processed == users.size) {
+                                    usersDone = true
+                                    finishFallback()
+                                }
+                            }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("AttendanceHistory", "Fallback usuarios query failed", e)
+                    usersDone = true
+                    finishFallback()
+                }
+        }
+
+        val listener: ListenerRegistration = db.collectionGroup("asistencias")
+            .addSnapshotListener { snapshot, error ->
+                if (!active) return@addSnapshotListener
+                if (error != null) {
+                    Log.e("AttendanceHistory", "collectionGroup asistencias failed", error)
+                    runFallbackQueries()
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val parsed = snapshot.documents
+                        .mapNotNull { parseAttendanceDoc(it) }
+                        .distinctBy { it.key }
+                        .sortedByDescending { it.timestamp }
+                    rawRecords = parsed
+                    hasError = false
+                    isLoading = false
+                    resolveMissingNames(parsed)
+                }
             }
-        }.addOnFailureListener {
-            isLoading = false
+
+        onDispose {
+            active = false
+            listener.remove()
+        }
+    }
+
+    val records = remember(rawRecords, userNames) {
+        rawRecords.map { rec ->
+            val resolved = userNames[rec.userId]
+            if (!resolved.isNullOrBlank()) rec.copy(employeeName = resolved) else rec
         }
     }
 
     // ✨ Lógica de Filtrado en Tiempo Real
-    val registrosFiltrados = records.filter { record ->
-        val coincideNombre = record.employeeName.contains(textBusqueda, ignoreCase = true)
-        val coincideFiltro = if (filtroSeleccionado == "TODOS") true else record.type == filtroSeleccionado
-        coincideNombre && coincideFiltro
+    val registrosFiltrados = remember(records, textBusqueda, filtroSeleccionado) {
+        filterAttendanceRecords(records, textBusqueda, filtroSeleccionado)
     }
 
     if (isInsideTab) {
@@ -142,6 +269,8 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
             filtroSeleccionado = filtroSeleccionado,
             onFiltroChange = { filtroSeleccionado = it },
             isLoading = isLoading,
+            hasError = hasError,
+            onRetry = { reloadTrigger++ },
             registrosFiltrados = registrosFiltrados,
             allRecords = records,
             isDarkMode = isDarkMode,
@@ -170,6 +299,8 @@ fun AttendanceHistoryScreen(onBack: () -> Unit, isInsideTab: Boolean = false) {
                     filtroSeleccionado = filtroSeleccionado,
                     onFiltroChange = { filtroSeleccionado = it },
                     isLoading = isLoading,
+                    hasError = hasError,
+                    onRetry = { reloadTrigger++ },
                     registrosFiltrados = registrosFiltrados,
                     allRecords = records,
                     isDarkMode = isDarkMode,
@@ -188,6 +319,8 @@ fun AttendanceContent(
     filtroSeleccionado: String,
     onFiltroChange: (String) -> Unit,
     isLoading: Boolean,
+    hasError: Boolean,
+    onRetry: () -> Unit,
     registrosFiltrados: List<AttendanceRecord>,
     allRecords: List<AttendanceRecord>,
     isDarkMode: Boolean,
@@ -197,383 +330,20 @@ fun AttendanceContent(
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // ✨ BOTÓN EXPORTAR NOMINA EXCEL
+        // ✨ BOTÓN EXPORTAR NOMINA EXCEL (.xlsx OOXML real)
         if (allRecords.isNotEmpty()) {
             Button(
                 onClick = {
                     try {
-                        val file = File(context.cacheDir, "Nomina_Asistencia_${System.currentTimeMillis()}.xls")
-                        FileOutputStream(file).use { fos ->
-                            OutputStreamWriter(fos, StandardCharsets.UTF_8).use { writer ->
-                                // BOM para compatibilidad UTF-8 en Excel
-                                writer.write("\uFEFF")
-                                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-                                val dateStr = dateFormat.format(Date())
-
-                                // Cálculos y métricas generales
-                                val grouped = allRecords.groupBy { it.employeeName }
-                                val totalEmpleados = grouped.size
-                                val totalRegistros = allRecords.size
-                                val totalEntradasGlobal = allRecords.count { it.type == "ENTRADA" }
-                                val totalSalidasGlobal = allRecords.count { it.type == "SALIDA" }
-
-                                var granTotalNomina = 0.0
-                                var granTotalDias = 0
-                                var granTotalEntradas = 0
-                                var granTotalSalidas = 0
-
-                                data class EmpSummary(
-                                    val name: String,
-                                    val days: Int,
-                                    val entries: Int,
-                                    val exits: Int,
-                                    val dailyRate: Double,
-                                    val totalPay: Double,
-                                    val estatus: String
-                                )
-
-                                val summaryList = mutableListOf<EmpSummary>()
-                                for ((employeeName, empRecords) in grouped) {
-                                    val entries = empRecords.count { it.type == "ENTRADA" }
-                                    val exits = empRecords.count { it.type == "SALIDA" }
-                                    val days = empRecords.map { it.dateFormatted }.distinct().size
-                                    val dailyRate = 300.0 // Sueldo base diario estándar
-                                    val totalPay = days * dailyRate
-                                    val estatus = if (entries > 0 && exits > 0) "Activo / Completo" else "Parcial / Pendiente"
-
-                                    granTotalNomina += totalPay
-                                    granTotalDias += days
-                                    granTotalEntradas += entries
-                                    granTotalSalidas += exits
-
-                                    summaryList.add(
-                                        EmpSummary(
-                                            name = employeeName,
-                                            days = days,
-                                            entries = entries,
-                                            exits = exits,
-                                            dailyRate = dailyRate,
-                                            totalPay = totalPay,
-                                            estatus = estatus
-                                        )
-                                    )
-                                }
-
-                                val formattedGranTotalNomina = String.format(Locale.US, "$%,.2f", granTotalNomina)
-
-                                // Estructura HTML profesional con estilos CSS e interoperabilidad total para Excel
-                                writer.write("""
-                                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                                          xmlns="http://www.w3.org/TR/REC-html40">
-                                    <head>
-                                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-                                    <!--[if gte mso 9]>
-                                    <xml>
-                                     <x:ExcelWorkbook>
-                                      <x:ExcelWorksheets>
-                                       <x:ExcelWorksheet>
-                                        <x:Name>Nómina y Asistencia</x:Name>
-                                        <x:WorksheetOptions>
-                                         <x:DisplayGridlines/>
-                                        </x:WorksheetOptions>
-                                       </x:ExcelWorksheet>
-                                      </x:ExcelWorksheets>
-                                     </x:ExcelWorkbook>
-                                    </xml>
-                                    <![endif]-->
-                                    <style>
-                                        body {
-                                            font-family: 'Segoe UI', Arial, sans-serif;
-                                            background-color: #FFFFFF;
-                                            color: #1E293B;
-                                            margin: 0;
-                                            padding: 20px;
-                                        }
-                                        table {
-                                            border-collapse: collapse;
-                                            width: 100%;
-                                            margin-bottom: 24px;
-                                        }
-                                        .main-header {
-                                            background-color: #1E3A8A;
-                                            color: #FFFFFF;
-                                            font-size: 16pt;
-                                            font-weight: bold;
-                                            text-align: center;
-                                            padding: 14px;
-                                            border: 1px solid #1E3A8A;
-                                        }
-                                        .sub-header {
-                                            background-color: #2563EB;
-                                            color: #FFFFFF;
-                                            font-size: 10pt;
-                                            font-weight: bold;
-                                            text-align: center;
-                                            padding: 6px;
-                                            border: 1px solid #1D4ED8;
-                                        }
-                                        .meta-table td {
-                                            border: 1px solid #CBD5E1;
-                                            padding: 8px 12px;
-                                            font-size: 10pt;
-                                        }
-                                        .meta-label {
-                                            background-color: #F1F5F9;
-                                            font-weight: bold;
-                                            color: #334155;
-                                        }
-                                        .kpi-card-title {
-                                            background-color: #F8FAFC;
-                                            font-weight: bold;
-                                            font-size: 9pt;
-                                            color: #64748B;
-                                            text-align: center;
-                                            padding: 6px;
-                                            border: 1px solid #CBD5E1;
-                                        }
-                                        .kpi-card-value {
-                                            background-color: #FFFFFF;
-                                            font-weight: bold;
-                                            font-size: 13pt;
-                                            color: #1E3A8A;
-                                            text-align: center;
-                                            padding: 8px;
-                                            border: 1px solid #CBD5E1;
-                                        }
-                                        .section-banner {
-                                            background-color: #0F172A;
-                                            color: #FFFFFF;
-                                            font-size: 11pt;
-                                            font-weight: bold;
-                                            padding: 10px 14px;
-                                            text-align: left;
-                                            border: 1px solid #0F172A;
-                                        }
-                                        th {
-                                            background-color: #1E40AF;
-                                            color: #FFFFFF;
-                                            font-size: 10pt;
-                                            font-weight: bold;
-                                            text-align: center;
-                                            padding: 10px 8px;
-                                            border: 1px solid #1E3A8A;
-                                            vertical-align: middle;
-                                        }
-                                        th.th-sec {
-                                            background-color: #334155;
-                                            border: 1px solid #1E293B;
-                                        }
-                                        td {
-                                            font-size: 10pt;
-                                            padding: 8px 10px;
-                                            border: 1px solid #E2E8F0;
-                                            vertical-align: middle;
-                                        }
-                                        .tr-even { background-color: #FFFFFF; }
-                                        .tr-odd { background-color: #F8FAFC; }
-                                        .t-left { text-align: left; }
-                                        .t-center { text-align: center; }
-                                        .t-right { text-align: right; }
-                                        .bold { font-weight: bold; }
-
-                                        .badge-green {
-                                            background-color: #DCFCE7;
-                                            color: #15803D;
-                                            font-weight: bold;
-                                            padding: 4px 10px;
-                                            border-radius: 12px;
-                                            border: 1px solid #BBF7D0;
-                                        }
-                                        .badge-yellow {
-                                            background-color: #FEF3C7;
-                                            color: #B45309;
-                                            font-weight: bold;
-                                            padding: 4px 10px;
-                                            border-radius: 12px;
-                                            border: 1px solid #FDE68A;
-                                        }
-                                        .badge-red {
-                                            background-color: #FEE2E2;
-                                            color: #B91C1C;
-                                            font-weight: bold;
-                                            padding: 4px 10px;
-                                            border-radius: 12px;
-                                            border: 1px solid #FCA5A5;
-                                        }
-                                        .badge-blue {
-                                            background-color: #DBEAFE;
-                                            color: #1E40AF;
-                                            font-weight: bold;
-                                            padding: 4px 10px;
-                                            border-radius: 12px;
-                                            border: 1px solid #BFDBFE;
-                                        }
-                                        .tr-total {
-                                            background-color: #E2E8F0;
-                                            font-weight: bold;
-                                            font-size: 10.5pt;
-                                            border-top: 2px solid #1E3A8A;
-                                            border-bottom: 3px double #1E3A8A;
-                                        }
-                                        .footer {
-                                            margin-top: 20px;
-                                            text-align: center;
-                                            font-size: 9pt;
-                                            color: #94A3B8;
-                                            font-style: italic;
-                                        }
-                                    </style>
-                                    </head>
-                                    <body>
-                                """.trimIndent())
-
-                                // Encabezado Principal
-                                writer.write("""
-                                    <table>
-                                        <tr>
-                                            <td colspan="8" class="main-header">PANAPP - CONTROL DE ASISTENCIA Y NÓMINA EMPRESARIAL</td>
-                                        </tr>
-                                        <tr>
-                                            <td colspan="8" class="sub-header">REPORTE OFICIAL DE PERSONAL, ASISTENCIAS Y ESTIMACIÓN DE PAGOS</td>
-                                        </tr>
-                                    </table>
-                                """.trimIndent())
-
-                                // Metadatos del Reporte
-                                writer.write("""
-                                    <table class="meta-table">
-                                        <tr>
-                                            <td class="meta-label" style="width: 150px;">Fecha de Generación:</td>
-                                            <td style="width: 200px;">$dateStr</td>
-                                            <td class="meta-label" style="width: 150px;">Sistema Origen:</td>
-                                            <td>PanApp ERP - Control de Personal</td>
-                                        </tr>
-                                    </table>
-                                """.trimIndent())
-
-                                // Tarjetas KPI de Resumen
-                                writer.write("""
-                                    <table>
-                                        <tr>
-                                            <td class="kpi-card-title" style="width: 25%;">TOTAL EMPLEADOS</td>
-                                            <td class="kpi-card-title" style="width: 25%;">TOTAL REGISTROS</td>
-                                            <td class="kpi-card-title" style="width: 25%;">ENTRADAS / SALIDAS</td>
-                                            <td class="kpi-card-title" style="width: 25%;">NÓMINA TOTAL ESTIMADA</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="kpi-card-value">$totalEmpleados</td>
-                                            <td class="kpi-card-value">$totalRegistros</td>
-                                            <td class="kpi-card-value">$totalEntradasGlobal / $totalSalidasGlobal</td>
-                                            <td class="kpi-card-value" style="color: #059669;">$formattedGranTotalNomina</td>
-                                        </tr>
-                                    </table>
-                                """.trimIndent())
-
-                                // Tabla 1: Resumen General de Nómina
-                                writer.write("""
-                                    <table>
-                                        <tr>
-                                            <td colspan="8" class="section-banner">TABLA 1: RESUMEN GENERAL DE NÓMINA Y PAGOS POR EMPLEADO</td>
-                                        </tr>
-                                        <tr>
-                                            <th style="width: 45px;">N°</th>
-                                            <th style="width: 220px;" class="t-left">Empleado</th>
-                                            <th style="width: 120px;">Días Asistidos</th>
-                                            <th style="width: 120px;">Total Entradas</th>
-                                            <th style="width: 120px;">Total Salidas</th>
-                                            <th style="width: 150px;" class="t-right">Sueldo Base Diario</th>
-                                            <th style="width: 170px;" class="t-right">Pago Estimado Periodo</th>
-                                            <th style="width: 160px;">Estatus Nómina</th>
-                                        </tr>
-                                """.trimIndent())
-
-                                summaryList.forEachIndexed { index, emp ->
-                                    val trClass = if (index % 2 == 0) "tr-even" else "tr-odd"
-                                    val formattedDaily = String.format(Locale.US, "$%,.2f", emp.dailyRate)
-                                    val formattedPay = String.format(Locale.US, "$%,.2f", emp.totalPay)
-                                    val badgeClass = if (emp.estatus == "Activo / Completo") "badge-green" else "badge-yellow"
-
-                                    writer.write("""
-                                        <tr class="$trClass">
-                                            <td class="t-center">${index + 1}</td>
-                                            <td class="t-left bold">${emp.name}</td>
-                                            <td class="t-center">${emp.days}</td>
-                                            <td class="t-center">${emp.entries}</td>
-                                            <td class="t-center">${emp.exits}</td>
-                                            <td class="t-right">$formattedDaily</td>
-                                            <td class="t-right bold" style="color: #059669;">$formattedPay</td>
-                                            <td class="t-center"><span class="$badgeClass">${emp.estatus}</span></td>
-                                        </tr>
-                                    """.trimIndent())
-                                }
-
-                                // Fila de Totales Generales de Tabla 1
-                                writer.write("""
-                                    <tr class="tr-total">
-                                        <td colspan="2" class="t-right">TOTALES GENERALES:</td>
-                                        <td class="t-center">$granTotalDias</td>
-                                        <td class="t-center">$granTotalEntradas</td>
-                                        <td class="t-center">$granTotalSalidas</td>
-                                        <td class="t-right">-</td>
-                                        <td class="t-right" style="color: #047857;">$formattedGranTotalNomina</td>
-                                        <td class="t-center">-</td>
-                                    </tr>
-                                    </table>
-                                """.trimIndent())
-
-                                // Tabla 2: Control Diario de Asistencia y Puntualidad
-                                writer.write("""
-                                    <table>
-                                        <tr>
-                                            <td colspan="7" class="section-banner" style="background-color: #334155;">TABLA 2: CONTROL DIARIO DE ASISTENCIA Y PUNTUALIDAD</td>
-                                        </tr>
-                                        <tr>
-                                            <th class="th-sec" style="width: 45px;">N°</th>
-                                            <th class="th-sec" style="width: 220px;" class="t-left">Empleado</th>
-                                            <th class="th-sec" style="width: 120px;">Fecha</th>
-                                            <th class="th-sec" style="width: 100px;">Hora</th>
-                                            <th class="th-sec" style="width: 140px;">Tipo de Registro</th>
-                                            <th class="th-sec" style="width: 150px;">Puntualidad</th>
-                                            <th class="th-sec" style="width: 120px;">Estado</th>
-                                        </tr>
-                                """.trimIndent())
-
-                                allRecords.forEachIndexed { index, rec ->
-                                    val trClass = if (index % 2 == 0) "tr-even" else "tr-odd"
-                                    val isEntrada = rec.type == "ENTRADA"
-                                    val tipoBadge = if (isEntrada) "<span class=\"badge-green\">ENTRADA</span>" else "<span class=\"badge-red\">SALIDA</span>"
-                                    val puntBadge = if (isEntrada) "<span class=\"badge-blue\">A tiempo (A)</span>" else "<span class=\"badge-yellow\">Salida de Turno</span>"
-
-                                    writer.write("""
-                                        <tr class="$trClass">
-                                            <td class="t-center">${index + 1}</td>
-                                            <td class="t-left bold">${rec.employeeName}</td>
-                                            <td class="t-center">${rec.dateFormatted}</td>
-                                            <td class="t-center bold">${rec.timeFormatted}</td>
-                                            <td class="t-center">$tipoBadge</td>
-                                            <td class="t-center">$puntBadge</td>
-                                            <td class="t-center">Registrado</td>
-                                        </tr>
-                                    """.trimIndent())
-                                }
-
-                                writer.write("""
-                                    </table>
-                                    <div class="footer">
-                                        PanApp Enterprise Payroll System &bull; Documento oficial exportado el $dateStr &bull; Información Confidencial
-                                    </div>
-                                    </body>
-                                    </html>
-                                """.trimIndent())
-                            }
-                        }
+                        val file = exportAttendancePayrollFile(context.cacheDir, allRecords)
 
                         // ✨ Usamos la autoridad exacta del FileProvider del módulo admin
                         val uri = FileProvider.getUriForFile(context, "com.developers.admin.fileprovider", file)
                         val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/vnd.ms-excel"
+                            type = XLSX_MIME_TYPE
                             putExtra(Intent.EXTRA_STREAM, uri)
+                            putExtra(Intent.EXTRA_SUBJECT, file.name)
+                            clipData = ClipData.newRawUri(file.name, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                         context.startActivity(Intent.createChooser(intent, context.getString(R.string.admin_share_payroll)))
@@ -640,6 +410,22 @@ fun AttendanceContent(
             Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = contrastAccentColor(AdminPrimary))
             }
+        } else if (hasError && allRecords.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().weight(1f).padding(32.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        stringResource(R.string.admin_attendance_load_error),
+                        color = contrastTextColor(Color.Gray, secondary = true)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onRetry,
+                        colors = ButtonDefaults.buttonColors(containerColor = AdminPrimary)
+                    ) {
+                        Text(stringResource(R.string.admin_retry), color = Color.White)
+                    }
+                }
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().weight(1f).padding(horizontal = 16.dp),
@@ -652,7 +438,7 @@ fun AttendanceContent(
                         }
                     }
                 } else {
-                    items(registrosFiltrados, key = { it.id }) { record ->
+                    items(registrosFiltrados, key = { it.key }) { record ->
                         Box(panAppFilteredItem()) { AttendanceItem(record, isDarkMode) }
                     }
                 }

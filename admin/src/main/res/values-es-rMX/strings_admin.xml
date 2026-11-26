@@ -198,4 +198,6 @@
     <string name="admin_payroll_generated">Archivo de nómina Excel generado con éxito</string>
     <string name="admin_error_generating_payroll">Error al generar el archivo de nómina: %1$s</string>
     <string name="admin_share_payroll">Compartir Reporte de Nómina</string>
+    <string name="admin_attendance_load_error">No se pudo cargar el historial de asistencias.</string>
+    <string name="admin_retry">Reintentar</string>
 </resources>
