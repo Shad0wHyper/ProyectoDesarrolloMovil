@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
+import java.text.Normalizer
 import java.util.Locale
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -45,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.developers.client.ui.theme.PanAppPrimary
 
-private enum class OrderFilter(val status: String?, val label: Int?) {
+internal enum class OrderFilter(val status: String?, val label: Int?) {
     All(null, R.string.client_order_filter_all),
     AwaitingPayment("ESPERANDO PAGO", null),
     Pending("PENDIENTE", R.string.client_pendiente),
@@ -53,13 +54,34 @@ private enum class OrderFilter(val status: String?, val label: Int?) {
     Delivered("ENTREGADO", R.string.client_entregado)
 }
 
-private fun orderStatus(status: String): OrderFilter? =
-    OrderFilter.entries.firstOrNull { it.status == status.trim().uppercase(Locale.ROOT) }
+private val ORDER_DIACRITICS_REGEX = Regex("\\p{Mn}+")
+private val ORDER_SPACE_REGEX = Regex("\\s+")
+
+internal fun orderStatus(status: String): OrderFilter? {
+    val decomposed = Normalizer.normalize(status.trim(), Normalizer.Form.NFD)
+    val token = ORDER_DIACRITICS_REGEX.replace(decomposed, "")
+        .replace(ORDER_SPACE_REGEX, " ")
+        .uppercase(Locale.ROOT)
+    return when (token) {
+        "ENTREGADO", "ENTREGADOS", "DELIVERED", "COMPLETADO", "COMPLETADOS", "COMPLETED",
+        "CERRADO", "CERRADO - ENTREGADO", "ENTREGUE", "ENTREGUES" -> OrderFilter.Delivered
+
+        "ENVIADO", "ENVIADOS", "EN CAMINO", "EN_CAMINO", "ON THE WAY", "ON_THE_WAY",
+        "SHIPPED", "EN TRANSITO", "IN TRANSIT", "A CAMINHO" -> OrderFilter.OnTheWay
+
+        "PENDIENTE", "PENDIENTES", "PENDING", "ESPERANDO PAGO", "ESPERANDO_PAGO",
+        "AWAITING PAYMENT", "PAGO PENDIENTE", "PROCESADO", "PROCESADOS", "PROCESANDO",
+        "PROCESSED", "EN PROCESO", "EN PREPARACION", "PREPARANDO", "" -> OrderFilter.Pending
+
+        else -> null
+    }
+}
 
 @Composable
-private fun orderStatusLabel(status: String): String? {
-    val knownStatus = orderStatus(status) ?: return status
-    return knownStatus.label?.let { stringResource(it) }
+private fun orderStatusLabel(status: String): String {
+    val knownStatus = orderStatus(status)
+    return knownStatus?.label?.let { stringResource(it) }
+        ?: status.trim().ifEmpty { stringResource(R.string.client_pendiente) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -188,19 +210,8 @@ fun OrdersScreen(
                             Text(localizedText(TextR.string.pan_shipping_to, selectedOrder?.direccionEnvio.toString()), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
                             Text(localizedText(TextR.string.pan_order_total, selectedOrder?.total.toString()))
                             Text(localizedText(TextR.string.pan_order_method, paymentMethodLabel(selectedOrder?.metodoPago.orEmpty())), fontSize = 12.sp, color = contrastTextColor(Color.Gray, secondary = true))
-                            if (statusLabel != null) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(localizedText(TextR.string.pan_order_status, statusLabel), fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
-                                /* ✨ Temporalmente oculto hasta la Fase de Pagos
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = if (selectedOrder?.pagado == true) localizedText(TextR.string.pan_paid_bullet) else localizedText(TextR.string.pan_unpaid_bullet),
-                                    color = if (selectedOrder?.pagado == true) Color(0xFF2E7D32) else Color(0xFFC62828),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                                */
-                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(localizedText(TextR.string.pan_order_status, statusLabel), fontWeight = FontWeight.Bold, color = contrastAccentColor(PanAppPrimary))
 
                             Spacer(modifier = Modifier.height(12.dp))
                             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
@@ -265,6 +276,9 @@ fun OrderItemCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            val knownStatus = orderStatus(order.status)
+            val statusLabel = orderStatusLabel(order.status)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -280,48 +294,26 @@ fun OrderItemCard(
                     Text(order.date, style = MaterialTheme.typography.labelSmall, color = contrastTextColor(Color.Gray, secondary = true))
                 }
 
-                val statusUpper = order.status.uppercase()
-                val statusLabel = orderStatusLabel(order.status)
-
-                if (statusLabel != null) {
-                    /* ✨ Temporalmente oculto hasta la Fase de Pagos
-                    // ✨ Badge de Pago
-                    Surface(
-                        color = if (order.pagado) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Text(
-                            text = if (order.pagado) localizedText(TextR.string.pan_paid) else localizedText(TextR.string.pan_unpaid),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = if (order.pagado) Color(0xFF2E7D32) else Color(0xFFC62828),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                    */
-
-                    // Badge de Estado de Envío
-                    Surface(
-                        color = when(statusUpper) {
-                            "ENVIADO" -> Color(0xFFE3F2FD)
-                            "ENTREGADO" -> Color(0xFFE8F5E9)
-                            else -> Color(0xFFFFF4E5)
+                // Badge de Estado de Envío
+                Surface(
+                    color = when (knownStatus) {
+                        OrderFilter.OnTheWay -> Color(0xFFE3F2FD)
+                        OrderFilter.Delivered -> Color(0xFFE8F5E9)
+                        else -> Color(0xFFFFF4E5)
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = statusLabel,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        color = when (knownStatus) {
+                            OrderFilter.OnTheWay -> Color(0xFF1565C0)
+                            OrderFilter.Delivered -> Color(0xFF2E7D32)
+                            else -> Color(0xFFE65100)
                         },
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = statusLabel,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            color = when(statusUpper) {
-                                "ENVIADO" -> Color(0xFF1565C0)
-                                "ENTREGADO" -> Color(0xFF2E7D32)
-                                else -> Color(0xFFE65100)
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -377,7 +369,7 @@ fun OrderItemCard(
                     modifier = Modifier.weight(1.2f),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PanAppPrimary),
-                    enabled = order.status.uppercase() == "ENTREGADO"                ) {
+                    enabled = knownStatus == OrderFilter.Delivered                ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(appViewModel.getString("buy_again"), fontSize = 12.sp)
